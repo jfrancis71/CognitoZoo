@@ -34,21 +34,65 @@ CNFaceNet=NetChain[{
 
 
 Options[ CNSingleScaleDetectObjects ] = {
-   Threshold->0.997,
+   Threshold->0.997
 };
-CNSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min[ImageDimensions[image]]>=32,
+(* Conceptually it is a sliding window (32x32) object detector running at a single scale.
+   In practice it is implemented convolutionally ( for performance reasons ) so the net
+   should be fully convolutional, ie no fully connected layers.
+   The net output should be a 2D array of numbers indicating a metric for likelihood of object being present
+*)
+CNSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min[ImageDimensions[image]]<32,{},
    map=(net@{ColorConvert[image,"GrayScale"]//ImageData})[[1]];
    extractPositions=Position[map,x_/;x>OptionValue[Threshold]];
-   origCoords=Map[({4*#[[2]] + (16-4),ImageDimensions[image][[2]]-4*#[[1]]+4-16})&,extractPositions];
-   Map[{{#[[1]]-15,#[[2]]-15},{#[[1]]+16,#[[2]]+16}}&,origCoords],
-   {}]
+   origCoords=Map[{Extract[map,#],4*#[[2]] + (16-4),ImageDimensions[image][[2]]-4*#[[1]]+4-16}&,extractPositions];
+   Map[{#[[1]],{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}&,origCoords],
+   ]
+
+
+(* Like MapAt, but will work if an empty list is present  *)
+CNMapAt[f_,{},spec_] := {}
+CNMapAt[f_,dat_,spec_] := MapAt[f,dat,spec]
 
 
 Options[ CNMultiScaleDetectObjects ] = Options[ CNSingleScaleDetectObjects ];
+(* Implements a sliding window object detector at multiple scales.
+   The function resamples the image at scales ranging from a minimum width of 32 up to 800 at 20% scale increments.
+   The maximum width of 800 was chosen for 2 reasons: to limit inference run time and to limit the number of likely
+   false positives / image, implying the detector's limit is to recognise faces larger than 32/800 (4%) of the image width.
+   Note that if for example you had high resolution images with faces in the far distance and wanted to detect those and were
+   willing to accept false positives within the image, you might reconsider that tradeoff.
+   However, the main use case was possibly high resolution images where faces are not too distant with objective of limiting
+   false positives across the image as a whole.
+*)
 CNMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
-   Flatten[Table[(ImageDimensions[image][[1]]/(32*1.2^sc))*CNSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts],{sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
+   Flatten[Table[CNMapAt[(#*ImageDimensions[image][[1]]/(32*1.2^sc))&,CNSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts],{All,2;;3}],{sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
+
+
+CNIntersection[a_, b_] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
+   If[xa>xb||ya>yb,0,(xb-xa+1)*(yb-ya+1)]]
+CNArea[a_] := ( a[[1,1]]-a[[2,1]] ) * ( a[[1,2]]-a[[2,2]] )
+CNUnion[a_,b_] := CNArea[a] + CNArea[b] - CNIntersection[a, b]
+
+
+(* Had considered using RegionIntersection/RegionUnion but this was overly general and unacceptably slow in practice.
+   Not uncommon to see 100 raw detections, hence 10,000 pairs to evaluate.
+*)
+CNIntersectionOverUnion[a_, b_]:= 
+   CNIntersection[ a, b ] / CNUnion[a, b]
+
+
+CNDeleteOverlappingWindows[ {} ] := {};
+CNDeleteOverlappingWindows[ objects_ ] :=
+   Extract[objects,
+      Position[
+         Total[Table[
+         Table[If[CNIntersectionOverUnion[objects[[a,2;;3]],objects[[b,2;;3]]]>.25&&objects[[a,1]]<objects[[b,1]],1,0],{b,1,Length[objects]}]
+            ,{a,1,Length[objects]}]],
+         0]][[All,2;;3]]
 
 
 Options[ CNDetectFaces ] = Options[ CNSingleScaleDetectObjects ];
+(* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
+*)
 CNDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
- CNMultiScaleDetectObjects[image, CNFaceNet, opts];
+   CNDeleteOverlappingWindows[ CNMultiScaleDetectObjects[image, CNFaceNet, opts] ];
