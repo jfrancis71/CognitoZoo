@@ -106,6 +106,7 @@ Options[ CNDetectFaces ] = Options[ CNSingleScaleDetectObjects ];
    The Caltech dataset has 450 images where most faces are quite close to camera,
    where images are of size 896x592. Most of these images are of good quality, but some
    are challenging, eg. cartoon, significant obscuring of face or poor lighting conditions.
+   Reference comparison, FindFances achieves 99.6% recognition, but 56% average false positive rate/image
 *)
 CNDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
    CNDeleteOverlappingWindows[ CNMultiScaleDetectObjects[image, CNFaceNet, opts] ];
