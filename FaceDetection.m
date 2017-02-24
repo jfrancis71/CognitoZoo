@@ -39,7 +39,15 @@ Options[ CNSingleScaleDetectObjects ] = {
 (* Conceptually it is a sliding window (32x32) object detector running at a single scale.
    In practice it is implemented convolutionally ( for performance reasons ) so the net
    should be fully convolutional, ie no fully connected layers.
-   The net output should be a 2D array of numbers indicating a metric for likelihood of object being present
+   The net output should be a 2D array of numbers indicating a metric for likelihood of object being present.
+   The net filter should accept an array of real numbers (ie this works on greyscale images). You can supply a
+   colour image as input to the function, but this is just converted to greyscale before being fed to the neural net
+   Note the geometric factor 4 in mapping from the output array to the input array, this is because we have
+   downsampled twice in the neural network, so there is a coupling from this algorithm to the architecture
+   of the neural net supplied.
+   The rational for using a greyscale neural net is that I am particularly fascinated by shape (much more
+   than colour), so wanted to look at performance driven by that factor alone. A commercial use might take
+   a different view.
 *)
 CNSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min[ImageDimensions[image]]<32,{},
    map=(net@{ColorConvert[image,"GrayScale"]//ImageData})[[1]];
@@ -93,6 +101,11 @@ CNDeleteOverlappingWindows[ objects_ ] :=
 
 Options[ CNDetectFaces ] = Options[ CNSingleScaleDetectObjects ];
 (* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
+   On the Caltech 1999 face dataset, we achieve a recognition rate of around 92% with
+   an average of 14% of false positives/image.
+   The Caltech dataset has 450 images where most faces are quite close to camera,
+   where images are of size 896x592. Most of these images are of good quality, but some
+   are challenging, eg. cartoon, significant obscuring of face or poor lighting conditions.
 *)
 CNDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
    CNDeleteOverlappingWindows[ CNMultiScaleDetectObjects[image, CNFaceNet, opts] ];
