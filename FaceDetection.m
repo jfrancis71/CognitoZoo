@@ -12,17 +12,9 @@
 
 
 CNFaceModel=Import["https://sites.google.com/site/julianwfrancis/dummy/FaceNet2Convolve.wdx"];
-
-
 CNconv1=ConvolutionLayer[32,{5,5},"Biases"-> CNFaceModel[[1,1,All,1]],"Weights"-> Transpose[{CNFaceModel[[1,1,All,2]]},{2,1,3,4}]];
-
-
 CNconv2=ConvolutionLayer[32,{5,5},"Biases"-> CNFaceModel[[4,1,All,1]],"Weights"->CNFaceModel[[4,1,All,2]]];
-
-
 CNconv3=ConvolutionLayer[64,{5,5},"Biases"-> CNFaceModel[[7,1,All,1]],"Weights"->CNFaceModel[[7,1,All,2]]];
-
-
 CNconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CNFaceModel[[9,1]]},"Weights"->{CNFaceModel[[9,2]]}];
 
 
@@ -73,7 +65,10 @@ Options[ CNMultiScaleDetectObjects ] = Options[ CNSingleScaleDetectObjects ];
    false positives across the image as a whole.
 *)
 CNMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
-   Flatten[Table[CNMapAt[(#*ImageDimensions[image][[1]]/(32*1.2^sc))&,CNSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts],{All,2;;3}],{sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
+   Flatten[Table[
+      CNMapAt[(#*ImageDimensions[image][[1]]/(32*1.2^sc))&,
+         CNSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts],{All,2;;3}],
+      {sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
 
 
 CNIntersection[a_, b_] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
