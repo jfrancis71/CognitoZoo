@@ -1,5 +1,15 @@
 (* ::Package:: *)
 
+(* Implements AlexNet
+   Implementation based on from
+      Michael Guerzhoy and Davi Frossard, 2016
+      http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/
+      Model from  https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet
+      Weights from Caffe converted using https://github.com/ethereon/caffe-tensorflow
+   Weights were loaded using above code, and then saved in HDF5 format.
+*)
+
+
 classNames=Import["/Users/julian/tensorflow/julian/alex1/class_names.json"];
 
 
