@@ -1,35 +1,45 @@
 (* ::Package:: *)
 
 (* Implements AlexNet
-   Implementation based on from
+
+   You will need to download:
+      class_names.json from https://drive.google.com/open?id=0Bzhe0pgVZtNUc2RVVVFNSVF0NW8
+      alexnet.hdf from https://drive.google.com/open?id=0Bzhe0pgVZtNUNm1OdFFWWS1mb2c
+   and install it on a Mathematica search path, eg your home directory.
+   
+
+   Credit:
+      The following tensorflow code was used as a reference implementation:
       Michael Guerzhoy and Davi Frossard, 2016
       http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/
       Model from  https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet
+         License: This model is released for unrestricted use. (as at 12/03/2017)
       Weights from Caffe converted using https://github.com/ethereon/caffe-tensorflow
-   Weights were loaded using above code, and then saved in HDF5 format.
+      
+      Weights were loaded using above code, and then saved in HDF5 format.
 *)
 
 
-classNames=Import["/Users/julian/tensorflow/julian/alex1/class_names.json"];
+classNames=Import["class_names.json"];
 
 
 (* Loading in CNN parameters *)
-conv1W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv1W"}];
-conv1b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv1b"}];
-conv2W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv2W"}];
-conv2b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv2b"}];
-conv3W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv3W"}];
-conv3b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv3b"}];
-conv4W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv4W"}];
-conv4b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv4b"}];
-conv5W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv5W"}];
-conv5b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/conv5b"}];
-fc6W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/fc6W"}];
-fc6b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/fc6b"}];
-fc7W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/fc7W"}];
-fc7b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/fc7b"}];
-fc8W=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/fc8W"}];
-fc8b=Import["/Users/julian/tensorflow/julian/alex1/alexnet.hdf",{"Datasets","/fc8b"}];
+conv1W=Import["alexnet.hdf",{"Datasets","/conv1W"}];
+conv1b=Import["alexnet.hdf",{"Datasets","/conv1b"}];
+conv2W=Import["alexnet.hdf",{"Datasets","/conv2W"}];
+conv2b=Import["alexnet.hdf",{"Datasets","/conv2b"}];
+conv3W=Import["alexnet.hdf",{"Datasets","/conv3W"}];
+conv3b=Import["alexnet.hdf",{"Datasets","/conv3b"}];
+conv4W=Import["alexnet.hdf",{"Datasets","/conv4W"}];
+conv4b=Import["alexnet.hdf",{"Datasets","/conv4b"}];
+conv5W=Import["alexnet.hdf",{"Datasets","/conv5W"}];
+conv5b=Import["alexnet.hdf",{"Datasets","/conv5b"}];
+fc6W=Import["alexnet.hdf",{"Datasets","/fc6W"}];
+fc6b=Import["alexnet.hdf",{"Datasets","/fc6b"}];
+fc7W=Import["alexnet.hdf",{"Datasets","/fc7W"}];
+fc7b=Import["alexnet.hdf",{"Datasets","/fc7b"}];
+fc8W=Import["alexnet.hdf",{"Datasets","/fc8W"}];
+fc8b=Import["alexnet.hdf",{"Datasets","/fc8b"}];
 
 
 CNConv1=ConvolutionLayer[96,{11,11},"Biases"->conv1b,"Weights"->Transpose[conv1W,{3,4,2,1}],"PaddingSize"->5];
@@ -49,7 +59,7 @@ LRN[layer_] := Module[{sq=Table[Sum[layer[[d1]]^2,{d1,Max[1,d-2],Min[Length[laye
 
 
 CNFixedSizeImageIdentify[image_] := (
-   in4=256*(Transpose[ImageData[image][[All,All,1;;3]],{2,3,1}]-Mean[ImageData[im0][[All,All,1;;3]]//Flatten]);
+   in4=256*(Transpose[ImageData[image][[All,All,1;;3]],{2,3,1}]-Mean[ImageData[image][[All,All,1;;3]]//Flatten]);
    (* Note that CAFFE striding started at index 2, not 1*)
    conv1=(NetChain[{CNConv1,Ramp}]@in4)[[All,2;;-1;;4,2;;-1;;4]];
    lrn1=LRN[conv1];
