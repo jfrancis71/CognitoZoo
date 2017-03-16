@@ -11,21 +11,21 @@
 *)
 
 
-CNFaceModel=Import["https://sites.google.com/site/julianwfrancis/dummy/FaceNet2Convolve.wdx"];
-CNconv1=ConvolutionLayer[32,{5,5},"Biases"-> CNFaceModel[[1,1,All,1]],"Weights"-> Transpose[{CNFaceModel[[1,1,All,2]]},{2,1,3,4}]];
-CNconv2=ConvolutionLayer[32,{5,5},"Biases"-> CNFaceModel[[4,1,All,1]],"Weights"->CNFaceModel[[4,1,All,2]]];
-CNconv3=ConvolutionLayer[64,{5,5},"Biases"-> CNFaceModel[[7,1,All,1]],"Weights"->CNFaceModel[[7,1,All,2]]];
-CNconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CNFaceModel[[9,1]]},"Weights"->{CNFaceModel[[9,2]]}];
+CZFaceModel=Import["https://sites.google.com/site/julianwfrancis/dummy/FaceNet2Convolve.wdx"];
+CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceModel[[1,1,All,1]],"Weights"-> Transpose[{CZFaceModel[[1,1,All,2]]},{2,1,3,4}]];
+CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceModel[[4,1,All,1]],"Weights"->CZFaceModel[[4,1,All,2]]];
+CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceModel[[7,1,All,1]],"Weights"->CZFaceModel[[7,1,All,2]]];
+CZconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CZFaceModel[[9,1]]},"Weights"->{CZFaceModel[[9,2]]}];
 
 
-CNFaceNet=NetChain[{
-   CNconv1,ElementwiseLayer[Tanh],PoolingLayer[2,"Stride"->2],
-   CNconv2,ElementwiseLayer[Tanh],PoolingLayer[2,"Stride"->2],
-   CNconv3,ElementwiseLayer[Tanh],
-   CNconv4,ElementwiseLayer[LogisticSigmoid]}];
+CZFaceNet=NetChain[{
+   CZconv1,ElementwiseLayer[Tanh],PoolingLayer[2,"Stride"->2],
+   CZconv2,ElementwiseLayer[Tanh],PoolingLayer[2,"Stride"->2],
+   CZconv3,ElementwiseLayer[Tanh],
+   CZconv4,ElementwiseLayer[LogisticSigmoid]}];
 
 
-Options[ CNSingleScaleDetectObjects ] = {
+Options[ CZSingleScaleDetectObjects ] = {
    Threshold->0.997
 };
 (* Conceptually it is a sliding window (32x32) object detector running at a single scale.
@@ -41,7 +41,7 @@ Options[ CNSingleScaleDetectObjects ] = {
    than colour), so wanted to look at performance driven by that factor alone. A commercial use might take
    a different view.
 *)
-CNSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min[ImageDimensions[image]]<32,{},
+CZSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min[ImageDimensions[image]]<32,{},
    map=(net@{ColorConvert[image,"GrayScale"]//ImageData})[[1]];
    extractPositions=Position[map,x_/;x>OptionValue[Threshold]];
    origCoords=Map[{Extract[map,#],4*#[[2]] + (16-4),ImageDimensions[image][[2]]-4*#[[1]]+4-16}&,extractPositions];
@@ -54,7 +54,7 @@ CNMapAt[f_,{},spec_] := {}
 CNMapAt[f_,dat_,spec_] := MapAt[f,dat,spec]
 
 
-Options[ CNMultiScaleDetectObjects ] = Options[ CNSingleScaleDetectObjects ];
+Options[ CZMultiScaleDetectObjects ] = Options[ CZSingleScaleDetectObjects ];
 (* Implements a sliding window object detector at multiple scales.
    The function resamples the image at scales ranging from a minimum width of 32 up to 800 at 20% scale increments.
    The maximum width of 800 was chosen for 2 reasons: to limit inference run time and to limit the number of likely
@@ -64,37 +64,37 @@ Options[ CNMultiScaleDetectObjects ] = Options[ CNSingleScaleDetectObjects ];
    However, the main use case was possibly high resolution images where faces are not too distant with objective of limiting
    false positives across the image as a whole.
 *)
-CNMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
+CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
    Flatten[Table[
       CNMapAt[(#*ImageDimensions[image][[1]]/(32*1.2^sc))&,
-         CNSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts],{All,2;;3}],
+         CZSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts],{All,2;;3}],
       {sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
 
 
-CNIntersection[a_, b_] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
+CZIntersection[a_, b_] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
    If[xa>xb||ya>yb,0,(xb-xa+1)*(yb-ya+1)]]
-CNArea[a_] := ( a[[1,1]]-a[[2,1]] ) * ( a[[1,2]]-a[[2,2]] )
-CNUnion[a_,b_] := CNArea[a] + CNArea[b] - CNIntersection[a, b]
+CZArea[a_] := ( a[[1,1]]-a[[2,1]] ) * ( a[[1,2]]-a[[2,2]] )
+CZUnion[a_,b_] := CZArea[a] + CZArea[b] - CZIntersection[a, b]
 
 
 (* Had considered using RegionIntersection/RegionUnion but this was overly general and unacceptably slow in practice.
    Not uncommon to see 100 raw detections, hence 10,000 pairs to evaluate.
 *)
-CNIntersectionOverUnion[a_, b_]:= 
-   CNIntersection[ a, b ] / CNUnion[a, b]
+CZIntersectionOverUnion[a_, b_]:= 
+   CZIntersection[ a, b ] / CZUnion[a, b]
 
 
-CNDeleteOverlappingWindows[ {} ] := {};
-CNDeleteOverlappingWindows[ objects_ ] :=
+CZDeleteOverlappingWindows[ {} ] := {};
+CZDeleteOverlappingWindows[ objects_ ] :=
    Extract[objects,
       Position[
          Total[Table[
-         Table[If[CNIntersectionOverUnion[objects[[a,2;;3]],objects[[b,2;;3]]]>.25&&objects[[a,1]]<objects[[b,1]],1,0],{b,1,Length[objects]}]
+         Table[If[CZIntersectionOverUnion[objects[[a,2;;3]],objects[[b,2;;3]]]>.25&&objects[[a,1]]<objects[[b,1]],1,0],{b,1,Length[objects]}]
             ,{a,1,Length[objects]}]],
          0]][[All,2;;3]]
 
 
-Options[ CNDetectFaces ] = Options[ CNSingleScaleDetectObjects ];
+Options[ CZDetectFaces ] = Options[ CZSingleScaleDetectObjects ];
 (* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
    On the Caltech 1999 face dataset, we achieve a recognition rate of around 92% with
    an average of 14% of false positives/image.
@@ -103,5 +103,5 @@ Options[ CNDetectFaces ] = Options[ CNSingleScaleDetectObjects ];
    are challenging, eg. cartoon, significant obscuring of face or poor lighting conditions.
    Reference comparison, FindFances achieves 99.6% recognition, but 56% average false positive rate/image
 *)
-CNDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
-   CNDeleteOverlappingWindows[ CNMultiScaleDetectObjects[image, CNFaceNet, opts] ];
+CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
+   CZDeleteOverlappingWindows[ CZMultiScaleDetectObjects[image, CZFaceNet, opts] ];

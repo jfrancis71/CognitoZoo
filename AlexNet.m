@@ -58,7 +58,7 @@ FC8=DotPlusLayer[ "Weights"->Transpose[fc8W],"Biases"->fc8b];
 LRN[layer_] := Module[{sq=Table[Sum[layer[[d1]]^2,{d1,Max[1,d-2],Min[Length[layer],d+2]}],{d,1,Length[layer]}]},layer/(1 +(2 10^-5)*sq)^0.75]
 
 
-CNFixedSizeImageIdentify[image_] := (
+CZFixedSizeImageIdentify[image_] := (
    in4=256*(Transpose[ImageData[image][[All,All,1;;3]],{2,3,1}]-Mean[ImageData[image][[All,All,1;;3]]//Flatten]);
    (* Note that CAFFE striding started at index 2, not 1*)
    conv1=(NetChain[{CNConv1,Ramp}]@in4)[[All,2;;-1;;4,2;;-1;;4]];
@@ -86,5 +86,5 @@ CNFixedSizeImageIdentify[image_] := (
 )
 
 
-CNImageIdentify[image_] :=
-   CNFixedSizeImageIdentify[ ImageCrop[ImageResize[image,227],{227,227}] ]
+CZImageIdentify[image_] :=
+   CZFixedSizeImageIdentify[ ImageCrop[ImageResize[image,227],{227,227}] ]
