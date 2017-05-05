@@ -138,7 +138,7 @@ CZGetBoundingBox[boxes_, position_]:=
 
 
 CZDetectObjects[img_] := (
-   inp=(ImageResize[img,{448,448}]//ImageData)*2.0-1.0;
+   inp=(ImageData[ImageResize[img,{448,448}]][[All,All,1;;3]])*2.0-1.0;
    conv1=CZConv1@Transpose[inp,{2,3,1}];
    lr1=UnitStep[conv1]*conv1 + (1-UnitStep[conv1])*conv1*0.1;
    maxpool1=NetChain[{PoolingLayer[{2,2},"Stride"->2]}]@lr1;
