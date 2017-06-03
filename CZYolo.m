@@ -19,7 +19,6 @@
    See https://github.com/jfrancis71/CognitoZoo/wiki/Yolo
    for usage details
    
-   Currently I don't have any non max suppression, so results can be a little cluttered.
    Takes about 25 secs to run on an image (MacBook air, CPU). This is actually quite slow
    by comparison with what can be achieved. (Darknet has reported tiny YOLO running at
    over 100 frames/sec).
@@ -54,8 +53,8 @@ THE REAL LICENSE:
       https://pjreddie.com/media/files/tiny-yolo-voc.weights
       
    In case it changes, I have an additional copy here:
-      https://drive.google.com/file/d/0Bzhe0pgVZtNUeTNJN0w3OWRKOWM/view?usp=sharing
-*)   
+      https://drive.google.com/file/d/0Bzhe0pgVZtNUWk9TOUdOTVJxMlk/view?usp=sharing
+*)
 
 
 (* Copyright Julian Francis 2017. Please see license file for details. *)
