@@ -61,6 +61,9 @@ THE REAL LICENSE:
 (* Copyright Julian Francis 2017. Please see license file for details. *)
 
 
+<<CZUtils.m
+
+
 (* resizes image so that length of longest side = max *)
 CZMaxSideImage[image_Image, max_Integer] :=
  If[ImageAspectRatio[image] <1,
@@ -187,7 +190,7 @@ CZGetBoundingBox[cubePos_]:=
    w=(1/13)*Exp[conv15[[1,3+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],1]];
    h=
       (1/13)*(Exp[conv15[[1,4+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],2]]);
-   Rectangle[416*{centX-w/2,1-(centY-h/2)},416*{centX+w/2,1-(centY+h/2)}]
+   Rectangle[416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}]
 )
 
 
@@ -212,7 +215,15 @@ CZMap[cubePos_]:={object[[cubePos[[4]]]],CZGetBoundingBox[cubePos]}
 CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,24],{20,20}+object[[2,1]],Background->Black]}
 
 
-CZDetectObjects[image_]:=(
+CZNonMaxSuppression[objectsInClass_]:=
+   Map[{objectsInClass[[1,1]],Rectangle[#[[1]],#[[2]]]}&,CZDeleteOverlappingWindows[Map[{#[[2]],#[[3,1]],#[[3,2]]}&,objectsInClass]]]
+
+
+CZDetectObjects[img_]:=
+   Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
+
+
+CZRawDetectObjects[image_]:=(
    inp={ImageData[CZImagePadToSquare[CZMaxSideImage[image,416]],Interleaving->False]};
    conv1=CZConv1@inp[[1;;1,1;;3]];
    bn1=CZBN1@conv1;
@@ -250,7 +261,7 @@ CZDetectObjects[image_]:=(
       SoftmaxLayer[][conv15[[1,6+(n*25);;6+(n*25)+20-1,r,c]]],
       {n,0,4},{r,1,13},{c,1,13}];
    extract=Position[cube,x_/;x>.24];
-   Map[{object[[#[[4]]]],CorrectBox[CZMap[#][[2]],image]}&,extract]
+   Map[{object[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CorrectBox[CZMap[#][[2]],image]}&,extract]
 )
 
 
