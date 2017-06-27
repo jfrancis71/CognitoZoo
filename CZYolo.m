@@ -4,6 +4,8 @@
 
    tiny YOLO is a computer vision object detection and localisation model designed to detect
    20 object categories (e.g. people, horses, dogs etc)
+   
+   Usage: HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
 
    The code is based on the tiny YOLO model from Darknet, Joseph Redmon:
       https://pjreddie.com/darknet/yolo/
@@ -222,39 +224,42 @@ CZDetectObjects[img_]:=
    Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
 
 
+leakyReLU[input_] := UnitStep[input]*input + (1-UnitStep[input])*input*0.1;
+
+
 CZRawDetectObjects[image_]:=(
    inp={ImageData[CZImagePadToSquare[CZMaxSideImage[image,416]],Interleaving->False]};
    conv1=CZConv1@inp[[1;;1,1;;3]];
    bn1=CZBN1@conv1;
-   lr1=UnitStep[bn1]*bn1 + (1-UnitStep[bn1])*bn1*0.1;
+   lr1=leakyReLU[bn1];
    maxpool2=PoolingLayer[{2,2},"Stride"->2]@lr1;
    conv3=CZConv3@maxpool2;
    bn3=CZBN3@conv3;
-   lr3=UnitStep[bn3]*bn3 + (1-UnitStep[bn3])*bn3*0.1;
+   lr3=leakyReLU[bn3];
    maxpool4=PoolingLayer[{2,2},"Stride"->2]@lr3;
    conv5=CZConv5@maxpool4;
    bn5=CZBN5@conv5;
-   lr5=UnitStep[bn5]*bn5 + (1-UnitStep[bn5])*bn5*0.1;
+   lr5=leakyReLU[bn5];
    maxpool6=PoolingLayer[{2,2},"Stride"->2]@lr5;
    conv7=CZConv7@maxpool6;
    bn7=CZBN7@conv7;
-   lr7=UnitStep[bn7]*bn7 + (1-UnitStep[bn7])*bn7*0.1;
+   lr7=leakyReLU[bn7];
    maxpool8=PoolingLayer[{2,2},"Stride"->2]@lr7;
    conv9=CZConv9@maxpool8;
    bn9=CZBN9@conv9;
-   lr9=UnitStep[bn9]*bn9 + (1-UnitStep[bn9])*bn9*0.1;
+   lr9=leakyReLU[bn9];
    maxpool10=PoolingLayer[{2,2},"Stride"->2]@lr9;
    conv11=CZConv11@maxpool10;
    bn11=CZBN11@conv11;
-   lr11=UnitStep[bn11]*bn11 + (1-UnitStep[bn11])*bn11*0.1;
+   lr11=leakyReLU[bn11];
    rs11={ArrayPad[lr11[[1]],{{0},{0,1},{0,1}},-100.]};
    maxpool12=(PoolingLayer[{2,2},"Stride"->1]@rs11);
    conv13=CZConv13@maxpool12;
    bn13=CZBN13@conv13;
-   lr13=UnitStep[bn13]*bn13 + (1-UnitStep[bn13])*bn13*0.1;
+   lr13=leakyReLU[bn13];
    conv14=CZConv14@lr13;
    bn14=CZBN14@conv14;
-   lr14=UnitStep[bn14]*bn14 + (1-UnitStep[bn14])*bn14*0.1;
+   lr14=leakyReLU[bn14];
    conv15=CZConv15@lr14;
    cube=Table[LogisticSigmoid[conv15[[1,5+(n*25),r,c]]]*
       SoftmaxLayer[][conv15[[1,6+(n*25);;6+(n*25)+20-1,r,c]]],
