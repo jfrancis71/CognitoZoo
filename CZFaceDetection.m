@@ -16,11 +16,11 @@
 <<CZUtils.m
 
 
-CZFaceModel=Import["https://sites.google.com/site/julianwfrancis/dummy/FaceNet2Convolve.wdx"];
-CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceModel[[1,1,All,1]],"Weights"-> Transpose[{CZFaceModel[[1,1,All,2]]},{2,1,3,4}]];
-CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceModel[[4,1,All,1]],"Weights"->CZFaceModel[[4,1,All,2]]];
-CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceModel[[7,1,All,1]],"Weights"->CZFaceModel[[7,1,All,2]]];
-CZconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CZFaceModel[[9,1]]},"Weights"->{CZFaceModel[[9,2]]}];
+CZFaceParameters = Import["https://sites.google.com/site/julianwfrancis/dummy/FaceNet2Convolve.wdx"];
+CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[1,1,All,1]],"Weights"-> Transpose[{CZFaceParameters[[1,1,All,2]]},{2,1,3,4}]];
+CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[4,1,All,1]],"Weights"->CZFaceParameters[[4,1,All,2]]];
+CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceParameters[[7,1,All,1]],"Weights"->CZFaceParameters[[7,1,All,2]]];
+CZconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CZFaceParameters[[9,1]]},"Weights"->{CZFaceParameters[[9,2]]}];
 
 
 CZFaceNet=NetChain[{
@@ -93,3 +93,24 @@ Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]].
 ";
 CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
    CZDeleteOverlappingWindows[ CZMultiScaleDetectObjects[image, CZFaceNet, opts] ];
+
+
+CZGenderParameters = Import["/Users/julian/Google Drive/Personal/Computer Science/WebMonitor/FaceNet/GenderNet.json"];
+CZGconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[1,1]],"Weights"->Transpose[ CZGenderParameters[[1,2]],{3,4,2,1}],"PaddingSize"->2];
+CZGconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[2,1]],"Weights"->Transpose[ CZGenderParameters[[2,2]],{3,4,2,1}],"PaddingSize"->2];
+CZGconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZGenderParameters[[3,1]],"Weights"->Transpose[ CZGenderParameters[[3,2]],{3,4,2,1}],"PaddingSize"->2];
+CZGd1=DotPlusLayer[1,"Biases"->{CZGenderParameters[[4,1]]},"Weights"->Transpose[CZGenderParameters[[4,2]]]];
+
+
+GenderNet = NetChain[{
+   CZGconv1,Tanh,PoolingLayer[2,"Stride"->2],
+   CZGconv2,Tanh,PoolingLayer[2,"Stride"->2],
+   CZGconv3,Tanh,PoolingLayer[2,"Stride"->2],
+   FlattenLayer[],
+   CZGd1,
+   LogisticSigmoid}
+];
+
+
+CZGender[image_?ImageQ] :=
+   (GenderNet@{pk=ColorConvert[ImageResize[image,{32,32}],"GrayScale"]//ImageData})[[1]]
