@@ -8,6 +8,8 @@
    H.-W. Ng, S. Winkler.
    A data-driven approach to cleaning large face datasets.
    Proc. IEEE International Conference on Image Processing (ICIP), Paris, France, Oct. 27-30, 2014.
+   
+   Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]]
 *)
 
 
@@ -83,5 +85,11 @@ Options[ CZDetectFaces ] = Options[ CZSingleScaleDetectObjects ];
    are challenging, eg. cartoon, significant obscuring of face or poor lighting conditions.
    Reference comparison, FindFances achieves 99.6% recognition, but 56% average false positive rate/image
 *)
+CZDetectFaces::usage="
+CZDetectFaces[img,options] returns {{xmin1,ymin1},{xmax1,ymax1},...
+Options are: Threshold
+
+Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]].
+";
 CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
    CZDeleteOverlappingWindows[ CZMultiScaleDetectObjects[image, CZFaceNet, opts] ];
