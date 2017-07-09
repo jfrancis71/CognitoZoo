@@ -10,13 +10,17 @@
    Proc. IEEE International Conference on Image Processing (ICIP), Paris, France, Oct. 27-30, 2014.
    
    Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]]
+   
+   You need to download the following two files and install them somewhere on youe search path.
+   FaceNet2Convolve.wdx from https://drive.google.com/file/d/0Bzhe0pgVZtNUMFhfcGJwRE9sRWc/view?usp=sharing
+   GenderNet.json from https://drive.google.com/file/d/0Bzhe0pgVZtNUaDY5ZzFiN2ZfTFU/view?usp=sharing
 *)
 
 
 <<CZUtils.m
 
 
-CZFaceParameters = Import["https://sites.google.com/site/julianwfrancis/dummy/FaceNet2Convolve.wdx"];
+CZFaceParameters = Import["FaceNet2Convolve.wdx"];
 CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[1,1,All,1]],"Weights"-> Transpose[{CZFaceParameters[[1,1,All,2]]},{2,1,3,4}]];
 CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[4,1,All,1]],"Weights"->CZFaceParameters[[4,1,All,2]]];
 CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceParameters[[7,1,All,1]],"Weights"->CZFaceParameters[[7,1,All,2]]];
@@ -95,7 +99,7 @@ CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] :=
    CZDeleteOverlappingWindows[ CZMultiScaleDetectObjects[image, CZFaceNet, opts] ];
 
 
-CZGenderParameters = Import["/Users/julian/Google Drive/Personal/Computer Science/WebMonitor/FaceNet/GenderNet.json"];
+CZGenderParameters = Import["GenderNet.json"];
 CZGconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[1,1]],"Weights"->Transpose[ CZGenderParameters[[1,2]],{3,4,2,1}],"PaddingSize"->2];
 CZGconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[2,1]],"Weights"->Transpose[ CZGenderParameters[[2,2]],{3,4,2,1}],"PaddingSize"->2];
 CZGconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZGenderParameters[[3,1]],"Weights"->Transpose[ CZGenderParameters[[3,2]],{3,4,2,1}],"PaddingSize"->2];
