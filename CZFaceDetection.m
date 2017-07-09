@@ -99,7 +99,7 @@ CZGenderParameters = Import["/Users/julian/Google Drive/Personal/Computer Scienc
 CZGconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[1,1]],"Weights"->Transpose[ CZGenderParameters[[1,2]],{3,4,2,1}],"PaddingSize"->2];
 CZGconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[2,1]],"Weights"->Transpose[ CZGenderParameters[[2,2]],{3,4,2,1}],"PaddingSize"->2];
 CZGconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZGenderParameters[[3,1]],"Weights"->Transpose[ CZGenderParameters[[3,2]],{3,4,2,1}],"PaddingSize"->2];
-CZGd1=DotPlusLayer[1,"Biases"->{CZGenderParameters[[4,1]]},"Weights"->Transpose[CZGenderParameters[[4,2]]]];
+CZGlinear1=DotPlusLayer[1,"Biases"->{CZGenderParameters[[4,1]]},"Weights"->Transpose[CZGenderParameters[[4,2]]]];
 
 
 GenderNet = NetChain[{
@@ -107,10 +107,26 @@ GenderNet = NetChain[{
    CZGconv2,Tanh,PoolingLayer[2,"Stride"->2],
    CZGconv3,Tanh,PoolingLayer[2,"Stride"->2],
    FlattenLayer[],
-   CZGd1,
+   CZGlinear1,
    LogisticSigmoid}
 ];
 
 
+CZGender::usage = "
+CZGender[image] returns a gender score ranging from 0 (most likely female) to 1 (most likely male).
+";
 CZGender[image_?ImageQ] :=
    (GenderNet@{pk=ColorConvert[ImageResize[image,{32,32}],"GrayScale"]//ImageData})[[1]]
+
+
+Options[ CZHighlightFaces ] = {
+   Threshold->0.997
+};
+
+
+CZHighlightFaces::usage = "
+   CZHightFaces[image,opts] Draws bounding boxes around detected faces and attempts to determine likely gender.
+   Valid option is Threshold.
+";
+CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] := 
+   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[img,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
