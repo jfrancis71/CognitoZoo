@@ -20,11 +20,11 @@
 <<CZUtils.m
 
 
-CZFaceParameters = Import["FaceNet2Convolve.wdx"];
-CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[1,1,All,1]],"Weights"-> Transpose[{CZFaceParameters[[1,1,All,2]]},{2,1,3,4}]];
-CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[4,1,All,1]],"Weights"->CZFaceParameters[[4,1,All,2]]];
-CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceParameters[[7,1,All,1]],"Weights"->CZFaceParameters[[7,1,All,2]]];
-CZconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CZFaceParameters[[9,1]]},"Weights"->{CZFaceParameters[[9,2]]}];
+CZFaceParameters = Import["FaceNet.json"];
+CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[1,1]],"Weights"-> Transpose[CZFaceParameters[[1,2]],{3,4,2,1}]];
+CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[2,1]],"Weights"->Transpose[CZFaceParameters[[2,2]],{3,4,2,1}]];
+CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceParameters[[3,1]],"Weights"->Transpose[CZFaceParameters[[3,2]],{3,4,2,1}]];
+CZconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CZFaceParameters[[4,1]]},"Weights"->Transpose[CZFaceParameters[[4,2]],{3,4,2,1}]];
 
 
 CZFaceNet=NetChain[{
