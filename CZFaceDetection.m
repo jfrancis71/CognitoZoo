@@ -12,10 +12,47 @@
    Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]]
    
    You need to download the following two files and install them somewhere on youe search path.
-   FaceNet2Convolve.wdx from https://drive.google.com/file/d/0Bzhe0pgVZtNUMFhfcGJwRE9sRWc/view?usp=sharing
+   FaceNet2Convolve.json from https://drive.google.com/file/d/0Bzhe0pgVZtNUMFhfcGJwRE9sRWc/view?usp=sharing
    GenderNet.json from https://drive.google.com/file/d/0Bzhe0pgVZtNUaDY5ZzFiN2ZfTFU/view?usp=sharing
 *)
 
+(* Public Interfaces *)
+
+Options[ CZDetectFaces ] = Options[ CZSingleScaleDetectObjects ];
+(* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
+   On the Caltech 1999 face dataset, we achieve a recognition rate of around 92% with
+   an average of 14% of false positives/image.
+   The Caltech dataset has 450 images where most faces are quite close to camera,
+   where images are of size 896x592. Most of these images are of good quality, but some
+   are challenging, eg. cartoon, significant obscuring of face or poor lighting conditions.
+   Reference comparison, FindFances achieves 99.6% recognition, but 56% average false positive rate/image
+*)
+CZDetectFaces::usage="
+CZDetectFaces[img,options] returns {{xmin1,ymin1},{xmax1,ymax1},...
+Options are: Threshold
+
+Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]].
+";
+CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
+   CZDeleteOverlappingWindows[ CZMultiScaleDetectObjects[image, CZFaceNet, opts] ];
+
+
+CZGender::usage = "
+CZGender[image] returns a gender score ranging from 0 (most likely female) to 1 (most likely male).
+";
+CZGender[image_?ImageQ] :=
+   (GenderNet@{pk=ColorConvert[ImageResize[image,{32,32}],"GrayScale"]//ImageData})[[1]]
+
+
+CZHighlightFaces::usage = "
+   CZHightFaces[image,opts] Draws bounding boxes around detected faces and attempts to determine likely gender.
+   Valid option is Threshold.
+";
+CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] := 
+   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[img,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
+
+
+(* Private Implementation Code *)
 
 <<CZUtils.m
 
@@ -80,25 +117,6 @@ CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
       {sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
 
 
-Options[ CZDetectFaces ] = Options[ CZSingleScaleDetectObjects ];
-(* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
-   On the Caltech 1999 face dataset, we achieve a recognition rate of around 92% with
-   an average of 14% of false positives/image.
-   The Caltech dataset has 450 images where most faces are quite close to camera,
-   where images are of size 896x592. Most of these images are of good quality, but some
-   are challenging, eg. cartoon, significant obscuring of face or poor lighting conditions.
-   Reference comparison, FindFances achieves 99.6% recognition, but 56% average false positive rate/image
-*)
-CZDetectFaces::usage="
-CZDetectFaces[img,options] returns {{xmin1,ymin1},{xmax1,ymax1},...
-Options are: Threshold
-
-Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]].
-";
-CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
-   CZDeleteOverlappingWindows[ CZMultiScaleDetectObjects[image, CZFaceNet, opts] ];
-
-
 CZGenderParameters = Import["GenderNet.json"];
 CZGconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[1,1]],"Weights"->Transpose[ CZGenderParameters[[1,2]],{3,4,2,1}],"PaddingSize"->2];
 CZGconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[2,1]],"Weights"->Transpose[ CZGenderParameters[[2,2]],{3,4,2,1}],"PaddingSize"->2];
@@ -116,21 +134,9 @@ GenderNet = NetChain[{
 ];
 
 
-CZGender::usage = "
-CZGender[image] returns a gender score ranging from 0 (most likely female) to 1 (most likely male).
-";
-CZGender[image_?ImageQ] :=
-   (GenderNet@{pk=ColorConvert[ImageResize[image,{32,32}],"GrayScale"]//ImageData})[[1]]
-
-
-Options[ CZHighlightFaces ] = {
-   Threshold->0.997
-};
-
-
 CZHighlightFaces::usage = "
    CZHightFaces[image,opts] Draws bounding boxes around detected faces and attempts to determine likely gender.
    Valid option is Threshold.
 ";
 CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] := 
-   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[img,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
+   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[image,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
