@@ -132,11 +132,3 @@ GenderNet = NetChain[{
    CZGlinear1,
    LogisticSigmoid}
 ];
-
-
-CZHighlightFaces::usage = "
-   CZHightFaces[image,opts] Draws bounding boxes around detected faces and attempts to determine likely gender.
-   Valid option is Threshold.
-";
-CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] := 
-   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[image,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
