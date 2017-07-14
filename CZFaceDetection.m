@@ -95,11 +95,6 @@ CZSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min
    ]
 
 
-(* Like MapAt, but will work if an empty list is present  *)
-CNMapAt[f_,{},spec_] := {}
-CNMapAt[f_,dat_,spec_] := MapAt[f,dat,spec]
-
-
 Options[ CZMultiScaleDetectObjects ] = Options[ CZSingleScaleDetectObjects ];
 (* Implements a sliding window object detector at multiple scales.
    The function resamples the image at scales ranging from a minimum width of 32 up to 800 at 20% scale increments.
@@ -112,8 +107,8 @@ Options[ CZMultiScaleDetectObjects ] = Options[ CZSingleScaleDetectObjects ];
 *)
 CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
    Flatten[Table[
-      CNMapAt[(#*ImageDimensions[image][[1]]/(32*1.2^sc))&,
-         CZSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts],{All,2;;3}],
+      Map[Prepend[#[[2;;3]]*ImageDimensions[image][[1]]/(32*1.2^sc),#[[1]]]&,
+         CZSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts]],
       {sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
 
 
