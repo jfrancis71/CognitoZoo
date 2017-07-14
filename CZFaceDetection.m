@@ -49,7 +49,7 @@ CZHighlightFaces::usage = "
    Valid option is Threshold.
 ";
 CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] := 
-   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[img,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
+   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[image,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
 
 
 (* Private Implementation Code *)
