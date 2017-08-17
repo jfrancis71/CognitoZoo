@@ -228,7 +228,7 @@ leakyReLU[input_] := UnitStep[input]*input + (1-UnitStep[input])*input*0.1;
 
 
 CZRawDetectObjects[image_]:=(
-   inp={ImageData[CZImagePadToSquare[CZMaxSideImage[image,416]],Interleaving->False]};
+   inp={ImageData[ColorConvert[CZImagePadToSquare[CZMaxSideImage[image,416]],"RGB"],Interleaving->False]};
    conv1=CZConv1@inp[[1;;1,1;;3]];
    bn1=CZBN1@conv1;
    lr1=leakyReLU[bn1];
