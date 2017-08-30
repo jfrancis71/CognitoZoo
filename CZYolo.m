@@ -79,7 +79,7 @@ CZImagePadToSquare[image_Image]:=
    ImagePad[image,{{(1/2)*(ImageDimensions[image][[2]]-ImageDimensions[image][[1]]),Ceiling[(1/2)*(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])]},{0,0}},Padding->0.5]]
 
 
-file=OpenRead["tiny-yolo-voc.weights",BinaryFormat->True];
+file=OpenRead["CZModels/tiny-yolo-voc.weights",BinaryFormat->True];
 
 
 BinaryReadList[file,"Integer32",4]; (*Some magic numbers indicating file format versioning *)

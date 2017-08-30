@@ -57,7 +57,7 @@ CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] :=
 <<CZUtils.m
 
 
-CZFaceParameters = Import["FaceNet.json"];
+CZFaceParameters = Import["CZModels/FaceNet.json"];
 CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[1,1]],"Weights"-> Transpose[CZFaceParameters[[1,2]],{3,4,2,1}]];
 CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[2,1]],"Weights"->Transpose[CZFaceParameters[[2,2]],{3,4,2,1}]];
 CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceParameters[[3,1]],"Weights"->Transpose[CZFaceParameters[[3,2]],{3,4,2,1}]];
