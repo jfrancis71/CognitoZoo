@@ -19,5 +19,5 @@ CZDeleteOverlappingWindows[ objects_ ] :=
       Position[
          Total[Table[
          Table[If[CZIntersectionOverUnion[objects[[a,2;;3]],objects[[b,2;;3]]]>.25&&objects[[a,1]]<objects[[b,1]],1,0],{b,1,Length[objects]}]
-            ,{a,1,Length[objects]}]],
+            ,{a,1,Length[objects]}],{2}],
          0]][[All,2;;3]]
