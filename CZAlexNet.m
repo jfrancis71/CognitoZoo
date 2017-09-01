@@ -20,26 +20,27 @@
 *)
 
 
-classNames=Import["class_names.json"];
+classNames=Import["CZModels/alexnet_names.json"];
 
 
 (* Loading in CNN parameters *)
-conv1W=Import["alexnet.hdf",{"Datasets","/conv1W"}];
-conv1b=Import["alexnet.hdf",{"Datasets","/conv1b"}];
-conv2W=Import["alexnet.hdf",{"Datasets","/conv2W"}];
-conv2b=Import["alexnet.hdf",{"Datasets","/conv2b"}];
-conv3W=Import["alexnet.hdf",{"Datasets","/conv3W"}];
-conv3b=Import["alexnet.hdf",{"Datasets","/conv3b"}];
-conv4W=Import["alexnet.hdf",{"Datasets","/conv4W"}];
-conv4b=Import["alexnet.hdf",{"Datasets","/conv4b"}];
-conv5W=Import["alexnet.hdf",{"Datasets","/conv5W"}];
-conv5b=Import["alexnet.hdf",{"Datasets","/conv5b"}];
-fc6W=Import["alexnet.hdf",{"Datasets","/fc6W"}];
-fc6b=Import["alexnet.hdf",{"Datasets","/fc6b"}];
-fc7W=Import["alexnet.hdf",{"Datasets","/fc7W"}];
-fc7b=Import["alexnet.hdf",{"Datasets","/fc7b"}];
-fc8W=Import["alexnet.hdf",{"Datasets","/fc8W"}];
-fc8b=Import["alexnet.hdf",{"Datasets","/fc8b"}];
+CZAlexNetFilename = "CZModels/alexnet.hdf";
+conv1W=Import[CZAlexNetFilename,{"Datasets","/conv1W"}];
+conv1b=Import[CZAlexNetFilename,{"Datasets","/conv1b"}];
+conv2W=Import[CZAlexNetFilename,{"Datasets","/conv2W"}];
+conv2b=Import[CZAlexNetFilename,{"Datasets","/conv2b"}];
+conv3W=Import[CZAlexNetFilename,{"Datasets","/conv3W"}];
+conv3b=Import[CZAlexNetFilename,{"Datasets","/conv3b"}];
+conv4W=Import[CZAlexNetFilename,{"Datasets","/conv4W"}];
+conv4b=Import[CZAlexNetFilename,{"Datasets","/conv4b"}];
+conv5W=Import[CZAlexNetFilename,{"Datasets","/conv5W"}];
+conv5b=Import[CZAlexNetFilename,{"Datasets","/conv5b"}];
+fc6W=Import[CZAlexNetFilename,{"Datasets","/fc6W"}];
+fc6b=Import[CZAlexNetFilename,{"Datasets","/fc6b"}];
+fc7W=Import[CZAlexNetFilename,{"Datasets","/fc7W"}];
+fc7b=Import[CZAlexNetFilename,{"Datasets","/fc7b"}];
+fc8W=Import[CZAlexNetFilename,{"Datasets","/fc8W"}];
+fc8b=Import[CZAlexNetFilename,{"Datasets","/fc8b"}];
 
 
 CNConv1=ConvolutionLayer[96,{11,11},"Biases"->conv1b,"Weights"->Transpose[conv1W,{3,4,2,1}],"PaddingSize"->5];
@@ -63,25 +64,25 @@ CZFixedSizeImageIdentify[image_] := (
    (* Note that CAFFE striding started at index 2, not 1*)
    conv1=(NetChain[{CNConv1,Ramp}]@in4)[[All,2;;-1;;4,2;;-1;;4]];
    lrn1=LRN[conv1];
-   maxpool1=NetChain[{PoolingLayer[{3,3},"Stride"->2]}]@lrn1;
-   conv2p1=(NetChain[{CNConv2P1}]@(maxpool1[[1;;48]]));
-   conv2p2=(NetChain[{CNConv2P2}]@(maxpool1[[49;;96]]));
-   conv2=NetChain[{Ramp}]@MapThread[((z=#1)+#2)&,{Join[conv2p1,conv2p2],conv2b}];
+   maxpool1=PoolingLayer[{3,3},"Stride"->2]@lrn1;
+   conv2p1=CNConv2P1@(maxpool1[[1;;48]]);
+   conv2p2=CNConv2P2@(maxpool1[[49;;96]]);
+   conv2=Ramp@MapThread[((z=#1)+#2)&,{Join[conv2p1,conv2p2],conv2b}];
    lrn2=LRN[conv2];
    (* Not sure why, but AlexNet TF implementation seems to drop last row/column *)
-   maxpool2=(NetChain[{PoolingLayer[{3,3},"Stride"->2]}]@lrn2)[[All,;;-2,;;-2]];
+   maxpool2=(PoolingLayer[{3,3},"Stride"->2]@lrn2)[[All,;;-2,;;-2]];
    conv3=(NetChain[{CNConv3,Ramp}]@maxpool2);
-   conv4p1=(NetChain[{CNConv4P1}]@(conv3[[;;192]]));
-   conv4p2=(NetChain[{CNConv4P2}]@(conv3[[193;;]]));
-   conv4=NetChain[{Ramp}]@MapThread[((z=#1)+#2)&,{Join[conv4p1,conv4p2],conv4b}];
-   conv5p1=(NetChain[{CNConv5P1}]@(conv4[[;;192]]));
-   conv5p2=(NetChain[{CNConv5P2}]@(conv4[[193;;]]));
-   conv5=NetChain[{Ramp}]@MapThread[((z=#1)+#2)&,{Join[conv5p1,conv5p2],conv5b}];
-   maxpool5=(NetChain[{PoolingLayer[{3,3},"Stride"->2]}]@conv5);
+   conv4p1=CNConv4P1@conv3[[;;192]];
+   conv4p2=CNConv4P2@conv3[[193;;]];
+   conv4=Ramp@MapThread[((z=#1)+#2)&,{Join[conv4p1,conv4p2],conv4b}];
+   conv5p1=CNConv5P1@(conv4[[;;192]]);
+   conv5p2=CNConv5P2@(conv4[[193;;]]);   
+   conv5=Ramp@MapThread[((z=#1)+#2)&,{Join[conv5p1,conv5p2],conv5b}];
+   maxpool5=PoolingLayer[{3,3},"Stride"->2]@conv5;
    fc6=NetChain[{FC6,Ramp}]@Flatten[Transpose[maxpool5,{3,1,2}]];
    fc7=NetChain[{FC7,Ramp}]@fc6;
-   fc8=NetChain[{FC8}]@fc7;
-   final=NetChain[{SoftmaxLayer[]}]@fc8;
+   fc8=FC8@fc7;
+   final=SoftmaxLayer[]@fc8;
    classNames[[Position[final,Max[final]][[1,1]]]]
 )
 
