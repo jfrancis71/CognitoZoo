@@ -224,20 +224,21 @@ CZDetectObjects[img_]:=
    Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
 
 
+leakyReLU = ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&];
 
 
 net1=NetChain[{
-   CZConv1,CZBN1,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
-   CZConv3,CZBN3,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
-   CZConv5,CZBN5,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
-   CZConv7,CZBN7,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
-   CZConv9,CZBN9,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
-   CZConv11,CZBN11,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&]
+   CZConv1,CZBN1,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
+   CZConv3,CZBN3,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
+   CZConv5,CZBN5,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
+   CZConv7,CZBN7,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
+   CZConv9,CZBN9,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
+   CZConv11,CZBN11,leakyReLU
 },"Input"->{3,416,416}];
 net2=NetChain[{
    PoolingLayer[{2,2},"Stride"->1],
-   CZConv13,CZBN13,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],
-   CZConv14,CZBN14,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],
+   CZConv13,CZBN13,leakyReLU,
+   CZConv14,CZBN14,leakyReLU,
    CZConv15}];
 
 
