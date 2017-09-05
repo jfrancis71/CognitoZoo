@@ -224,46 +224,29 @@ CZDetectObjects[img_]:=
    Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
 
 
-leakyReLU[input_] := UnitStep[input]*input + (1-UnitStep[input])*input*0.1;
+
+
+net1=NetChain[{
+   CZConv1,CZBN1,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
+   CZConv3,CZBN3,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
+   CZConv5,CZBN5,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
+   CZConv7,CZBN7,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
+   CZConv9,CZBN9,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],PoolingLayer[{2,2},"Stride"->2],
+   CZConv11,CZBN11,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&]
+},"Input"->{3,416,416}];
+net2=NetChain[{
+   PoolingLayer[{2,2},"Stride"->1],
+   CZConv13,CZBN13,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],
+   CZConv14,CZBN14,ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&],
+   CZConv15}];
 
 
 CZRawDetectObjects[image_]:=(
    inp={ImageData[ColorConvert[CZImagePadToSquare[CZMaxSideImage[image,416]],"RGB"],Interleaving->False]};
-   conv1=CZConv1@inp[[1;;1,1;;3]];
-   bn1=CZBN1@conv1;
-   lr1=leakyReLU[bn1];
-   maxpool2=PoolingLayer[{2,2},"Stride"->2]@lr1;
-   conv3=CZConv3@maxpool2;
-   bn3=CZBN3@conv3;
-   lr3=leakyReLU[bn3];
-   maxpool4=PoolingLayer[{2,2},"Stride"->2]@lr3;
-   conv5=CZConv5@maxpool4;
-   bn5=CZBN5@conv5;
-   lr5=leakyReLU[bn5];
-   maxpool6=PoolingLayer[{2,2},"Stride"->2]@lr5;
-   conv7=CZConv7@maxpool6;
-   bn7=CZBN7@conv7;
-   lr7=leakyReLU[bn7];
-   maxpool8=PoolingLayer[{2,2},"Stride"->2]@lr7;
-   conv9=CZConv9@maxpool8;
-   bn9=CZBN9@conv9;
-   lr9=leakyReLU[bn9];
-   maxpool10=PoolingLayer[{2,2},"Stride"->2]@lr9;
-   conv11=CZConv11@maxpool10;
-   bn11=CZBN11@conv11;
-   lr11=leakyReLU[bn11];
-   rs11={ArrayPad[lr11[[1]],{{0},{0,1},{0,1}},-100.]};
-   maxpool12=(PoolingLayer[{2,2},"Stride"->1]@rs11);
-   conv13=CZConv13@maxpool12;
-   bn13=CZBN13@conv13;
-   lr13=leakyReLU[bn13];
-   conv14=CZConv14@lr13;
-   bn14=CZBN14@conv14;
-   lr14=leakyReLU[bn14];
-   conv15=CZConv15@lr14;
-   cube=Table[LogisticSigmoid[conv15[[1,5+(n*25),r,c]]]*
-      SoftmaxLayer[][conv15[[1,6+(n*25);;6+(n*25)+20-1,r,c]]],
-      {n,0,4},{r,1,13},{c,1,13}];
+   conv15=net2[{ArrayPad[
+     net1[inp[[1;;1,1;;3]]][[1]],
+        {{0},{0,1},{0,1}},-100.]}];
+   cube=LogisticSigmoid[conv15[[1,5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15[[1]],25][[All,6;;25]],{1,4,2,3}]];
    extract=Position[cube,x_/;x>.24];
    Map[{object[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CorrectBox[CZMap[#][[2]],image]}&,extract]
 )
