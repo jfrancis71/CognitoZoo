@@ -21,8 +21,7 @@
    See https://github.com/jfrancis71/CognitoZoo/wiki/Yolo
    for usage details
    
-   Takes about 25 secs to run on an image (MacBook air, CPU). This is actually quite slow
-   by comparison with what can be achieved. (Darknet has reported tiny YOLO running at
+   Takes about 1.25 secs to run on an image (MacBook air, CPU). (Darknet has reported tiny YOLO running at
    over 100 frames/sec).
    
    The codebase is fairly small, this is partly a consequence of quite tight coupling between the code
