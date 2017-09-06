@@ -233,7 +233,7 @@ net1=NetChain[{
    CZConv7,CZBN7,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
    CZConv9,CZBN9,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
    CZConv11,CZBN11,leakyReLU
-},"Input"->{3,416,416}];
+},"Input"->NetEncoder[{"Image",{416,416},ColorSpace->"RGB"}]];
 net2=NetChain[{
    PoolingLayer[{2,2},"Stride"->1],
    CZConv13,CZBN13,leakyReLU,
@@ -242,9 +242,9 @@ net2=NetChain[{
 
 
 CZRawDetectObjects[image_]:=(
-   inp={ImageData[ColorConvert[CZImagePadToSquare[CZMaxSideImage[image,416]],"RGB"],Interleaving->False]};
+(*   inp={ImageData[ColorConvert[,"RGB"],Interleaving->False]};*)
    conv15=net2[{ArrayPad[
-     net1[inp[[1;;1,1;;3]]][[1]],
+     net1[CZImagePadToSquare[CZMaxSideImage[image,416]]],
         {{0},{0,1},{0,1}},-100.]}];
    cube=LogisticSigmoid[conv15[[1,5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15[[1]],25][[All,6;;25]],{1,4,2,3}]];
    extract=Position[cube,x_/;x>.24];
