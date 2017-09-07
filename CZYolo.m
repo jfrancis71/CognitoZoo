@@ -184,12 +184,12 @@ biases={{1.08,1.19},{3.42,4.41},{6.63,11.38},{9.42,5.11},{16.62,10.52}};
 CZGetBoundingBox[cubePos_]:=
 (
    centX=
-      (1/13)*(cubePos[[3]]-1+LogisticSigmoid[conv15[[1,1+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]);
+      (1/13)*(cubePos[[3]]-1+LogisticSigmoid[conv15[[1+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]);
    centY=
-      (1/13)*(cubePos[[2]]-1+LogisticSigmoid[conv15[[1,2+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]);
-   w=(1/13)*Exp[conv15[[1,3+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],1]];
+      (1/13)*(cubePos[[2]]-1+LogisticSigmoid[conv15[[2+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]);
+   w=(1/13)*Exp[conv15[[3+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],1]];
    h=
-      (1/13)*(Exp[conv15[[1,4+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],2]]);
+      (1/13)*(Exp[conv15[[4+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],2]]);
    Rectangle[416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}]
 )
 
@@ -226,27 +226,24 @@ CZDetectObjects[img_]:=
 leakyReLU = ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&];
 
 
-net1=NetChain[{
+CZYoloNet = NetChain[{
    CZConv1,CZBN1,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
    CZConv3,CZBN3,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
    CZConv5,CZBN5,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
    CZConv7,CZBN7,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
    CZConv9,CZBN9,leakyReLU,PoolingLayer[{2,2},"Stride"->2],
-   CZConv11,CZBN11,leakyReLU
-},"Input"->NetEncoder[{"Image",{416,416},ColorSpace->"RGB"}]];
-net2=NetChain[{
-   PoolingLayer[{2,2},"Stride"->1],
+   CZConv11,CZBN11,leakyReLU,PaddingLayer[{{0,0},{0,1},{0,1}},-100],PoolingLayer[{2,2},"Stride"->1],
    CZConv13,CZBN13,leakyReLU,
    CZConv14,CZBN14,leakyReLU,
-   CZConv15}];
+   CZConv15},
+   "Input"->NetEncoder[{"Image",{416,416},ColorSpace->"RGB"}]];
 
 
 CZRawDetectObjects[image_]:=(
 (*   inp={ImageData[ColorConvert[,"RGB"],Interleaving->False]};*)
-   conv15=net2[{ArrayPad[
-     net1[CZImagePadToSquare[CZMaxSideImage[image,416]]],
-        {{0},{0,1},{0,1}},-100.]}];
-   cube=LogisticSigmoid[conv15[[1,5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15[[1]],25][[All,6;;25]],{1,4,2,3}]];
+   conv15=
+     CZYoloNet[CZImagePadToSquare[CZMaxSideImage[image,416]]];
+   cube=LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    extract=Position[cube,x_/;x>.24];
    Map[{object[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CorrectBox[CZMap[#][[2]],image]}&,extract]
 )
