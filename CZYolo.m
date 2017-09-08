@@ -240,13 +240,31 @@ CZYoloNet = NetChain[{
 
 
 CZRawDetectObjects[image_]:=(
-(*   inp={ImageData[ColorConvert[,"RGB"],Interleaving->False]};*)
    conv15=
      CZYoloNet[CZImagePadToSquare[CZMaxSideImage[image,416]]];
    cube=LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    extract=Position[cube,x_/;x>.24];
    Map[{object[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CorrectBox[CZMap[#][[2]],image]}&,extract]
 )
+
+
+(* Below functions not necessary for Yolo detection, but useful for inspecting the output of the
+net and are differentiable.
+*)
+
+(*
+Little net that can be attached to end of YoloNet to extract a particular slot
+Usage: YoloSlotExtractNet[8,4,2] note slot runs from 1 to 5.
+*)
+YoloSlotExtractNet[row_,col_,slot_] :=
+   NetChain[{TransposeLayer[1->3],TransposeLayer[],PartLayer[row],PartLayer[col],PartLayer[(slot-1)*25+1;;(slot*25)]}];
+   
+SlotToObjProbNet[object_] := 
+   NetGraph[{PartLayer[5],ElementwiseLayer[LogisticSigmoid],PartLayer[5+1;;5+20],SoftmaxLayer[],PartLayer[object],ThreadingLayer[Times]},{1->2,3->4,4->5,5->6,2->6}];
+
+(* Suggested use:
+   NetChain[{CZYoloNet,YoloSlotExtractNet[8,4,2],SlotToObjProbNet[7]}][CZImagePadToSquare[CZMaxSideImage[img,416]]]
+*)
 
 
 (*
