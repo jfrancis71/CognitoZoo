@@ -284,6 +284,22 @@ ThreadingLayer[Plus]},{1->2,3->4,5->6,7->8,9->10,2->11,4->11,6->12,8->12,11->13,
 
 
 (*
+   YoloGetMaxPatch takes a YOLO normalised image (ie 416x416) and a neural network output layer.
+   It can then dot prod this with a weight vector and returns the image patch which maximises this dot prob
+   receptiveFieldSize is 38 for conv7, 78 for conv9
+*)
+YoloMaxPatch[{image_,layer_},attrib_,receptiveFieldSize_]:=(
+   map=Transpose[layer,{3,1,2}].attrib;
+   p=Position[map,Max[map]][[1]];
+   {y,x}=p*{416,416}/Length[layer[[1,1]]];
+   {
+      Max[map],
+      ImageTake[ImagePad[image,receptiveFieldSize/2],{y,y+receptiveFieldSize},{x,x+receptiveFieldSize}]
+   }
+)
+
+
+(*
    Some sample test code that was used for cross checking results from the DarkNet codebase
    imgDat=BinaryReadList["/Users/julian/Downloads/darknet-master/img.dat","Real32",416*416*3];
    img=ArrayReshape[imgDat,{3,416,416}];img//Dimensions
