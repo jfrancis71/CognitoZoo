@@ -248,9 +248,11 @@ CZRawDetectObjects[image_]:=(
 )
 
 
-(* Below functions not necessary for Yolo detection, but useful for inspecting the output of the
-net and are differentiable.
+(*
+   Below functions not necessary for Yolo detection, but useful for inspecting the output of the
+   net and are differentiable.
 *)
+
 
 (*
 Little net that can be attached to end of YoloNet to extract a particular slot
@@ -265,6 +267,20 @@ SlotToObjProbNet[object_] :=
 (* Suggested use:
    NetChain[{CZYoloNet,YoloSlotExtractNet[8,4,2],SlotToObjProbNet[7]}][CZImagePadToSquare[CZMaxSideImage[img,416]]]
 *)
+
+SlotToSoftMax=NetChain[{PartLayer[6;;25],TransposeLayer[3->1],TransposeLayer[],SoftmaxLayer[]}];
+(* Slightly unfortunate implementation, would be better if stack spported broadcasting *)
+SlotToProb=NetGraph[{SlotToSoftMax,PartLayer[5],LogisticSigmoid,ReplicateLayer[20],TransposeLayer[3->1],TransposeLayer[],ThreadingLayer[Times]},{2->3,3->4,4->5,5->6,6->7,1->7}];
+SlotsToProb=NetGraph[{
+PartLayer[1;;25],SlotToProb,
+PartLayer[26;;50],SlotToProb,
+PartLayer[51;;75],SlotToProb,
+PartLayer[76;;100],SlotToProb,
+PartLayer[101;;125],SlotToProb,
+ThreadingLayer[Plus],
+ThreadingLayer[Plus],
+ThreadingLayer[Plus],
+ThreadingLayer[Plus]},{1->2,3->4,5->6,7->8,9->10,2->11,4->11,6->12,8->12,11->13,12->13,10->14,13->14}];
 
 
 (*
