@@ -197,6 +197,17 @@ CZTransformRectangleToImage[rect_Rectangle,image_]:=
    ]
 
 
+CZTransformRectangleToYolo[rect_Rectangle, image_] :=
+   If[ImageAspectRatio[image]<1,
+         Rectangle[
+            {rect[[1,1]]*416/ImageDimensions[image][[1]],416/ImageDimensions[image][[1]]*(rect[[1,2]]+(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2)},
+            {rect[[2,1]]*416/ImageDimensions[image][[1]],416/ImageDimensions[image][[1]]*(rect[[2,2]]+(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2)}],
+         Rectangle[
+            {416/ImageDimensions[image][[2]]*(rect[[1,1]]+(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2),rect[[1,2]]*416/ImageDimensions[image][[2]]},
+            {416/ImageDimensions[image][[2]]*(rect[[2,1]]*(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2),rect[[2,2]]*416/ImageDimensions[image][[2]]}]
+   ]
+
+
 CZpascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
    "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
