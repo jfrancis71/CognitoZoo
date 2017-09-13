@@ -186,22 +186,22 @@ CZGetBoundingBox[cubePos_]:=
 )
 
 
-CorrectBox[box_,image_]:=
+CZTransformRectangleToImage[rect_Rectangle,image_]:=
    If[ImageAspectRatio[image]<1,
          Rectangle[
-            {box[[1,1]]*ImageDimensions[image][[1]]/416,box[[1,2]]*ImageDimensions[image][[1]]/416-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
-            {box[[2,1]]*ImageDimensions[image][[1]]/416,box[[2,2]]*ImageDimensions[image][[1]]/416-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2}],
+            {rect[[1,1]]*ImageDimensions[image][[1]]/416,rect[[1,2]]*ImageDimensions[image][[1]]/416-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
+            {rect[[2,1]]*ImageDimensions[image][[1]]/416,rect[[2,2]]*ImageDimensions[image][[1]]/416-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2}],
          Rectangle[
-            {box[[1,1]]*ImageDimensions[image][[2]]/416-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,box[[1,2]]*ImageDimensions[image][[2]]/416},
-            {box[[2,1]]*ImageDimensions[image][[2]]/416-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,box[[2,2]]*ImageDimensions[image][[2]]/416}]
+            {rect[[1,1]]*ImageDimensions[image][[2]]/416-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[1,2]]*ImageDimensions[image][[2]]/416},
+            {rect[[2,1]]*ImageDimensions[image][[2]]/416-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[2,2]]*ImageDimensions[image][[2]]/416}]
    ]
 
 
-object={"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-"dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+CZpascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+   "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
 
-CZMap[cubePos_]:={object[[cubePos[[4]]]],CZGetBoundingBox[cubePos]}
+CZMap[cubePos_]:={CZpascalClasses[[cubePos[[4]]]],CZGetBoundingBox[cubePos]}
 
 
 CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,24],{20,20}+object[[2,1]],Background->Black]}
@@ -236,7 +236,7 @@ CZRawDetectObjects[image_]:=(
      CZYoloNet[ImageResize[CZImagePadToSquare[image],{416,416}]];
    cube=LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    extract=Position[cube,x_/;x>.24];
-   Map[{object[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CorrectBox[CZMap[#][[2]],image]}&,extract]
+   Map[{CZpascalClasses[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMap[#][[2]],image]}&,extract]
 )
 
 
