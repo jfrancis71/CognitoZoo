@@ -64,14 +64,6 @@ THE REAL LICENSE:
 <<CZUtils.m
 
 
-(* resizes image so that length of longest side = max *)
-CZMaxSideImage[image_Image, max_Integer] :=
- If[ImageAspectRatio[image] <1,
-  ImageResize[image, max],
-ImageResize[image,Scaled[max/ImageDimensions[image][[2]]]]
-]
-
-
 CZImagePadToSquare[image_Image]:=
    If[ImageAspectRatio[image]<1,
    ImagePad[image,{{0,0},{(1/2)*(ImageDimensions[image][[1]]-ImageDimensions[image][[2]]),Ceiling[(1/2)*(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])]}},Padding->0.5],
@@ -241,7 +233,7 @@ CZYoloNet = NetChain[{
 
 CZRawDetectObjects[image_]:=(
    conv15=
-     CZYoloNet[CZImagePadToSquare[CZMaxSideImage[image,416]]];
+     CZYoloNet[ImageResize[CZImagePadToSquare[image],{416,416}]];
    cube=LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    extract=Position[cube,x_/;x>.24];
    Map[{object[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CorrectBox[CZMap[#][[2]],image]}&,extract]
