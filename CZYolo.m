@@ -244,7 +244,7 @@ CZYoloNet = NetChain[{
 
 CZRawDetectObjects[image_]:=(
    conv15=
-     CZYoloNet[ImageResize[CZImagePadToSquare[image],{416,416}]];
+     CZYoloNet[CZImagePadToSquare[image]];
    cube=LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    extract=Position[cube,x_/;x>.24];
    Map[{CZpascalClasses[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMap[#][[2]],image]}&,extract]
