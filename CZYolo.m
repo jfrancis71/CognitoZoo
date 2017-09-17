@@ -204,7 +204,7 @@ CZTransformRectangleToYolo[rect_Rectangle, image_] :=
             {rect[[2,1]]*416/ImageDimensions[image][[1]],416/ImageDimensions[image][[1]]*(rect[[2,2]]+(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2)}],
          Rectangle[
             {416/ImageDimensions[image][[2]]*(rect[[1,1]]+(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2),rect[[1,2]]*416/ImageDimensions[image][[2]]},
-            {416/ImageDimensions[image][[2]]*(rect[[2,1]]*(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2),rect[[2,2]]*416/ImageDimensions[image][[2]]}]
+            {416/ImageDimensions[image][[2]]*(rect[[2,1]]+(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2),rect[[2,2]]*416/ImageDimensions[image][[2]]}]
    ]
 
 
