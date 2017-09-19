@@ -21,7 +21,7 @@
    See https://github.com/jfrancis71/CognitoZoo/wiki/Yolo
    for usage details
    
-   Takes about 1.25 secs to run on an image (MacBook air, CPU). (Darknet has reported tiny YOLO running at
+   Takes about .28 secs to run on an image (MacBook air, CPU). (Darknet has reported tiny YOLO running at
    over 100 frames/sec).
    
    The codebase is fairly small, this is partly a consequence of quite tight coupling between the code
@@ -173,7 +173,7 @@ CZConv15=ConvolutionLayer[125,{1,1},"Biases"->conv15b,"Weights"->conv15W];
 biases={{1.08,1.19},{3.42,4.41},{6.63,11.38},{9.42,5.11},{16.62,10.52}};
 
 
-CZGetBoundingBox[cubePos_]:=
+CZGetBoundingBox[ cubePos_, conv15_ ]:=
 (
    centX=
       (1/13)*(cubePos[[3]]-1+LogisticSigmoid[conv15[[1+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]);
@@ -212,7 +212,7 @@ CZpascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car
    "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
 
-CZMap[cubePos_]:={CZpascalClasses[[cubePos[[4]]]],CZGetBoundingBox[cubePos]}
+CZMapSlotPositionToObject[ slotPos_, conv15_ ]:={CZpascalClasses[[slotPos[[4]]]],CZGetBoundingBox[slotPos, conv15]}
 
 
 CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,24],{20,20}+object[[2,1]],Background->Black]}
@@ -245,9 +245,9 @@ CZYoloNet = NetChain[{
 CZRawDetectObjects[image_]:=(
    conv15=
      CZYoloNet[CZImagePadToSquare[image]];
-   cube=LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
-   extract=Position[cube,x_/;x>.24];
-   Map[{CZpascalClasses[[#[[4]]]],cube[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMap[#][[2]],image]}&,extract]
+   slots = LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
+   slotPositions = Position[slots, x_/;x>.24];
+   Map[{CZpascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMapSlotPositionToObject[#,conv15][[2]],image]}&,slotPositions]
 )
 
 
