@@ -112,7 +112,7 @@ CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
       {sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
 
 
-CZGenderParameters = Import["GenderNet.json"];
+CZGenderParameters = Import["CZModels/GenderNet.json"];
 CZGconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[1,1]],"Weights"->Transpose[ CZGenderParameters[[1,2]],{3,4,2,1}],"PaddingSize"->2];
 CZGconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[2,1]],"Weights"->Transpose[ CZGenderParameters[[2,2]],{3,4,2,1}],"PaddingSize"->2];
 CZGconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZGenderParameters[[3,1]],"Weights"->Transpose[ CZGenderParameters[[3,2]],{3,4,2,1}],"PaddingSize"->2];
