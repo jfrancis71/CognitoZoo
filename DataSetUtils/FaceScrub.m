@@ -23,7 +23,10 @@ CZGetName[recordNo_Integer,database_] := ReadList[StringToStream[database[[recor
 CZBoundingBox[recordNo_Integer,database_,image_] := ( 
    c=ReadList[StringToStream[database[[recordNo]]],Record,RecordSeparators->"\t"][[5]];
    p=Map[FromDigits,ReadList[StringToStream[c],Record,RecordSeparators->","]];
-   {{p[[1]],ImageDimensions[image][[2]]-p[[2]]},{p[[3]],ImageDimensions[image][[2]]-p[[4]]}})
+   {{p[[1]],ImageDimensions[image][[2]]-p[[4]]},{p[[3]],ImageDimensions[image][[2]]-p[[2]]}})
+
+
+CZImportFaceScrub[file_, database_] := {Import[file],CZGetName[FromDigits[FileBaseName[file]],database],CZBoundingBox[FromDigits[FileBaseName[file]],database,Import[file]]}
 
 
 (* Implemented as Table as opposed to Map. Easier to track progress *)
@@ -38,3 +41,6 @@ CZGetImagesPartition[setOfFiles_] := Table[Map[Import,setOfFiles[[f]]],{f,1,Leng
 
 
 CZGetImages[files_] := CZGetImagesPartition[ Partition[files,UpTo[100]] ]
+
+
+CZGetRecordNo[file_] := FromDigits[FileBaseName[file]]
