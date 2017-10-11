@@ -87,4 +87,4 @@ CZFixedSizeImageIdentify[image_] := (
 
 
 CZImageIdentify[image_] :=
-   CZFixedSizeImageIdentify[ ImageCrop[ImageResize[image,227],{227,227}] ]
+   CZFixedSizeImageIdentify[ ImageCrop[ImageResize[ColorConvert[image,"RGB"],227],{227,227}] ]
