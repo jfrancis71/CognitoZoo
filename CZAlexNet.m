@@ -69,8 +69,7 @@ CZFixedSizeImageIdentify[image_] := (
    conv2p2=CNConv2P2@(maxpool1[[49;;96]]);
    conv2=Ramp@MapThread[((z=#1)+#2)&,{Join[conv2p1,conv2p2],conv2b}];
    lrn2=LRN[conv2];
-   (* Not sure why, but AlexNet TF implementation seems to drop last row/column *)
-   maxpool2=(PoolingLayer[{3,3},"Stride"->2]@lrn2)[[All,;;-2,;;-2]];
+   maxpool2=(PoolingLayer[{3,3},"Stride"->2]@lrn2);
    conv3=(NetChain[{CNConv3,Ramp}]@maxpool2);
    conv4p1=CNConv4P1@conv3[[;;192]];
    conv4p2=CNConv4P2@conv3[[193;;]];
