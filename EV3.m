@@ -27,8 +27,9 @@ EV3StopMotor[motor_] := (
 );
 
 
-EV3StepMotor[motor_] := (
-   telegram = {16^^12, 16^^00,(*LENGTH*)     16^^01, 16^^00 (*Response Sequence*),     16^^80,(*NoReply*)     16^^00, 16^^00,     16^^AE, (*StepSpeed OP*)     16^^00,(*LAYER, whatever that means*)     motor, (*Port*)     16^^81,20,(*Power*)     00,     16^^82,200,00,     16^^82,16^^00,00,     00};
+EV3StepMotor[motor_,power_] := (
+   moderatedPower=If[Abs[power]>100,100*Sign[power],power];
+   telegram = {16^^12, 16^^00,(*LENGTH*)     16^^01, 16^^00 (*Response Sequence*),     16^^80,(*NoReply*)     16^^00, 16^^00,     16^^AE, (*StepSpeed OP*)     16^^00,(*LAYER, whatever that means*)     motor, (*Port*)     16^^81,If[moderatedPower>=0,moderatedPower,256-Abs[moderatedPower]],(*Power*)     00,     16^^82,200,00,     16^^82,16^^00,00,     00};
    message = Map[FromCharacterCode, telegram];
    Map[DeviceWrite[mybrick, #] &, message]);
 
