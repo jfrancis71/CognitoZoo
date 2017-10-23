@@ -126,7 +126,7 @@ CZDetectObjects[img_]:=
    Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
 
 
-CZYoloNet = Import["~/CZModels/TinyYolov2.wlnet"];
+CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
 CZRawDetectObjects[image_]:=(
