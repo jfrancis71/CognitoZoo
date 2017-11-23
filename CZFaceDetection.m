@@ -91,7 +91,7 @@ CZSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min
    map=(net@{ColorConvert[image,"GrayScale"]//ImageData})[[1]];
    extractPositions=Position[map,x_/;x>OptionValue[Threshold]];
    origCoords=Map[{Extract[map,#],4*#[[2]] + (16-4),ImageDimensions[image][[2]]-4*#[[1]]+4-16}&,extractPositions];
-   Map[{#[[1]],{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}&,origCoords],
+   Map[{#[[1]],{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}&,origCoords]
    ]
 
 
