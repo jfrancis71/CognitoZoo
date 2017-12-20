@@ -57,18 +57,7 @@ CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] :=
 <<CZUtils.m
 
 
-CZFaceParameters = Import["CZModels/FaceNet.json"];
-CZconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[1,1]],"Weights"-> Transpose[CZFaceParameters[[1,2]],{3,4,2,1}]];
-CZconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZFaceParameters[[2,1]],"Weights"->Transpose[CZFaceParameters[[2,2]],{3,4,2,1}]];
-CZconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZFaceParameters[[3,1]],"Weights"->Transpose[CZFaceParameters[[3,2]],{3,4,2,1}]];
-CZconv4=ConvolutionLayer[1,{1,1},"Biases"-> {CZFaceParameters[[4,1]]},"Weights"->Transpose[CZFaceParameters[[4,2]],{3,4,2,1}]];
-
-
-CZFaceNet=NetChain[{
-   CZconv1,ElementwiseLayer[Tanh],PoolingLayer[2,"Stride"->2],
-   CZconv2,ElementwiseLayer[Tanh],PoolingLayer[2,"Stride"->2],
-   CZconv3,ElementwiseLayer[Tanh],
-   CZconv4,ElementwiseLayer[LogisticSigmoid]}];
+CZFaceNet = Import["CZModels/FaceNet.wlnet"];
 
 
 Options[ CZSingleScaleDetectObjects ] = {
@@ -112,18 +101,4 @@ CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
       {sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
 
 
-CZGenderParameters = Import["CZModels/GenderNet.json"];
-CZGconv1=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[1,1]],"Weights"->Transpose[ CZGenderParameters[[1,2]],{3,4,2,1}],"PaddingSize"->2];
-CZGconv2=ConvolutionLayer[32,{5,5},"Biases"-> CZGenderParameters[[2,1]],"Weights"->Transpose[ CZGenderParameters[[2,2]],{3,4,2,1}],"PaddingSize"->2];
-CZGconv3=ConvolutionLayer[64,{5,5},"Biases"-> CZGenderParameters[[3,1]],"Weights"->Transpose[ CZGenderParameters[[3,2]],{3,4,2,1}],"PaddingSize"->2];
-CZGlinear1=DotPlusLayer[1,"Biases"->{CZGenderParameters[[4,1]]},"Weights"->Transpose[CZGenderParameters[[4,2]]]];
-
-
-GenderNet = NetChain[{
-   CZGconv1,Tanh,PoolingLayer[2,"Stride"->2],
-   CZGconv2,Tanh,PoolingLayer[2,"Stride"->2],
-   CZGconv3,Tanh,PoolingLayer[2,"Stride"->2],
-   FlattenLayer[],
-   CZGlinear1,
-   LogisticSigmoid}
-];
+GenderNet = Import["CZModels/GenderNet.wlnet"];
