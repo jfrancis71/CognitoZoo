@@ -20,6 +20,16 @@
 *)
 
 
+(* Public Interface Code *)
+
+
+CZImageIdentify[image_] :=
+   CZFixedSizeImageIdentify[ ImageCrop[ImageResize[ColorConvert[image,"RGB"],227],{227,227}] ]
+
+
+(* Private Implementation Code *)
+
+
 classNames=Import["CZModels/alexnet_names.json"];
 
 
@@ -84,7 +94,3 @@ CZFixedSizeImageIdentify[image_] := (
    final=SoftmaxLayer[]@fc8;
    classNames[[Position[final,Max[final]][[1,1]]]]
 )
-
-
-CZImageIdentify[image_] :=
-   CZFixedSizeImageIdentify[ ImageCrop[ImageResize[ColorConvert[image,"RGB"],227],{227,227}] ]

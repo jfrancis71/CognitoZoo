@@ -61,6 +61,19 @@ THE REAL LICENSE:
 (* Copyright Julian Francis 2017. Please see license file for details. *)
 
 
+(* Public Interface Code *)
+
+
+CZDetectObjects[img_]:=
+   Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
+
+
+CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,24],{20,20}+object[[2,1]],Background->Black]}
+
+
+(* Private Implementation Code *)
+
+
 <<CZUtils.m
 
 
@@ -109,15 +122,8 @@ CZpascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car
 CZMapSlotPositionToObject[ slotPos_, conv15_ ]:={CZpascalClasses[[slotPos[[4]]]],CZGetBoundingBox[slotPos, conv15]}
 
 
-CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,24],{20,20}+object[[2,1]],Background->Black]}
-
-
 CZNonMaxSuppression[objectsInClass_]:=
    Map[{objectsInClass[[1,1]],Rectangle[#[[1]],#[[2]]]}&,CZDeleteOverlappingWindows[Map[{#[[2]],#[[3,1]],#[[3,2]]}&,objectsInClass]]]
-
-
-CZDetectObjects[img_]:=
-   Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
 
 
 CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
