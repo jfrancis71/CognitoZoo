@@ -1,5 +1,11 @@
 (* ::Package:: *)
 
+(*
+   This library is really nothing to do with deep learning.
+   It is code to drive an EV3 lego robot over a bluetooth connection.
+*)
+
+
 EV3Connect[] := ( mybrick = DeviceOpen["Serial","/dev/tty.EV3-SerialPort"] )
 
 
