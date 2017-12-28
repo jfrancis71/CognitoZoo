@@ -66,6 +66,13 @@ CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] :=
 CZFaceNet = Import["CZModels/FaceNet.wlnet"];
 
 
+CZFaceNetDecoder[ netOutput_, image_, threshold_ ] := (
+   extractPositions=Position[map,x_/;x>threshold];
+   origCoords=Map[{Extract[map,#],4*#[[2]] + (16-4),ImageDimensions[image][[2]]-4*#[[1]]+4-16}&,extractPositions];
+   Map[{#[[1]],{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}&,origCoords]
+)
+
+
 Options[ CZSingleScaleDetectObjects ] = {
    Threshold->0.997
 };
@@ -84,10 +91,8 @@ Options[ CZSingleScaleDetectObjects ] = {
 *)
 CZSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min[ImageDimensions[image]]<32,{},
    map=(net@{ColorConvert[image,"GrayScale"]//ImageData})[[1]];
-   extractPositions=Position[map,x_/;x>OptionValue[Threshold]];
-   origCoords=Map[{Extract[map,#],4*#[[2]] + (16-4),ImageDimensions[image][[2]]-4*#[[1]]+4-16}&,extractPositions];
-   Map[{#[[1]],{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}&,origCoords]
-   ]
+   CZFaceNetDecoder[ map, image, OptionValue[Threshold] ]
+]
 
 
 Options[ CZMultiScaleDetectObjects ] = Options[ CZSingleScaleDetectObjects ];

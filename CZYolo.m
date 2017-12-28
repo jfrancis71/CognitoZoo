@@ -132,12 +132,17 @@ CZNonMaxSuppression[objectsInClass_]:=
 CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
-CZRawDetectObjects[image_]:=(
-   conv15=
-     CZYoloNet[CZImagePadToSquare[image]];
+CZYoloDecoder[ netOutput_, image_ ] := (
    slots = LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    slotPositions = Position[slots, x_/;x>.24];
    Map[{CZpascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMapSlotPositionToObject[#,conv15][[2]],image]}&,slotPositions]
+)
+
+
+CZRawDetectObjects[image_]:=(
+   conv15=
+     CZYoloNet[CZImagePadToSquare[image]];
+   CZYoloDecoder[ conv15, image ]
 )
 
 
