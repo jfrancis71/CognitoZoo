@@ -6,7 +6,18 @@
    20 object categories (e.g. people, horses, dogs etc)
    
    Usage: HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
+   
+   Takes about .28 secs to run on an image (MacBook air, CPU). (Darknet has reported tiny YOLO running at
+   over 100 frames/sec).
 
+   You need to ensure the following files are installed in a CZModels subfolder on your search path:
+      TinyYolov2.wlnet
+   Files found in: https://drive.google.com/open?id=0Bzhe0pgVZtNUVGJJak1GWDQ3S1U 
+*)
+
+(*
+   Credit:
+   
    The code is based on the tiny YOLO model from Darknet, Joseph Redmon:
       https://pjreddie.com/darknet/yolo/
       
@@ -17,15 +28,7 @@
       howpublished = {\url{http://pjreddie.com/darknet/}},
       year = {2013--2016}
       }      
-
-   See https://github.com/jfrancis71/CognitoZoo/wiki/Yolo
-   for usage details
    
-   Takes about .28 secs to run on an image (MacBook air, CPU). (Darknet has reported tiny YOLO running at
-   over 100 frames/sec).
-   
-   You need to download the Mathematica wlnet tiny Yolo neural net file from 
-      https://drive.google.com/file/d/0Bzhe0pgVZtNUNk5TcWZCSjdPUTA/view?usp=sharing
 *)
 
 

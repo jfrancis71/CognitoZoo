@@ -2,12 +2,14 @@
 
 (* Implements AlexNet
 
-   You will need to download:
-      class_names.json from https://drive.google.com/open?id=0Bzhe0pgVZtNUc2RVVVFNSVF0NW8
-      alexnet.hdf from https://drive.google.com/open?id=0Bzhe0pgVZtNUNm1OdFFWWS1mb2c
-   and install it on a Mathematica search path, eg your home directory.
-   
+   Usage: CZImageIdentify[ image ]
 
+   You need to ensure the following files are installed in a CZModels subfolder on your search path:
+      alexnet.hdf, alexnet_names.json
+   Files found in: https://drive.google.com/open?id=0Bzhe0pgVZtNUVGJJak1GWDQ3S1U 
+*)
+
+(*
    Credit:
       The following tensorflow code was used as a reference implementation:
       Michael Guerzhoy and Davi Frossard, 2016

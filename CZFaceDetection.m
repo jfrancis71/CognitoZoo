@@ -1,6 +1,18 @@
 (* ::Package:: *)
 
+(* Implements a multi-scale pyramid face detector (basically sliding window implemented
+   convolutionally.
+
+   Usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]]
+          CZHightFaces[img] similar to above but also attempts gender recognition
+
+   You need to ensure the following files are installed in a CZModels subfolder on your search path:
+      FaceNet.wlnet, GenderNet.wlnet
+   Files found in: https://drive.google.com/open?id=0Bzhe0pgVZtNUVGJJak1GWDQ3S1U 
+*)
 (*
+   Credit:
+   
    The weights for this model come from training in a neural network library called CognitoNet which is now retired.
    
    That training session used images from the Face Scrub data set:
@@ -8,12 +20,6 @@
    H.-W. Ng, S. Winkler.
    A data-driven approach to cleaning large face datasets.
    Proc. IEEE International Conference on Image Processing (ICIP), Paris, France, Oct. 27-30, 2014.
-   
-   Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]]
-   
-   You need to download the following two files and install them somewhere on youe search path.
-   FaceNet2Convolve.json from https://drive.google.com/file/d/0Bzhe0pgVZtNUMFhfcGJwRE9sRWc/view?usp=sharing
-   GenderNet.json from https://drive.google.com/file/d/0Bzhe0pgVZtNUaDY5ZzFiN2ZfTFU/view?usp=sharing
 *)
 
 (* Public Interfaces *)
