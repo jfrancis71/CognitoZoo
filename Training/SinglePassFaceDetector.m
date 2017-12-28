@@ -18,11 +18,14 @@ images=Map[ImageResize[CZImagePadToSquare[ColorConvert[Import[#],"Grayscale"]],2
 faces=Map[FindFaces,images];
 
 
-size[face_]:=If[(face[[2,1]]-face[[1,1]])>84,2,1];
+sz1[face_]:=If[size[face]>84,2,1];
+
+
+size[face_] := (face[[2,1]]-face[[1,1]])
 
 
 CZEncoder[faces_]:=ReplacePart[ConstantArray[0,{2,8,8}],Map[{
-size[#],
+sz1[#],
 9-Ceiling[(#[[1,2]]+#[[2,2]])/(2*32)],
 Ceiling[(#[[1,1]]+#[[2,1]])/(2*32)]
 }->1&,faces]];
