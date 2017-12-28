@@ -24,7 +24,9 @@
 
 (* Public Interfaces *)
 
-Options[ CZDetectFaces ] = Options[ CZSingleScaleDetectObjects ];
+Options[ CZDetectFaces ] = {
+Threshold->0.997
+};
 (* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
    On the Caltech 1999 face dataset, we achieve a recognition rate of around 92% with
    an average of 14% of false positives/image.
@@ -40,7 +42,7 @@ Options are: Threshold
 Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]].
 ";
 CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
-   CZDeleteOverlappingWindows[ CZMultiScaleDetectObjects[image, CZFaceNet, opts] ];
+   CZDeleteOverlappingWindows[ Map[ {#[[1]], #[[2,1]], #[[2,2]] }&, CZMultiScaleDetectObjects[image, CZMultiScaleFaceNet, opts] ] ];
 
 
 CZGender::usage = "
@@ -66,50 +68,57 @@ CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] :=
 CZFaceNet = Import["CZModels/FaceNet.wlnet"];
 
 
-CZFaceNetDecoder[ netOutput_, image_, threshold_ ] := (
-   extractPositions=Position[map,x_/;x>threshold];
-   origCoords=Map[{Extract[map,#],4*#[[2]] + (16-4),ImageDimensions[image][[2]]-4*#[[1]]+4-16}&,extractPositions];
-   Map[{#[[1]],{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}&,origCoords]
-)
+scales = {493,411,342,285,238,198,165,138,115,96,80,66,55,46,38,32};
+scaleNo = Length[scales];
+CZMultiScaleFaceNet=NetGraph[{
+   ResizeLayer[{493,493}],ResizeLayer[{411,411}],ResizeLayer[{342,342}],
+   ResizeLayer[{285,285}],ResizeLayer[{238,238}],ResizeLayer[{198,198}],
+   ResizeLayer[{165,165}],ResizeLayer[{138,138}],ResizeLayer[{115,115}],
+   ResizeLayer[{96,96}],ResizeLayer[{80,80}],ResizeLayer[{66,66}],
+   ResizeLayer[{55,55}],ResizeLayer[{46,46}],ResizeLayer[{38,38}],
+   ResizeLayer[{32,32}],
+   CZFaceNet,CZFaceNet,CZFaceNet,CZFaceNet,CZFaceNet,
+   CZFaceNet,CZFaceNet,CZFaceNet,CZFaceNet,CZFaceNet,
+   CZFaceNet,CZFaceNet,CZFaceNet,CZFaceNet,CZFaceNet,
+   CZFaceNet
+   },{
+   1->scaleNo+1,2->scaleNo+2,3->scaleNo+3,4->scaleNo+4,5->scaleNo+5,
+   6->scaleNo+6,7->scaleNo+7,8->scaleNo+8,9->scaleNo+9,10->scaleNo+10,
+   11->scaleNo+11,12->scaleNo+12,13->scaleNo+13,14->scaleNo+14,15->scaleNo+15,
+   16->scaleNo+16},
+   "Input"->NetEncoder[{"Image",{512,512},"Grayscale"}]];
 
 
-Options[ CZSingleScaleDetectObjects ] = {
+CZFaceNetDecoder[ netOutput_, threshold_ ] := Flatten[Table[
+   extractPositions=Position[netOutput[[k,1]],x_/;x>threshold];
+   origCoords=Map[{Extract[netOutput[[k,1]],#],4*#[[2]] + (16-4),scales[[k]]-4*#[[1]]+4-16}&,extractPositions];
+   Map[{#[[1]],(512./scales[[k]])*{#[[2]]-15,#[[3]]-15},(512./scales[[k]])*{#[[2]]+16,#[[3]]+16}}&,origCoords],{k,4,4}],1]
+
+
+CZFaceNetDecoder[ netOutput_, image_, threshold_ ] :=
+   Map[ {#[[1]], CZTransformRectangleToImage[#[[2;;3]],image] }&,  CZFaceNetDecoder[ netOutput, threshold ] ]
+
+
+CZTransformRectangleToImage[rect_,image_]:=
+   If[ImageAspectRatio[image]<1,
+         {
+            {rect[[1,1]]*ImageDimensions[image][[1]]/512,rect[[1,2]]*ImageDimensions[image][[1]]/512-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
+            {rect[[2,1]]*ImageDimensions[image][[1]]/512,rect[[2,2]]*ImageDimensions[image][[1]]/512-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2}},
+         {
+            {rect[[1,1]]*ImageDimensions[image][[2]]/512-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[1,2]]*ImageDimensions[image][[2]]/512},
+            {rect[[2,1]]*ImageDimensions[image][[2]]/512-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[2,2]]*ImageDimensions[image][[2]]/512}}
+   ]
+
+
+Options[ CZMultiScaleDetectObjects ] = {
    Threshold->0.997
 };
-(* Conceptually it is a sliding window (32x32) object detector running at a single scale.
-   In practice it is implemented convolutionally ( for performance reasons ) so the net
-   should be fully convolutional, ie no fully connected layers.
-   The net output should be a 2D array of numbers indicating a metric for likelihood of object being present.
-   The net filter should accept an array of real numbers (ie this works on greyscale images). You can supply a
-   colour image as input to the function, but this is just converted to greyscale before being fed to the neural net
-   Note the geometric factor 4 in mapping from the output array to the input array, this is because we have
-   downsampled twice in the neural network, so there is a coupling from this algorithm to the architecture
-   of the neural net supplied.
-   The rational for using a greyscale neural net is that I am particularly fascinated by shape (much more
-   than colour), so wanted to look at performance driven by that factor alone. A commercial use might take
-   a different view.
-*)
-CZSingleScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[]] := If[Min[ImageDimensions[image]]<32,{},
-   map=(net@{ColorConvert[image,"GrayScale"]//ImageData})[[1]];
-   CZFaceNetDecoder[ map, image, OptionValue[Threshold] ]
-]
-
-
-Options[ CZMultiScaleDetectObjects ] = Options[ CZSingleScaleDetectObjects ];
 (* Implements a sliding window object detector at multiple scales.
-   The function resamples the image at scales ranging from a minimum width of 32 up to 800 at 20% scale increments.
-   The maximum width of 800 was chosen for 2 reasons: to limit inference run time and to limit the number of likely
-   false positives / image, implying the detector's limit is to recognise faces larger than 32/800 (4%) of the image width.
-   Note that if for example you had high resolution images with faces in the far distance and wanted to detect those and were
-   willing to accept false positives within the image, you might reconsider that tradeoff.
-   However, the main use case was possibly high resolution images where faces are not too distant with objective of limiting
-   false positives across the image as a whole.
 *)
-CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] :=
-   Flatten[Table[
-      Map[Prepend[#[[2;;3]]*ImageDimensions[image][[1]]/(32*1.2^sc),#[[1]]]&,
-         CZSingleScaleDetectObjects[ImageResize[image,32*1.2^sc], net, opts]],
-      {sc,0,Log[Min[ImageDimensions[image][[1]],800]/32]/Log[1.2]}],1]
+CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] := (
+   out = CZMultiScaleFaceNet[ImageResize[CZImagePadToSquare[image],512]];
+   CZFaceNetDecoder[ out, image, .997 ]
+)
 
 
 GenderNet = Import["CZModels/GenderNet.wlnet"];
