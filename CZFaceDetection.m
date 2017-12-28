@@ -92,7 +92,7 @@ CZMultiScaleFaceNet=NetGraph[{
 CZFaceNetDecoder[ netOutput_, threshold_ ] := Flatten[Table[
    extractPositions=Position[netOutput[[k,1]],x_/;x>threshold];
    origCoords=Map[{Extract[netOutput[[k,1]],#],4*#[[2]] + (16-4),scales[[k]]-4*#[[1]]+4-16}&,extractPositions];
-   Map[{#[[1]],(512./scales[[k]])*{#[[2]]-15,#[[3]]-15},(512./scales[[k]])*{#[[2]]+16,#[[3]]+16}}&,origCoords],{k,4,4}],1]
+   Map[{#[[1]],(512./scales[[k]])*{#[[2]]-15,#[[3]]-15},(512./scales[[k]])*{#[[2]]+16,#[[3]]+16}}&,origCoords],{k,1,16}],1]
 
 
 CZFaceNetDecoder[ netOutput_, image_, threshold_ ] :=
@@ -117,7 +117,7 @@ Options[ CZMultiScaleDetectObjects ] = {
 *)
 CZMultiScaleDetectObjects[image_?ImageQ, net_, opts:OptionsPattern[] ] := (
    out = CZMultiScaleFaceNet[ImageResize[CZImagePadToSquare[image],512]];
-   CZFaceNetDecoder[ out, image, .997 ]
+   CZFaceNetDecoder[ out, image, OptionValue[Threshold] ]
 )
 
 
