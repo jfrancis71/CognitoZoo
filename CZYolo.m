@@ -96,28 +96,6 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
 )
 
 
-CZTransformRectangleToImage[rect_Rectangle,image_]:=
-   If[ImageAspectRatio[image]<1,
-         Rectangle[
-            {rect[[1,1]]*ImageDimensions[image][[1]]/416,rect[[1,2]]*ImageDimensions[image][[1]]/416-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
-            {rect[[2,1]]*ImageDimensions[image][[1]]/416,rect[[2,2]]*ImageDimensions[image][[1]]/416-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2}],
-         Rectangle[
-            {rect[[1,1]]*ImageDimensions[image][[2]]/416-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[1,2]]*ImageDimensions[image][[2]]/416},
-            {rect[[2,1]]*ImageDimensions[image][[2]]/416-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[2,2]]*ImageDimensions[image][[2]]/416}]
-   ]
-
-
-CZTransformRectangleToYolo[rect_Rectangle, image_] :=
-   If[ImageAspectRatio[image]<1,
-         Rectangle[
-            {rect[[1,1]]*416/ImageDimensions[image][[1]],416/ImageDimensions[image][[1]]*(rect[[1,2]]+(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2)},
-            {rect[[2,1]]*416/ImageDimensions[image][[1]],416/ImageDimensions[image][[1]]*(rect[[2,2]]+(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2)}],
-         Rectangle[
-            {416/ImageDimensions[image][[2]]*(rect[[1,1]]+(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2),rect[[1,2]]*416/ImageDimensions[image][[2]]},
-            {416/ImageDimensions[image][[2]]*(rect[[2,1]]+(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2),rect[[2,2]]*416/ImageDimensions[image][[2]]}]
-   ]
-
-
 CZpascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
    "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
@@ -135,7 +113,7 @@ CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 CZYoloDecoder[ netOutput_, image_ ] := (
    slots = LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    slotPositions = Position[slots, x_/;x>.24];
-   Map[{CZpascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMapSlotPositionToObject[#,conv15][[2]],image]}&,slotPositions]
+   Map[{CZpascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMapSlotPositionToObject[#,conv15][[2]], image, 416]}&,slotPositions]
 )
 
 

@@ -96,18 +96,7 @@ CZFaceNetDecoder[ netOutput_, threshold_ ] := Flatten[Table[
 
 
 CZFaceNetDecoder[ netOutput_, image_, threshold_ ] :=
-   Map[ {#[[1]], CZTransformRectangleToImage[#[[2;;3]],image] }&,  CZFaceNetDecoder[ netOutput, threshold ] ]
-
-
-CZTransformRectangleToImage[rect_,image_]:=
-   If[ImageAspectRatio[image]<1,
-         {
-            {rect[[1,1]]*ImageDimensions[image][[1]]/512,rect[[1,2]]*ImageDimensions[image][[1]]/512-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
-            {rect[[2,1]]*ImageDimensions[image][[1]]/512,rect[[2,2]]*ImageDimensions[image][[1]]/512-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2}},
-         {
-            {rect[[1,1]]*ImageDimensions[image][[2]]/512-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[1,2]]*ImageDimensions[image][[2]]/512},
-            {rect[[2,1]]*ImageDimensions[image][[2]]/512-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[2,2]]*ImageDimensions[image][[2]]/512}}
-   ]
+   Map[ {#[[1]], CZTransformRectangleToImage[#[[2;;3]], image, 512] }&,  CZFaceNetDecoder[ netOutput, threshold ] ]
 
 
 Options[ CZMultiScaleDetectObjects ] = {

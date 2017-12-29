@@ -27,3 +27,20 @@ CZDeleteOverlappingWindows[ objects_ ] :=
          Table[If[CZIntersectionOverUnion[objects[[a,2;;3]],objects[[b,2;;3]]]>.25&&objects[[a,1]]<objects[[b,1]],1,0],{b,1,Length[objects]}]
             ,{a,1,Length[objects]}],{2}],
          0]][[All,2;;3]]
+
+
+(*
+   Maps rectangles from the neural net input layer space to the input image
+   correcting for the resizing and padding.
+*)
+CZTransformRectangleToImage[rect_, image_, netSize_ ]:=
+   If[ImageAspectRatio[image]<1,
+         {
+            {rect[[1,1]]*ImageDimensions[image][[1]]/netSize,rect[[1,2]]*ImageDimensions[image][[1]]/netSize-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
+            {rect[[2,1]]*ImageDimensions[image][[1]]/netSize,rect[[2,2]]*ImageDimensions[image][[1]]/netSize-(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2}
+            },
+         {
+            {rect[[1,1]]*ImageDimensions[image][[2]]/netSize-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[1,2]]*ImageDimensions[image][[2]]/netSize},
+            {rect[[2,1]]*ImageDimensions[image][[2]]/netSize-(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,rect[[2,2]]*ImageDimensions[image][[2]]/netSize}
+         }
+   ]
