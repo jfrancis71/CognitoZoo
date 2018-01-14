@@ -71,7 +71,7 @@ CZDetectObjects[img_]:=
    Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
 
 
-CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,24],{20,20}+object[[2,1]],Background->Black]}
+CZHighlightObjects[ img_ ] := HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
 
 
 (* Private Implementation Code *)
@@ -96,11 +96,7 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
 )
 
 
-CZpascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-   "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
-
-
-CZMapSlotPositionToObject[ slotPos_, conv15_ ]:={CZpascalClasses[[slotPos[[4]]]],CZGetBoundingBox[slotPos, conv15]}
+CZMapSlotPositionToObject[ slotPos_, conv15_ ]:={CZPascalClasses[[slotPos[[4]]]],CZGetBoundingBox[slotPos, conv15]}
 
 
 CZNonMaxSuppression[objectsInClass_]:=
@@ -113,7 +109,7 @@ CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 CZYoloDecoder[ netOutput_, image_ ] := (
    slots = LogisticSigmoid[conv15[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[conv15,25][[All,6;;25]],{1,4,2,3}]];
    slotPositions = Position[slots, x_/;x>.24];
-   Map[{CZpascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMapSlotPositionToObject[#,conv15][[2]], image, 416]}&,slotPositions]
+   Map[{CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMapSlotPositionToObject[#,conv15][[2]], image, 416]}&,slotPositions]
 )
 
 
