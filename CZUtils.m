@@ -37,6 +37,15 @@ CZDeleteOverlappingWindows[ objects_ ] :=
 
 
 (*
+   Note: requires format list of {prob,{{xmin,ymin},{xmax,ymax}}}
+   It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
+   work if it is wrong way round (ie corners in wrong order)
+*)
+CZNonMaxSuppression[objectsInClass_]:=
+   Map[{objectsInClass[[1,1]],Rectangle[#[[1]],#[[2]]]}&,CZDeleteOverlappingWindows[Map[{#[[2]],#[[3,1]],#[[3,2]]}&,objectsInClass]]]
+
+
+(*
    Maps rectangles from the neural net input layer space to the input image
    correcting for the resizing and padding.
 *)

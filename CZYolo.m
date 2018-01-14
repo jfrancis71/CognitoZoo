@@ -99,10 +99,6 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
 CZMapSlotPositionToObject[ slotPos_, conv15_ ]:={CZPascalClasses[[slotPos[[4]]]],CZGetBoundingBox[slotPos, conv15]}
 
 
-CZNonMaxSuppression[objectsInClass_]:=
-   Map[{objectsInClass[[1,1]],Rectangle[#[[1]],#[[2]]]}&,CZDeleteOverlappingWindows[Map[{#[[2]],#[[3,1]],#[[3,2]]}&,objectsInClass]]]
-
-
 CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
