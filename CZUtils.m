@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,24],{20,20}+object[[2,1]],Background->Black]}
+CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,0.2*(object[[2,2,1]]-object[[2,1,1]])],object[[2,1]],Background->Black]}
 
 
 CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
