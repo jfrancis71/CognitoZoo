@@ -226,7 +226,7 @@ net11 = NetChain[{
 Options[ SSD ] = Options[ CZDetectObjects ];
 SSD[image_, opts:OptionsPattern[] ] := ( 
 (*img4d=Transpose[Import["c:\\users\\julian\\google drive\\img4d.json"][[1,1]],{2,3,1}];*)
-img4d=Transpose[Import["/Users/julian/SSD-Tensorflow/notebooks/img4d.json"][[1,1]],{2,3,1}];
+(*img4d=Transpose[Import["/Users/julian/SSD-Tensorflow/notebooks/img4d.json"][[1,1]],{2,3,1}];*)
    img4d=38+(ImageData[ImageResize[image,{300,300}],Interleaving->False]-.5)*256;
   
   (*
