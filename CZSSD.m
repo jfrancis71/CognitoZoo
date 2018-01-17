@@ -176,7 +176,7 @@ conv11B2=Import["CZModels/ssd.hdf",{"Datasets","/conv11_2B"}];
 gamma4=Import["CZModels/ssd.hdf",{"Datasets","/block4_gamma"}];
 
 
-net4 = NetChain[{
+blockNet4 = NetChain[{
    ConvolutionLayer[64,{3,3},"Biases"->conv1B1,"Weights"->conv1W1,"PaddingSize"->1],Ramp,
    ConvolutionLayer[64,{3,3},"Biases"->conv1B2,"Weights"->conv1W2,"PaddingSize"->1],Ramp,
    PoolingLayer[{2,2},"Stride"->2],
@@ -190,10 +190,10 @@ net4 = NetChain[{
    ConvolutionLayer[512,{3,3},"Biases"->conv4B1,"Weights"->conv4W1,"PaddingSize"->1],Ramp,
    ConvolutionLayer[512,{3,3},"Biases"->conv4B2,"Weights"->conv4W2,"PaddingSize"->1],Ramp,
    ConvolutionLayer[512,{3,3},"Biases"->conv4B3,"Weights"->conv4W3,"PaddingSize"->1],Ramp
-   },"Input"->{3,300,300}];
+   }];
 
 
-net7 = NetChain[{
+blockNet7 = NetChain[{
    PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[512,{3,3},"Biases"->conv5B1,"Weights"->conv5W1,"PaddingSize"->1],Ramp,
    ConvolutionLayer[512,{3,3},"Biases"->conv5B2,"Weights"->conv5W2,"PaddingSize"->1],Ramp,
@@ -204,30 +204,43 @@ net7 = NetChain[{
 }];
 
 
-net8 = NetChain[{
+blockNet8 = NetChain[{
    ConvolutionLayer[256, {1,1}, "Biases"->conv8B1,"Weights"->conv8W1],Ramp,
    PaddingLayer[{{0,0},{1,1},{1,1}}],
    ConvolutionLayer[512, {3,3}, "Biases"->conv8B2,"Weights"->conv8W2,"Stride"->2],Ramp
    }];
 
 
-net9 = NetChain[{
+blockNet9 = NetChain[{
    ConvolutionLayer[128, {1,1}, "Biases"->conv9B1,"Weights"->conv9W1],Ramp,
    PaddingLayer[{{0,0},{1,1},{1,1}}],   
    ConvolutionLayer[256, {3,3}, "Biases"->conv9B2,"Weights"->conv9W2,"Stride"->2],Ramp
    }];
 
 
-net10 = NetChain[{
+blockNet10 = NetChain[{
    ConvolutionLayer[128, {1,1}, "Biases"->conv10B1,"Weights"->conv10W1],Ramp,
    ConvolutionLayer[256, {3,3}, "Biases"->conv10B2,"Weights"->conv10W2],Ramp
    }];
 
 
-net11 = NetChain[{
+blockNet11 = NetChain[{
    ConvolutionLayer[128, {1,1}, "Biases"->conv11B1,"Weights"->conv11W1],Ramp,
    ConvolutionLayer[256, {3,3}, "Biases"->conv11B2,"Weights"->conv11W2],Ramp
    }];
+
+
+SSDNet=NetGraph[{
+   blockNet4,
+   blockNet7,
+   blockNet8,
+   blockNet9,
+   blockNet10,
+   blockNet11},
+   {1->2->3->4->5->6,
+   1->NetPort["Layer1"],2->NetPort["Layer2"],3->NetPort["Layer3"],
+   4->NetPort["Layer4"],5->NetPort["Layer5"],6->NetPort["Layer6"]},
+   "Input"->{3,300,300}];
 
 
 Options[ SSD ] = Options[ CZDetectObjects ];
@@ -236,64 +249,40 @@ SSD[image_, opts:OptionsPattern[] ] := (
 (*img4d=Transpose[Import["/Users/julian/SSD-Tensorflow/notebooks/img4d.json"][[1,1]],{2,3,1}];*)
    img4d=38+(ImageData[ImageResize[image,{300,300}],Interleaving->False]-.5)*256;
   
-  (*
-mb11=ConvolutionLayer[64,{3,3},"Biases"->conv1B1,"Weights"->conv1W1,"PaddingSize"->1][img4d];
-mb12=Ramp@ConvolutionLayer[64,{3,3},"Biases"->conv1B2,"Weights"->conv1W2,"PaddingSize"->1][Ramp@mb11];
-mb1 = PoolingLayer[{2,2},"Stride"->2]@mb12;
+   eval=SSDNet[img4d, opts];
 
-mb21=ConvolutionLayer[128,{3,3},"Biases"->conv2B1,"Weights"->conv2W1,"PaddingSize"->1][Ramp@mb1];
-mb22=Ramp@ConvolutionLayer[128,{3,3},"Biases"->conv2B2,"Weights"->conv2W2,"PaddingSize"->1][Ramp@mb21];
-mb2 = PoolingLayer[{2,2},"Stride"->2]@mb22;
-
-   mb2 = net[img4d];
-mb31=ConvolutionLayer[256,{3,3},"Biases"->conv3B1,"Weights"->conv3W1,"PaddingSize"->1][Ramp@mb2];
-mb32=Ramp@ConvolutionLayer[256,{3,3},"Biases"->conv3B2,"Weights"->conv3W2,"PaddingSize"->1][Ramp@mb31];
-mb33=Ramp@ConvolutionLayer[256,{3,3},"Biases"->conv3B3,"Weights"->conv3W3,"PaddingSize"->1][Ramp@mb32];
-
-*)
-   mb43 = net4[img4d, opts];
-(*mb3 = PoolingLayer[{2,2},"Stride"->2]@ArrayPad[mb33,{{0,0},{0,1},{0,1}}];*)
-(*
-mb41=ConvolutionLayer[512,{3,3},"Biases"->conv4B1,"Weights"->conv4W1,"PaddingSize"->1][Ramp@mb3];
-mb42=Ramp@ConvolutionLayer[512,{3,3},"Biases"->conv4B2,"Weights"->conv4W2,"PaddingSize"->1][Ramp@mb41];
-mb43=Ramp@ConvolutionLayer[512,{3,3},"Biases"->conv4B3,"Weights"->conv4W3,"PaddingSize"->1][Ramp@mb42];
-*)
-
-
-(*mb4 = PoolingLayer[{2,2},"Stride"->2]@mb43;*)
-
-   c=Sqrt[Total[mb43^2]];
-   norm=gamma4*Map[#/c&,mb43];
+   c=Sqrt[Total[eval["Layer1"]^2]];
+   norm=gamma4*Map[#/c&,eval["Layer1"]];
    tmpmultibox4 = ConvolutionLayer[84,{3,3},"Biases"->block4ClassesB,"Weights"->block4ClassesW,"PaddingSize"->1][norm];
    multibox4=SoftmaxLayer[][Transpose[Partition[tmpmultibox4,21],{1,4,2,3}]];
    locs4 = ConvolutionLayer[16,{3,3},"Biases"->block4LocB,"Weights"->block4LocW,"PaddingSize"->1][norm];
    m4=multibox4[[All,All,All,2;;21]];
 
-   mb7 = net7[ mb43, opts ];
+   mb7 = eval["Layer2"];
    tmpmultibox7 = ConvolutionLayer[126,{3,3},"Biases"->block7ClassesB,"Weights"->block7ClassesW,"PaddingSize"->1][mb7];
    multibox7=SoftmaxLayer[][Transpose[Partition[tmpmultibox7,21],{1,4,2,3}]];
    m7=multibox7[[All,All,All,2;;21]];
    locs7 = ConvolutionLayer[24,{3,3},"Biases"->block7LocB,"Weights"->block7LocW,"PaddingSize"->1][mb7];
    
-   mb8 = net8[ mb7, opts ];
+   mb8 = eval["Layer3"];
    tmpmultibox8 = ConvolutionLayer[126,{3,3},"Biases"->block8ClassesB,"Weights"->block8ClassesW,"PaddingSize"->1][mb8];
    multibox8=SoftmaxLayer[][Transpose[Partition[tmpmultibox8,21],{1,4,2,3}]];
    m8=multibox8[[All,All,All,2;;21]];
    locs8 = ConvolutionLayer[24,{3,3},"Biases"->block8LocB,"Weights"->block8LocW,"PaddingSize"->1][mb8];
 
-   mb9 = net9[ mb8, opts ];
+   mb9 = eval["Layer4"];
    tmpmultibox9 = ConvolutionLayer[126,{3,3},"Biases"->block9ClassesB,"Weights"->block9ClassesW,"PaddingSize"->1][mb9];
    multibox9=SoftmaxLayer[][Transpose[Partition[tmpmultibox9,21],{1,4,2,3}]];
    m9=multibox9[[All,All,All,2;;21]];
    locs9 = ConvolutionLayer[24,{3,3},"Biases"->block9LocB,"Weights"->block9LocW,"PaddingSize"->1][mb9];
 
-  mb10 = net10[ mb9, opts ];
+   mb10 = eval["Layer5"];
    tmpmultibox10 = ConvolutionLayer[84,{3,3},"Biases"->block10ClassesB,"Weights"->block10ClassesW,"PaddingSize"->1][mb10];
    multibox10=SoftmaxLayer[][Transpose[Partition[tmpmultibox10,21],{1,4,2,3}]];
    m10=multibox10[[All,All,All,2;;21]];
    locs10 = ConvolutionLayer[16,{3,3},"Biases"->block10LocB,"Weights"->block10LocW,"PaddingSize"->1][mb10];
 
-  mb11 = net11[ mb10, opts ];
+   mb11 = eval["Layer6"];
    tmpmultibox11 = ConvolutionLayer[84,{3,3},"Biases"->block11ClassesB,"Weights"->block11ClassesW,"PaddingSize"->1][mb11];
    multibox11=SoftmaxLayer[][Transpose[Partition[tmpmultibox11,21],{1,4,2,3}]];
    m11=multibox11[[All,All,All,2;;21]];
