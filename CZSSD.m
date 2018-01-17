@@ -3,6 +3,13 @@
 (*
    First attempt at implementing SSD. This is very rough and ready.
    Just entering into github so we have it under source control.
+   
+   Timings are around: (for the two cars on Clapham Common image)
+      5 secs for MacBook Air
+      2.8 secs Desktop CPU
+      2.3 secs Desktop GPU
+      
+   Expect much more optimisation is possible!
 *)
 
 
