@@ -25,9 +25,9 @@ CZDetectObjects[ img_, opts:OptionsPattern[] ] :=
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
 CZHighlightObjects[ img_, opts:OptionsPattern[] ] := (
-   SSD[img];
+   detections = CZDetectObjects[ img, opts ];
    HighlightImage[Image[img4d,Interleaving->False]//ImageAdjust,
-      CZDisplayObject/@CZDetectObjects[ img, opts ]]
+      CZDisplayObject/@detections]
 )
 
 
