@@ -5,11 +5,9 @@
    Just entering into github so we have it under source control.
    
    Timings are around: (for the two cars on Clapham Common image)
-      5 secs for MacBook Air
-      2.8 secs Desktop CPU
-      2.3 secs Desktop GPU
-      
-   Expect much more optimisation is possible!
+      1.5 secs for MacBook Air
+      1.2 secs Desktop CPU
+      .54 secs Desktop GPU
 *)
 
 
@@ -232,28 +230,37 @@ blockNet11 = NetChain[{
 
 MultiBoxNetLayer2=NetGraph[{
    ConvolutionLayer[126,{3,3},"Biases"->block7ClassesB,"Weights"->block7ClassesW,"PaddingSize"->1],
+   ReshapeLayer[{6,21,19,19}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
    ConvolutionLayer[24,{3,3},"Biases"->block7LocB,"Weights"->block7LocW,"PaddingSize"->1]
- },{1->NetPort["ObjMap2"],2->NetPort["Locs2"]}];
+ },{1->2,2->3,3->4,4->5,5->NetPort["ObjMap2"],6->NetPort["Locs2"]}];
 
 
 MultiBoxNetLayer3=NetGraph[{
    ConvolutionLayer[126,{3,3},"Biases"->block8ClassesB,"Weights"->block8ClassesW,"PaddingSize"->1],
-   ConvolutionLayer[24,{3,3},"Biases"->block8LocB,"Weights"->block8LocW,"PaddingSize"->1]},{1->NetPort["ObjMap3"],2->NetPort["Locs3"]}];
+   ReshapeLayer[{6,21,10,10}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
+   ConvolutionLayer[24,{3,3},"Biases"->block8LocB,"Weights"->block8LocW,"PaddingSize"->1]},
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap3"],6->NetPort["Locs3"]}];
 
 
 MultiBoxNetLayer4=NetGraph[{
    ConvolutionLayer[126,{3,3},"Biases"->block9ClassesB,"Weights"->block9ClassesW,"PaddingSize"->1],
-   ConvolutionLayer[24,{3,3},"Biases"->block9LocB,"Weights"->block9LocW,"PaddingSize"->1]},{1->NetPort["ObjMap4"],2->NetPort["Locs4"]}];
+   ReshapeLayer[{6,21,5,5}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],   
+   ConvolutionLayer[24,{3,3},"Biases"->block9LocB,"Weights"->block9LocW,"PaddingSize"->1]},
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap4"],6->NetPort["Locs4"]}];
 
 
 MultiBoxNetLayer5=NetGraph[{
    ConvolutionLayer[84,{3,3},"Biases"->block10ClassesB,"Weights"->block10ClassesW,"PaddingSize"->1],
-   ConvolutionLayer[16,{3,3},"Biases"->block10LocB,"Weights"->block10LocW,"PaddingSize"->1]},{1->NetPort["ObjMap5"],2->NetPort["Locs5"]}];
+   ReshapeLayer[{4,21,3,3}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
+   ConvolutionLayer[16,{3,3},"Biases"->block10LocB,"Weights"->block10LocW,"PaddingSize"->1]},
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap5"],6->NetPort["Locs5"]}];
 
 
 MultiBoxNetLayer6=NetGraph[{
    ConvolutionLayer[84,{3,3},"Biases"->block11ClassesB,"Weights"->block11ClassesW,"PaddingSize"->1],
-   ConvolutionLayer[16,{3,3},"Biases"->block11LocB,"Weights"->block11LocW,"PaddingSize"->1]},{1->NetPort["ObjMap6"],2->NetPort["Locs6"]}];
+   ReshapeLayer[{4,21,1,1}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
+   ConvolutionLayer[16,{3,3},"Biases"->block11LocB,"Weights"->block11LocW,"PaddingSize"->1]},
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap6"],6->NetPort["Locs6"]}];
 
 
 SSDNet=NetGraph[{
@@ -289,35 +296,20 @@ SSD[image_, opts:OptionsPattern[] ] := (
    locs4 = ConvolutionLayer[16,{3,3},"Biases"->block4LocB,"Weights"->block4LocW,"PaddingSize"->1][norm];
    m4=multibox4[[All,All,All,2;;21]];
 
-   multibox7=SoftmaxLayer[][Transpose[Partition[eval["ObjMap2"],21],{1,4,2,3}]];
-   m7=multibox7[[All,All,All,2;;21]];
+   m7 = eval["ObjMap2"][[All,All,All,2;;21]];
    locs7 = eval["Locs2"];
-   
-   multibox8=SoftmaxLayer[][Transpose[Partition[eval["ObjMap3"],21],{1,4,2,3}]];
-   m8=multibox8[[All,All,All,2;;21]];
+
+   m8 = eval["ObjMap3"][[All,All,All,2;;21]];
    locs8 = eval["Locs3"];
    
-   multibox9=SoftmaxLayer[][Transpose[Partition[eval["ObjMap4"],21],{1,4,2,3}]];
-   m9=multibox9[[All,All,All,2;;21]];
+   m9 = eval["ObjMap4"][[All,All,All,2;;21]];
    locs9 = eval["Locs4"];
 
-   multibox10=SoftmaxLayer[][Transpose[Partition[eval["ObjMap5"],21],{1,4,2,3}]];
-   m10=multibox10[[All,All,All,2;;21]];
+   m10 = eval["ObjMap5"][[All,All,All,2;;21]];
    locs10 = eval["Locs5"];
 
-   multibox11=SoftmaxLayer[][Transpose[Partition[eval["ObjMap6"],21],{1,4,2,3}]];
-   m11=multibox11[[All,All,All,2;;21]];
+   m11 = eval["ObjMap6"][[All,All,All,2;;21]];
    locs11 = eval["Locs6"];
-
-
-   {
-   CZPascalClasses[[Position[m4,x_/;x>.5][[All,4]]]],
-   CZPascalClasses[[Position[m7,x_/;x>.5][[All,4]]]],
-   CZPascalClasses[[Position[m8,x_/;x>.5][[All,4]]]],
-   CZPascalClasses[[Position[m9,x_/;x>.5][[All,4]]]],
-   CZPascalClasses[[Position[m10,x_/;x>.5][[All,4]]]],
-   CZPascalClasses[[Position[m11,x_/;x>.5][[All,4]]]]
-   }
 )
 
 
