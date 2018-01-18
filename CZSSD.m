@@ -20,7 +20,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ img_, opts:OptionsPattern[] ] :=
-   Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
+   Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img, opts],#[[1]]&]],1]
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -230,16 +230,47 @@ blockNet11 = NetChain[{
    }];
 
 
+MultiBoxNetLayer2=NetGraph[{
+   ConvolutionLayer[126,{3,3},"Biases"->block7ClassesB,"Weights"->block7ClassesW,"PaddingSize"->1],
+   ConvolutionLayer[24,{3,3},"Biases"->block7LocB,"Weights"->block7LocW,"PaddingSize"->1]
+ },{1->NetPort["ObjMap2"],2->NetPort["Locs2"]}];
+
+
+MultiBoxNetLayer3=NetGraph[{
+   ConvolutionLayer[126,{3,3},"Biases"->block8ClassesB,"Weights"->block8ClassesW,"PaddingSize"->1],
+   ConvolutionLayer[24,{3,3},"Biases"->block8LocB,"Weights"->block8LocW,"PaddingSize"->1]},{1->NetPort["ObjMap3"],2->NetPort["Locs3"]}];
+
+
+MultiBoxNetLayer4=NetGraph[{
+   ConvolutionLayer[126,{3,3},"Biases"->block9ClassesB,"Weights"->block9ClassesW,"PaddingSize"->1],
+   ConvolutionLayer[24,{3,3},"Biases"->block9LocB,"Weights"->block9LocW,"PaddingSize"->1]},{1->NetPort["ObjMap4"],2->NetPort["Locs4"]}];
+
+
+MultiBoxNetLayer5=NetGraph[{
+   ConvolutionLayer[84,{3,3},"Biases"->block10ClassesB,"Weights"->block10ClassesW,"PaddingSize"->1],
+   ConvolutionLayer[16,{3,3},"Biases"->block10LocB,"Weights"->block10LocW,"PaddingSize"->1]},{1->NetPort["ObjMap5"],2->NetPort["Locs5"]}];
+
+
+MultiBoxNetLayer6=NetGraph[{
+   ConvolutionLayer[84,{3,3},"Biases"->block11ClassesB,"Weights"->block11ClassesW,"PaddingSize"->1],
+   ConvolutionLayer[16,{3,3},"Biases"->block11LocB,"Weights"->block11LocW,"PaddingSize"->1]},{1->NetPort["ObjMap6"],2->NetPort["Locs6"]}];
+
+
 SSDNet=NetGraph[{
    blockNet4,
    blockNet7,
    blockNet8,
    blockNet9,
    blockNet10,
-   blockNet11},
+   blockNet11,
+   MultiBoxNetLayer2,
+   MultiBoxNetLayer3,
+   MultiBoxNetLayer4,
+   MultiBoxNetLayer5,
+   MultiBoxNetLayer6},
    {1->2->3->4->5->6,
-   1->NetPort["Layer1"],2->NetPort["Layer2"],3->NetPort["Layer3"],
-   4->NetPort["Layer4"],5->NetPort["Layer5"],6->NetPort["Layer6"]},
+   1->NetPort["Layer1"],2->7,3->8,
+   4->9,5->10,6->11},
    "Input"->{3,300,300}];
 
 
@@ -258,35 +289,25 @@ SSD[image_, opts:OptionsPattern[] ] := (
    locs4 = ConvolutionLayer[16,{3,3},"Biases"->block4LocB,"Weights"->block4LocW,"PaddingSize"->1][norm];
    m4=multibox4[[All,All,All,2;;21]];
 
-   mb7 = eval["Layer2"];
-   tmpmultibox7 = ConvolutionLayer[126,{3,3},"Biases"->block7ClassesB,"Weights"->block7ClassesW,"PaddingSize"->1][mb7];
-   multibox7=SoftmaxLayer[][Transpose[Partition[tmpmultibox7,21],{1,4,2,3}]];
+   multibox7=SoftmaxLayer[][Transpose[Partition[eval["ObjMap2"],21],{1,4,2,3}]];
    m7=multibox7[[All,All,All,2;;21]];
-   locs7 = ConvolutionLayer[24,{3,3},"Biases"->block7LocB,"Weights"->block7LocW,"PaddingSize"->1][mb7];
+   locs7 = eval["Locs2"];
    
-   mb8 = eval["Layer3"];
-   tmpmultibox8 = ConvolutionLayer[126,{3,3},"Biases"->block8ClassesB,"Weights"->block8ClassesW,"PaddingSize"->1][mb8];
-   multibox8=SoftmaxLayer[][Transpose[Partition[tmpmultibox8,21],{1,4,2,3}]];
+   multibox8=SoftmaxLayer[][Transpose[Partition[eval["ObjMap3"],21],{1,4,2,3}]];
    m8=multibox8[[All,All,All,2;;21]];
-   locs8 = ConvolutionLayer[24,{3,3},"Biases"->block8LocB,"Weights"->block8LocW,"PaddingSize"->1][mb8];
-
-   mb9 = eval["Layer4"];
-   tmpmultibox9 = ConvolutionLayer[126,{3,3},"Biases"->block9ClassesB,"Weights"->block9ClassesW,"PaddingSize"->1][mb9];
-   multibox9=SoftmaxLayer[][Transpose[Partition[tmpmultibox9,21],{1,4,2,3}]];
+   locs8 = eval["Locs3"];
+   
+   multibox9=SoftmaxLayer[][Transpose[Partition[eval["ObjMap4"],21],{1,4,2,3}]];
    m9=multibox9[[All,All,All,2;;21]];
-   locs9 = ConvolutionLayer[24,{3,3},"Biases"->block9LocB,"Weights"->block9LocW,"PaddingSize"->1][mb9];
+   locs9 = eval["Locs4"];
 
-   mb10 = eval["Layer5"];
-   tmpmultibox10 = ConvolutionLayer[84,{3,3},"Biases"->block10ClassesB,"Weights"->block10ClassesW,"PaddingSize"->1][mb10];
-   multibox10=SoftmaxLayer[][Transpose[Partition[tmpmultibox10,21],{1,4,2,3}]];
+   multibox10=SoftmaxLayer[][Transpose[Partition[eval["ObjMap5"],21],{1,4,2,3}]];
    m10=multibox10[[All,All,All,2;;21]];
-   locs10 = ConvolutionLayer[16,{3,3},"Biases"->block10LocB,"Weights"->block10LocW,"PaddingSize"->1][mb10];
+   locs10 = eval["Locs5"];
 
-   mb11 = eval["Layer6"];
-   tmpmultibox11 = ConvolutionLayer[84,{3,3},"Biases"->block11ClassesB,"Weights"->block11ClassesW,"PaddingSize"->1][mb11];
-   multibox11=SoftmaxLayer[][Transpose[Partition[tmpmultibox11,21],{1,4,2,3}]];
+   multibox11=SoftmaxLayer[][Transpose[Partition[eval["ObjMap6"],21],{1,4,2,3}]];
    m11=multibox11[[All,All,All,2;;21]];
-   locs11 = ConvolutionLayer[16,{3,3},"Biases"->block11LocB,"Weights"->block11LocW,"PaddingSize"->1][mb11];
+   locs11 = eval["Locs6"];
 
 
    {
