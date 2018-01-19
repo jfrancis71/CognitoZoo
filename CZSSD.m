@@ -232,6 +232,9 @@ ngamma4=Table[gamma4[[c]],{c,1,512},{38},{38}];
 
 
 MultiBoxNetLayer1=NetGraph[{
+(* These layers up to the convolution compute the channed normalisation which is just
+   used in layer1. Slightly convoluted code (forgive the pun) to use SoftmaxLayer for this.
+*)
    TransposeLayer[1->3],
    ElementwiseLayer[Log[Max[#^2,10^-6]]&],SoftmaxLayer[],
    ElementwiseLayer[Sqrt],TransposeLayer[1->3],
