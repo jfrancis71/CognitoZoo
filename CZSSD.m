@@ -228,6 +228,23 @@ blockNet11 = NetChain[{
    }];
 
 
+ngamma4=Table[gamma4[[c]],{c,1,512},{38},{38}];
+
+
+MultiBoxNetLayer1=NetGraph[{
+   TransposeLayer[1->3],
+   ElementwiseLayer[Log[Max[#^2,10^-6]]&],SoftmaxLayer[],
+   ElementwiseLayer[Sqrt],TransposeLayer[1->3],
+   ConstantTimesLayer["Scaling"->ngamma4],
+   ConvolutionLayer[84,{3,3},"Biases"->block4ClassesB,"Weights"->block4ClassesW,"PaddingSize"->1],
+   ReshapeLayer[{4,21,38,38}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
+   ConvolutionLayer[16,{3,3},"Biases"->block4LocB,"Weights"->block4LocW,"PaddingSize"->1]
+ },{1->2,2->3,3->4,4->5,5->6,
+    6->7,7->8,8->9,9->10,10->11,
+    6->12,
+    11->NetPort["ObjMap1"],12->NetPort["Locs1"]}];
+
+
 MultiBoxNetLayer2=NetGraph[{
    ConvolutionLayer[126,{3,3},"Biases"->block7ClassesB,"Weights"->block7ClassesW,"PaddingSize"->1],
    ReshapeLayer[{6,21,19,19}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
@@ -270,14 +287,15 @@ SSDNet=NetGraph[{
    blockNet9,
    blockNet10,
    blockNet11,
+   MultiBoxNetLayer1,
    MultiBoxNetLayer2,
    MultiBoxNetLayer3,
    MultiBoxNetLayer4,
    MultiBoxNetLayer5,
    MultiBoxNetLayer6},
    {1->2->3->4->5->6,
-   1->NetPort["Layer1"],2->7,3->8,
-   4->9,5->10,6->11},
+   1->7,2->8,3->9,
+   4->10,5->11,6->12},
    "Input"->{3,300,300}];
 
 
@@ -289,12 +307,9 @@ SSD[image_, opts:OptionsPattern[] ] := (
   
    eval=SSDNet[img4d, opts];
 
-   c=Sqrt[Total[eval["Layer1"]^2]];
-   norm=gamma4*Map[#/c&,eval["Layer1"]];
-   tmpmultibox4 = ConvolutionLayer[84,{3,3},"Biases"->block4ClassesB,"Weights"->block4ClassesW,"PaddingSize"->1][norm];
-   multibox4=SoftmaxLayer[][Transpose[Partition[tmpmultibox4,21],{1,4,2,3}]];
-   locs4 = ConvolutionLayer[16,{3,3},"Biases"->block4LocB,"Weights"->block4LocW,"PaddingSize"->1][norm];
-   m4=multibox4[[All,All,All,2;;21]];
+   m4 = eval["ObjMap1"][[All,All,All,2;;21]];
+   locs4 = eval["Locs1"];
+
 
    m7 = eval["ObjMap2"][[All,All,All,2;;21]];
    locs7 = eval["Locs2"];
