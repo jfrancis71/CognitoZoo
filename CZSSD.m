@@ -5,9 +5,9 @@
    Just entering into github so we have it under source control.
    
    Timings are around: (for the two cars on Clapham Common image)
-      1.5 secs for MacBook Air
-      1.2 secs Desktop CPU
-      .54 secs Desktop GPU
+      ??? secs for MacBook Air
+      1.1 secs Desktop CPU
+      .34 secs Desktop GPU
 *)
 
 
