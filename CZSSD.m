@@ -23,9 +23,8 @@ CZDetectObjects[ img_, opts:OptionsPattern[] ] :=
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
 CZHighlightObjects[ img_, opts:OptionsPattern[] ] := (
-   detections = CZDetectObjects[ img, opts ];
-   HighlightImage[Image[img4d,Interleaving->False]//ImageAdjust,
-      CZDisplayObject/@detections]
+   HighlightImage[img,
+      CZDisplayObject /@ CZDetectObjects[ img, opts ]]
 )
 
 
@@ -306,7 +305,7 @@ Options[ SSD ] = Options[ CZDetectObjects ];
 SSD[image_, opts:OptionsPattern[] ] := ( 
 (*img4d=Transpose[Import["c:\\users\\julian\\google drive\\img4d.json"][[1,1]],{2,3,1}];*)
 (*img4d=Transpose[Import["/Users/julian/SSD-Tensorflow/notebooks/img4d.json"][[1,1]],{2,3,1}];*)
-   img4d=38+(ImageData[ImageResize[image,{300,300}],Interleaving->False]-.5)*256;
+   img4d = (ImageData[ImageResize[image,{300,300}],Interleaving->False]*256)-{123,117,104};
   
    eval=SSDNet[img4d, opts];
 
@@ -351,15 +350,19 @@ CZDecoder[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=(
 )
 
 
+CZDecoderImage[locs_, m_, {anchorsx_,anchorsy_,anchorsw_,anchorsh_},img_] :=
+   Map[{#[[1]],#[[2]],#[[3]]*{ImageDimensions[img],ImageDimensions[img]}/300}&,CZDecoder[ locs, m, {anchorsx,anchorsy,anchorsw,anchorsh} ] ]
+
+
 Options[ CZRawDetectObjects ] = Options[ CZDetectObjects ];
 CZRawDetectObjects[ img_, opts:OptionsPattern[] ] := (
    SSD[img,opts];
    Join[
-      CZDecoder[locs4,m4,{anchorsx1,anchorsy1,anchorsw1,anchorsh1}],
-      CZDecoder[locs7,m7,{anchorsx2,anchorsy2,anchorsw2,anchorsh2}],
-      CZDecoder[locs8,m8,{anchorsx3,anchorsy3,anchorsw3,anchorsh3}],
-      CZDecoder[locs9,m9,{anchorsx4,anchorsy4,anchorsw4,anchorsh4}],
-      CZDecoder[locs10,m10,{anchorsx5,anchorsy5,anchorsw5,anchorsh5}],
-      CZDecoder[locs11,m11,{anchorsx6,anchorsy6,anchorsw6,anchorsh6}]
+      CZDecoderImage[locs4,m4,{anchorsx1,anchorsy1,anchorsw1,anchorsh1},img],
+      CZDecoderImage[locs7,m7,{anchorsx2,anchorsy2,anchorsw2,anchorsh2},img],
+      CZDecoderImage[locs8,m8,{anchorsx3,anchorsy3,anchorsw3,anchorsh3},img],
+      CZDecoderImage[locs9,m9,{anchorsx4,anchorsy4,anchorsw4,anchorsh4},img],
+      CZDecoderImage[locs10,m10,{anchorsx5,anchorsy5,anchorsw5,anchorsh5},img],
+      CZDecoderImage[locs11,m11,{anchorsx6,anchorsy6,anchorsw6,anchorsh6},img]
       ]
 )
