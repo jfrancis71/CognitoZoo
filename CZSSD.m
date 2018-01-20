@@ -1,17 +1,60 @@
 (* ::Package:: *)
 
-(*
-   First attempt at implementing SSD. This is very rough and ready.
-   Just entering into github so we have it under source control.
+(* Implements SSD VGG 300 on Mathematica version 11.
+
+   SSD VGG 300 is a computer vision object detection and localisation model designed to detect
+   20 object categories (e.g. people, horses, dogs etc)
    
+   Usage: HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
+   or:    CZHighlightObjects[ img ]
+
    Timings are around: (for the two cars on Clapham Common image)
-      ??? secs for MacBook Air
-      1.1 secs Desktop CPU
-      .34 secs Desktop GPU
+   ??? secs for MacBook Air
+   1.1 secs Desktop CPU
+   .34 secs Desktop GPU
+   
+
+   You need to ensure the following files are installed in a CZModels subfolder on your search path:
+      ssd.hdf
+   Files found in: https://drive.google.com/open?id=0Bzhe0pgVZtNUVGJJak1GWDQ3S1U 
+*)
+
+(*
+   Credit:
+   
+   Paul Balanca's Tensorflow implementation was used as a reference implementation:
+      https://github.com/balancap/SSD-Tensorflow
+      
+   SSD VGG 300 is based on the following paper:
+   https://arxiv.org/abs/1512.02325
+   Title: SSD: Single Shot MultiBox Detector
+   Authors: Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed,
+   Cheng-Yang Fu, Alexander C. Berg
+*)
+(*
+The following copyright notice applies to the neural network weight file only (ssd.hdf )
+   which has been converted from Paul Balanca's TensorFlow checkpoint file.
+
+# Copyright 2016 Paul Balanca. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 *)
 
 
-<<CZutils.m
+(* Copyright Julian Francis 2018. Please see license file for details. *)
+
+
+(* Public Interface Code *)
 
 
 Options[ CZDetectObjects ] = {
@@ -26,6 +69,12 @@ CZHighlightObjects[ img_, opts:OptionsPattern[] ] := (
    HighlightImage[img,
       CZDisplayObject /@ CZDetectObjects[ img, opts ]]
 )
+
+
+(* Private Implementation Code *)
+
+
+<<CZutils.m
 
 
 conv1W1=Transpose[Import["CZModels/ssd.hdf",{"Datasets","/conv1_1W"}],{3,4,2,1}];
