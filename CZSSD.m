@@ -350,33 +350,8 @@ SSDNet=NetGraph[{
    "Input"->{3,300,300}];
 
 
-Options[ SSD ] = Options[ CZDetectObjects ];
-SSD[image_, opts:OptionsPattern[] ] := ( 
-(*img4d=Transpose[Import["c:\\users\\julian\\google drive\\img4d.json"][[1,1]],{2,3,1}];*)
-(*img4d=Transpose[Import["/Users/julian/SSD-Tensorflow/notebooks/img4d.json"][[1,1]],{2,3,1}];*)
-   img4d = (ImageData[ImageResize[image,{300,300}],Interleaving->False]*256)-{123,117,104};
-  
-   eval=SSDNet[img4d, opts];
-
-   m4 = eval["ObjMap1"][[All,All,All,2;;21]];
-   locs4 = eval["Locs1"];
-
-
-   m7 = eval["ObjMap2"][[All,All,All,2;;21]];
-   locs7 = eval["Locs2"];
-
-   m8 = eval["ObjMap3"][[All,All,All,2;;21]];
-   locs8 = eval["Locs3"];
-   
-   m9 = eval["ObjMap4"][[All,All,All,2;;21]];
-   locs9 = eval["Locs4"];
-
-   m10 = eval["ObjMap5"][[All,All,All,2;;21]];
-   locs10 = eval["Locs5"];
-
-   m11 = eval["ObjMap6"][[All,All,All,2;;21]];
-   locs11 = eval["Locs6"];
-)
+CZEncoder[ image_ ] :=
+   (ImageData[ImageResize[image,{300,300}],Interleaving->False]*256)-{123,117,104};
 
 
 CZDecoder[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=( 
@@ -399,19 +374,22 @@ CZDecoder[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=(
 )
 
 
-CZDecoderImage[locs_, m_, {anchorsx_,anchorsy_,anchorsw_,anchorsh_},img_] :=
-   Map[{#[[1]],#[[2]],#[[3]]*{ImageDimensions[img],ImageDimensions[img]}/300}&,CZDecoder[ locs, m, {anchorsx,anchorsy,anchorsw,anchorsh} ] ]
+CZDecoder[ netOutput_ ] :=
+   Join[
+      CZDecoder[netOutput["Locs1"],netOutput["ObjMap1"][[All,All,All,2;;21]],{anchorsx1,anchorsy1,anchorsw1,anchorsh1}],
+      CZDecoder[netOutput["Locs2"],netOutput["ObjMap2"][[All,All,All,2;;21]],{anchorsx2,anchorsy2,anchorsw2,anchorsh2}],
+      CZDecoder[netOutput["Locs3"],netOutput["ObjMap3"][[All,All,All,2;;21]],{anchorsx3,anchorsy3,anchorsw3,anchorsh3}],
+      CZDecoder[netOutput["Locs4"],netOutput["ObjMap4"][[All,All,All,2;;21]],{anchorsx4,anchorsy4,anchorsw4,anchorsh4}],
+      CZDecoder[netOutput["Locs5"],netOutput["ObjMap5"][[All,All,All,2;;21]],{anchorsx5,anchorsy5,anchorsw5,anchorsh5}],
+      CZDecoder[netOutput["Locs6"],netOutput["ObjMap6"][[All,All,All,2;;21]],{anchorsx6,anchorsy6,anchorsw6,anchorsh6}]
+];
+
+
+CZDecoderNetToImage[ netOutput_, image_ ] :=
+   Map[{#[[1]],#[[2]],#[[3]]*{ImageDimensions[image],ImageDimensions[image]}/300}&,CZDecoder[ netOutput ] ];
 
 
 Options[ CZRawDetectObjects ] = Options[ CZDetectObjects ];
-CZRawDetectObjects[ img_, opts:OptionsPattern[] ] := (
-   SSD[img,opts];
-   Join[
-      CZDecoderImage[locs4,m4,{anchorsx1,anchorsy1,anchorsw1,anchorsh1},img],
-      CZDecoderImage[locs7,m7,{anchorsx2,anchorsy2,anchorsw2,anchorsh2},img],
-      CZDecoderImage[locs8,m8,{anchorsx3,anchorsy3,anchorsw3,anchorsh3},img],
-      CZDecoderImage[locs9,m9,{anchorsx4,anchorsy4,anchorsw4,anchorsh4},img],
-      CZDecoderImage[locs10,m10,{anchorsx5,anchorsy5,anchorsw5,anchorsh5},img],
-      CZDecoderImage[locs11,m11,{anchorsx6,anchorsy6,anchorsw6,anchorsh6},img]
-      ]
+CZRawDetectObjects[ image_, opts:OptionsPattern[] ] := (
+   CZDecoderNetToImage[ SSDNet[ CZEncoder[ image ],opts], image ]
 )

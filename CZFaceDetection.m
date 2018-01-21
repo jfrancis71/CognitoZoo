@@ -82,14 +82,25 @@ CZBuildMultiScaleObjectNet[ baseNet_ ] := NetGraph[
 CZMultiScaleFaceNet = CZBuildMultiScaleObjectNet[ CZFaceNet ];
 
 
-CZObjectNetDecoder[ netOutput_, threshold_ ] := Flatten[Table[
+CZEncoder[ image_ ] := ImageResize[CZImagePadToSquare[image],512];
+
+
+CZDecoder[ netOutput_, threshold_ ] := Flatten[Table[
    extractPositions=Position[netOutput[[k,1]],x_/;x>threshold];
    origCoords=Map[{Extract[netOutput[[k,1]],#],4*#[[2]] + (16-4),scales[[k]]-4*#[[1]]+4-16}&,extractPositions];
    Map[{#[[1]],(512./scales[[k]])*{#[[2]]-15,#[[3]]-15},(512./scales[[k]])*{#[[2]]+16,#[[3]]+16}}&,origCoords],{k,1,16}],1]
 
 
-CZObjectNetDecoder[ netOutput_, image_, threshold_ ] :=
+CZDecoderNetToImage[ netOutput_, image_, threshold_ ] :=
    Map[ {#[[1]], CZTransformRectangleToImage[#[[2;;3]], image, 512] }&,  CZObjectNetDecoder[ netOutput, threshold ] ]
+
+
+Options[ CZRawMultiScaleDetectObjects ] = {
+   Threshold->0.997
+};
+CZRawMultiScaleDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[] ] := (
+   CZDecoderNetToImage[ multiScaleNet[ CZEncoder[ image ] ], image, OptionValue[Threshold] ]
+)
 
 
 Options[ CZMultiScaleDetectObjects ] = {
@@ -97,10 +108,8 @@ Options[ CZMultiScaleDetectObjects ] = {
 };
 (* Implements a sliding window object detector at multiple scales.
 *)
-CZMultiScaleDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[] ] := (
-   out = multiScaleNet[ImageResize[CZImagePadToSquare[image],512]];
-   CZObjectNetDecoder[ out, image, OptionValue[Threshold] ]
-)
+CZMultiScaleDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[] ] :=
+   CZRawMultiScaleDetectObjects[ image, multiScaleNet, opts ]
 
 
 GenderNet = Import["CZModels/GenderNet.wlnet"];

@@ -102,15 +102,22 @@ CZMapSlotPositionToObject[ slotPos_, conv15_ ]:={CZPascalClasses[[slotPos[[4]]]]
 CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
-CZYoloDecoder[ netOutput_, image_ ] := (
+CZEncoder[ image_ ] := CZImagePadToSquare[image]
+
+
+CZDecoder[ netOutput_ ] := (
    slots = LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
    slotPositions = Position[slots, x_/;x>.24];
-   Map[{CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZTransformRectangleToImage[CZMapSlotPositionToObject[#,netOutput][[2]], image, 416]}&,slotPositions]
+   Map[{CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZGetBoundingBox[#,netOutput]}&,slotPositions]
 )
 
 
+CZDecoderNetToImage[ netOutput_, image_ ] :=
+   Map[{#[[1]],#[[2]],CZTransformRectangleToImage[#[[3]], image, 416]}&,CZDecoder[ netOutput ]]
+
+
 CZRawDetectObjects[image_]:=
-   CZYoloDecoder[ CZYoloNet[CZImagePadToSquare[image]], image ]
+   CZDecoderNetToImage[ CZYoloNet[ CZEncoder[ image ] ], image ]
 
 
 (*
