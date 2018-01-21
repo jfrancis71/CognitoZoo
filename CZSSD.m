@@ -61,7 +61,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ img_, opts:OptionsPattern[] ] :=
-   Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img, opts],#[[1]]&]],1]
+   CZNonMaxSuppression[ CZRawDetectObjects[ img, opts ] ]
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];

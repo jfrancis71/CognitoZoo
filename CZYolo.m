@@ -68,7 +68,7 @@ THE REAL LICENSE:
 
 
 CZDetectObjects[img_]:=
-   Flatten[Map[CZNonMaxSuppression,GatherBy[CZRawDetectObjects[img],#[[1]]&]],1]
+   CZNonMaxSuppression[CZRawDetectObjects[img]];
 
 
 CZHighlightObjects[ img_ ] := HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]

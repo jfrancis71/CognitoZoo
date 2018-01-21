@@ -47,7 +47,7 @@ CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] :=
 
 
 CZDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[]] := 
-   CZDeleteOverlappingWindows[ Map[ {#[[1]], #[[2,1]], #[[2,2]] }&, CZRawMultiScaleDetectObjects[image, multiScaleNet, opts] ] ];
+   CZDeleteOverlappingWindows[ CZRawMultiScaleDetectObjects[image, multiScaleNet, opts] ];
 
 
 CZGender::usage = "
