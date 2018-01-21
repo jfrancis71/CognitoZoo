@@ -25,7 +25,8 @@
 (* Public Interfaces *)
 
 Options[ CZDetectFaces ] = {
-Threshold->0.997
+   Threshold->0.997,
+   TargetDevice->"CPU"
 };
 (* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
    On the Caltech 1999 face dataset, we achieve a recognition rate of around 92% with
@@ -42,11 +43,11 @@ Options are: Threshold
 Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]].
 ";
 CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] := 
-   CZNetDetectObjects[ image, CZMultiScaleFaceNet, opts ]
+   CZDetectObjects[ image, CZMultiScaleFaceNet, opts ]
 
 
-CZNetDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[]] := 
-   CZDeleteOverlappingWindows[ Map[ {#[[1]], #[[2,1]], #[[2,2]] }&, CZMultiScaleDetectObjects[image, multiScaleNet, opts] ] ];
+CZDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[]] := 
+   CZDeleteOverlappingWindows[ Map[ {#[[1]], #[[2,1]], #[[2,2]] }&, CZRawMultiScaleDetectObjects[image, multiScaleNet, opts] ] ];
 
 
 CZGender::usage = "
@@ -92,24 +93,16 @@ CZDecoder[ netOutput_, threshold_ ] := Flatten[Table[
 
 
 CZDecoderNetToImage[ netOutput_, image_, threshold_ ] :=
-   Map[ {#[[1]], CZTransformRectangleToImage[#[[2;;3]], image, 512] }&,  CZObjectNetDecoder[ netOutput, threshold ] ]
+   Map[ {#[[1]], CZTransformRectangleToImage[#[[2;;3]], image, 512] }&,  CZDecoder[ netOutput, threshold ] ]
 
 
 Options[ CZRawMultiScaleDetectObjects ] = {
-   Threshold->0.997
+   Threshold->0.997,
+   TargetDevice->"CPU"
 };
 CZRawMultiScaleDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[] ] := (
-   CZDecoderNetToImage[ multiScaleNet[ CZEncoder[ image ] ], image, OptionValue[Threshold] ]
+   CZDecoderNetToImage[ multiScaleNet[ CZEncoder[ image ], opts ], image, OptionValue[Threshold] ]
 )
-
-
-Options[ CZMultiScaleDetectObjects ] = {
-   Threshold->0.997
-};
-(* Implements a sliding window object detector at multiple scales.
-*)
-CZMultiScaleDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[] ] :=
-   CZRawMultiScaleDetectObjects[ image, multiScaleNet, opts ]
 
 
 GenderNet = Import["CZModels/GenderNet.wlnet"];
