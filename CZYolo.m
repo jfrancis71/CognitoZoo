@@ -67,8 +67,8 @@ THE REAL LICENSE:
 (* Public Interface Code *)
 
 
-CZDetectObjects[img_]:=
-   CZNonMaxSuppression[CZRawDetectObjects[img]];
+CZDetectObjects[image_]:=
+   CZNonMaxSuppression@CZDecoderNetToImage[ CZYoloNet@CZEncoder@image, image ];
 
 
 CZHighlightObjects[ img_ ] := HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
@@ -114,10 +114,6 @@ CZDecoder[ netOutput_ ] := (
 
 CZDecoderNetToImage[ netOutput_, image_ ] :=
    Map[{#[[1]],#[[2]],CZTransformRectangleToImage[#[[3]], image, 416]}&,CZDecoder[ netOutput ]]
-
-
-CZRawDetectObjects[image_]:=
-   CZDecoderNetToImage[ CZYoloNet[ CZEncoder[ image ] ], image ]
 
 
 (*

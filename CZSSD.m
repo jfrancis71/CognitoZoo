@@ -60,8 +60,8 @@ The following copyright notice applies to the neural network weight file only (s
 Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
-CZDetectObjects[ img_, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppression[ CZRawDetectObjects[ img, opts ] ]
+CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
+   CZNonMaxSuppression@CZDecoderNetToImage[ SSDNet[ CZEncoder@image, opts], image ]
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -387,9 +387,3 @@ CZDecoder[ netOutput_ ] :=
 
 CZDecoderNetToImage[ netOutput_, image_ ] :=
    Map[{#[[1]],#[[2]],#[[3]]*{ImageDimensions[image],ImageDimensions[image]}/300}&,CZDecoder[ netOutput ] ];
-
-
-Options[ CZRawDetectObjects ] = Options[ CZDetectObjects ];
-CZRawDetectObjects[ image_, opts:OptionsPattern[] ] := (
-   CZDecoderNetToImage[ SSDNet[ CZEncoder[ image ],opts], image ]
-)

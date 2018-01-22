@@ -46,8 +46,12 @@ CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] :=
    CZDetectObjects[ image, CZMultiScaleFaceNet, opts ]
 
 
+Options[ CZDetectObjects ] = {
+   Threshold->0.997,
+   TargetDevice->"CPU"
+};
 CZDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[]] := 
-   CZDeleteOverlappingWindows[ CZRawMultiScaleDetectObjects[image, multiScaleNet, opts] ];
+   CZDeleteOverlappingWindows@CZDecoderNetToImage[ multiScaleNet[ CZEncoder@image, opts ], image, OptionValue[Threshold] ];
 
 
 CZGender::usage = "
@@ -94,15 +98,6 @@ CZDecoder[ netOutput_, threshold_ ] := Flatten[Table[
 
 CZDecoderNetToImage[ netOutput_, image_, threshold_ ] :=
    Map[ {#[[1]], CZTransformRectangleToImage[#[[2;;3]], image, 512] }&,  CZDecoder[ netOutput, threshold ] ]
-
-
-Options[ CZRawMultiScaleDetectObjects ] = {
-   Threshold->0.997,
-   TargetDevice->"CPU"
-};
-CZRawMultiScaleDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[] ] := (
-   CZDecoderNetToImage[ multiScaleNet[ CZEncoder[ image ], opts ], image, OptionValue[Threshold] ]
-)
 
 
 GenderNet = Import["CZModels/GenderNet.wlnet"];
