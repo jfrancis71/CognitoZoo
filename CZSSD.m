@@ -61,7 +61,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppression@CZDecoderNetToImage[ SSDNet[ CZEncoder@image, opts], image ]
+   CZNonMaxSuppression@CZResizeObjects[ CZDecoder@SSDNet[ CZEncoder@image, opts ], image ]
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -385,5 +385,6 @@ CZDecoder[ netOutput_ ] :=
 ];
 
 
-CZDecoderNetToImage[ netOutput_, image_ ] :=
-   Map[{#[[1]],#[[2]],#[[3]]*{ImageDimensions[image],ImageDimensions[image]}/300}&,CZDecoder[ netOutput ] ];
+CZResizeObjects[ {}, _ ] := {};
+CZResizeObjects[ objects_, image_ ] :=
+   Transpose[ { objects[[All,1]], objects[[All,2]], Transpose[ImageDimensions[ image ] * Transpose[objects[[All,3]],{2,3,1}],{3,1,2}]/300 } ] 

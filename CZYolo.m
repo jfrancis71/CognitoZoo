@@ -68,7 +68,7 @@ THE REAL LICENSE:
 
 
 CZDetectObjects[image_]:=
-   CZNonMaxSuppression@CZDecoderNetToImage[ CZYoloNet@CZEncoder@image, image ];
+   CZNonMaxSuppression@CZResizeObjects[ CZDecoder@CZYoloNet@CZEncoder@image, image ];
 
 
 CZHighlightObjects[ img_ ] := HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
@@ -92,7 +92,7 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
    w=(1/13)*Exp[conv15[[3+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],1]];
    h=
       (1/13)*(Exp[conv15[[4+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],2]]);
-   Rectangle[416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}]
+   {416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}}
 )
 
 
@@ -112,8 +112,8 @@ CZDecoder[ netOutput_ ] := (
 )
 
 
-CZDecoderNetToImage[ netOutput_, image_ ] :=
-   Map[{#[[1]],#[[2]],CZTransformRectangleToImage[#[[3]], image, 416]}&,CZDecoder[ netOutput ]]
+CZResizeObjects[ objects_, image_ ] :=
+   Transpose[ MapAt[ CZResizeBoundingBoxes[ #, image, 416 ]&, Transpose[ objects ], 3 ] ]
 
 
 (*
