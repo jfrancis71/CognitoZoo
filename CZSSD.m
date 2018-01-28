@@ -9,13 +9,13 @@
    or:    CZHighlightObjects[ img ]
 
    Timings are around: (for the two cars on Clapham Common image)
-   ??? secs for MacBook Air
+   1.3 secs for MacBook Air
    1.1 secs Desktop CPU
    .34 secs Desktop GPU
    
 
    You need to ensure the following files are installed in a CZModels subfolder on your search path:
-      ssd.hdf
+      SSDVGG300.wlnet
    Files found in: https://drive.google.com/open?id=0Bzhe0pgVZtNUVGJJak1GWDQ3S1U 
 *)
 
@@ -105,7 +105,6 @@ anchorsx5 = Table[{x/3},{y,1,3},{x,.5,2.5}];
 anchorsy5 = Table[{y/3},{y,.5,2.5},{x,1,3}];
 anchorsw5 = {0.689,0.774,0.975,0.487};
 anchorsh5 = {0.689,0.774,0.487,0.975};
-
 
 
 anchorsx6 = Table[{x/2},{y,1,1},{x,1,1}];
