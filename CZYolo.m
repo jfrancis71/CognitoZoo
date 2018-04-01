@@ -112,6 +112,7 @@ CZDecoder[ netOutput_ ] := (
 )
 
 
+CZResizeObjects[ {}, _ ] := {};
 CZResizeObjects[ objects_, image_ ] :=
    Transpose[ MapAt[ CZResizeBoundingBoxes[ #, image, 416 ]&, Transpose[ objects ], 3 ] ]
 
