@@ -3,6 +3,11 @@
 (*
    This library is really nothing to do with deep learning.
    It is code to drive an EV3 lego robot over a bluetooth connection.
+   
+   Reference: https://le-www-live-s.legocdn.com/sc/media/files/ev3-developer-kit/lego%20mindstorms%20ev3%20communication%20developer%20kit-f691e7ad1e0c28a4cfb0835993d76ae3.pdf?la=en-us
+
+   Claw design:
+   http://www.instructables.com/id/Simplest-EV3-Robot-ClawGripper/
 *)
 
 
@@ -35,7 +40,10 @@ EV3StopMotor[motor_] := (
 
 EV3StepMotor[motor_,power_] := (
    moderatedPower=If[Abs[power]>100,100*Sign[power],power];
-   telegram = {16^^12, 16^^00,(*LENGTH*)     16^^01, 16^^00 (*Response Sequence*),     16^^80,(*NoReply*)     16^^00, 16^^00,     16^^AE, (*StepSpeed OP*)     16^^00,(*LAYER, whatever that means*)     motor, (*Port*)     16^^81,If[moderatedPower>=0,moderatedPower,256-Abs[moderatedPower]],(*Power*)     00,     16^^82,200,00,     16^^82,16^^00,00,     00};
+   telegram = {16^^12, 16^^00,(*LENGTH*)     16^^01, 16^^00 (*Response Sequence*),     16^^80,(*NoReply*)     16^^00, 16^^00,     16^^AE, (*StepSpeed OP*)     16^^00,(*LAYER, whatever that means*)     motor, (*Port*)
+        16^^81,If[moderatedPower>=0,moderatedPower,256-Abs[moderatedPower]],(*Power*)     00, 
+        16^^82,16^^68,01 (* One revolution *),
+        16^^82,16^^00,00,     00};
    message = Map[FromCharacterCode, telegram];
    Map[DeviceWrite[mybrick, #] &, message]);
 
