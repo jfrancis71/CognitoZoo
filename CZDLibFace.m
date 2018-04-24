@@ -26,22 +26,17 @@ sess = If[
 ExternalEvaluate[sess,DlibInitCmd]
 
 
-CZDLibFaceDetection[file_String,height_Integer]:=
-Map[{{#[[1,1]],height-#[[1,2]]},{#[[2,1]],height-#[[2,2]]}}&,
-ExternalEvaluate[sess,"
+CZDLibFaceDetection[image_Image] := Module[{height=ImageDimensions[image][[2]]},
+   Export[DLibTmpFileName,image,IncludeMetaInformation->None];
+   Map[{{#[[1,1]],height-#[[1,2]]},{#[[2,1]],height-#[[2,2]]}}&,
+      ExternalEvaluate[sess,"
 img = skimage.io.imread(r'"<>DLibTmpFileName<>"')
 dets = detector( img, 1 )
 rects = []
 for i,d in enumerate( dets ):
    rects.append( [ [ d.left(), d.bottom() ], [ d.right(), d.top() ] ] )
 rects
-"]]
-
-
-CZDLibFaceDetection[image_Image]:=( 
-   Export[DLibTmpFileName,image,IncludeMetaInformation->None];
-   CZDLibFaceDetection["c:\\users\\julian\\tmp.jpg",ImageDimensions[image][[2]]]
-)
+"]]]
 
 
 angle[img_] := Module[{features = FacialFeatures[img,"NosePoints"]},
