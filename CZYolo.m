@@ -6,9 +6,12 @@
    20 object categories (e.g. people, horses, dogs etc)
    
    Usage: HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
-   
+   or:    CZHighlightObjects[ img ]
+      
    Takes about .28 secs to run on an image (MacBook air, CPU). (Darknet has reported tiny YOLO running at
    over 100 frames/sec).
+   Desktop CPU: .34 secs
+   Desktop GPU: .11 secs
 
    You need to ensure the following files are installed in a CZModels subfolder on your search path:
       TinyYolov2.wlnet
@@ -67,11 +70,15 @@ THE REAL LICENSE:
 (* Public Interface Code *)
 
 
-CZDetectObjects[image_]:=
-   CZNonMaxSuppression@CZResizeObjects[ CZDecoder@CZYoloNet@CZEncoder@image, image ];
+Options[ CZDetectObjects ] = {
+TargetDevice->"CPU"
+};
+CZDetectObjects[ image_, opts:OptionsPattern[] ]:=
+   CZNonMaxSuppression@CZResizeObjects[ CZDecoder@CZYoloNet[ CZEncoder@image, opts ], image ];
 
 
-CZHighlightObjects[ img_ ] := HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
+Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
+CZHighlightObjects[ img_,  opts:OptionsPattern[] ] := HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img, opts]]
 
 
 (* Private Implementation Code *)

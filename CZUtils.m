@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-CZDisplayObject[object_]:={Rectangle@@object[[2]],Text[Style[object[[1]],White,12],{20,20}+object[[2,1]],Background->Black]}
+CZDisplayObject[object_]:={object[[2]],Text[Style[object[[1]],White,12],{20,20}+object[[2,1]],Background->Black]}
 
 
 CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -33,12 +33,12 @@ CZIntersectionOverUnion[a_, b_]:=
 *)
 CZDeleteOverlappingWindows[ {} ] := {};
 CZDeleteOverlappingWindows[ objects_ ] :=
-   Extract[objects,
+   Map[Rectangle[#[[1]],#[[2]]]&,Extract[objects,
       Position[
          Total[Table[
          Table[If[CZIntersectionOverUnion[objects[[a,2]],objects[[b,2]]]>.25&&objects[[a,1]]<objects[[b,1]],1,0],{b,1,Length[objects]}]
             ,{a,1,Length[objects]}],{2}],
-         0]][[All,2]]
+         0]][[All,2]]]
 
 
 (*
@@ -47,7 +47,7 @@ CZDeleteOverlappingWindows[ objects_ ] :=
    work if it is wrong way round (ie corners in wrong order)
 *)
 CZNonMaxSuppressionByClass[objectsInClass_]:=
-   Map[{objectsInClass[[1,1]],{#[[1]],#[[2]]}}&,CZDeleteOverlappingWindows[Map[{#[[2]],#[[3]]}&,objectsInClass]]];
+   Map[{objectsInClass[[1,1]],Rectangle[#[[1]],#[[2]]]}&,CZDeleteOverlappingWindows[Map[{#[[2]],#[[3]]}&,objectsInClass]]];
 (* Does Non Max Suppression seperately by object class *)
 CZNonMaxSuppression[objects_]:=
       Flatten[Map[CZNonMaxSuppressionByClass,GatherBy[objects,#[[1]]&]],1]

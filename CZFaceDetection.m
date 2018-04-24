@@ -3,7 +3,7 @@
 (* Implements a multi-scale pyramid face detector (basically sliding window implemented
    convolutionally.
 
-   Usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]]
+   Usage: HighlightImage[img,CZDetectFaces[img]]
           CZHightFaces[img] similar to above but also attempts gender recognition
 
    You need to ensure the following files are installed in a CZModels subfolder on your search path:
@@ -66,7 +66,7 @@ CZHighlightFaces::usage = "
    Valid option is Threshold.
 ";
 CZHighlightFaces[image_?ImageQ,opts:OptionsPattern[]] := 
-   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[image,#]]],Rectangle@@#}&,CZDetectFaces[image,opts]]];
+   HighlightImage[image,Map[{Blend[{Pink,Blue},CZGender[ImageTrim[image,#]]],#}&,CZDetectFaces[image,opts]]];
 
 
 (* Private Implementation Code *)
