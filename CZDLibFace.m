@@ -28,7 +28,7 @@ ExternalEvaluate[sess,DlibInitCmd]
 
 CZDLibFaceDetection[image_Image] := Module[{height=ImageDimensions[image][[2]]},
    Export[DLibTmpFileName,image,IncludeMetaInformation->None];
-   Map[{{#[[1,1]],height-#[[1,2]]},{#[[2,1]],height-#[[2,2]]}}&,
+   Map[Rectangle[{#[[1,1]],height-#[[1,2]]},{#[[2,1]],height-#[[2,2]]}]&,
       ExternalEvaluate[sess,"
 img = skimage.io.imread(r'"<>DLibTmpFileName<>"')
 dets = detector( img, 1 )
