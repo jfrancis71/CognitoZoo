@@ -6,6 +6,9 @@
 *)
 
 
+<<CZUtils.m
+
+
 DLibTmpFileName = FileNameJoin[{$TemporaryDirectory,"tmp.jpg"}];
 
 
@@ -89,3 +92,8 @@ CZDLibFaceRecognition[ image_Image ] := Module[
       If[Min[faceSpace]>0.6,"Unknown",faceBase[[Ordering[faceSpace][[1]],2]]],
       "Unknown"]
    ]
+
+
+CZHighlightFaces[ image_Image ] := HighlightImage[image,CZDisplayObject /@ Map[
+   {CZDLibFaceRecognition[ImageTrim[image,#]],#}&,
+   CZDLibFaceDetection@image]]
