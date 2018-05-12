@@ -23,17 +23,20 @@ dataset=RandomSample[Table[files[[f]]->faces[[f]],{f,1,Length[faces]}]];
 ndataset=Map[#[[1]]->CZEncoder[#[[2]]]&,dataset];
 
 
-net=NetChain[{
+trunk = NetChain[{
    ConvolutionLayer[16,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[32,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[64,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[128,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
-   ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
-   ConvolutionLayer[2,{1,1}],
-   LogisticSigmoid
-},
+   ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]
+}];
+
+
+net = NetGraph[
+   { trunk, ConvolutionLayer[2,{1,1}], LogisticSigmoid },
+   { 1->2, 2->3 },
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]
-];
+];   
 
 
 trained=NetTrain[net,ndataset[[1;;7000]],ValidationSet->ndataset[[7001;;-1]],TargetDevice->"GPU"];
