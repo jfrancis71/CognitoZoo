@@ -1,36 +1,23 @@
 (* ::Package:: *)
 
-<<CZUtils.m
-
-
-<<CZDLibFace.m
-
-
-(* Note this is better than importing all eg *.jpg and then resizing, speed is similar, but memory balloons.
-   Takes around 3 mins to import around 8,000 images *)
-ImportFromDir[filePath_String] :=
-   Map[
-      ImageResize[CZImagePadToSquare[ColorConvert[Import[#],"Grayscale"]],256]&,
-      FileNames[filePath]];
-
-
-(* faces=Map[FindFaces,images]; *)
-
-
-sz1[face_]:=If[size[face]>84,2,1];
+sz1[face_]:=If[size[face]>190,2,1];
 
 
 size[face_] := (face[[2,1]]-face[[1,1]])
 
 
-CZEncoder[faces_]:=ReplacePart[ConstantArray[0,{2,8,8}],Map[{
+CZEncoder[faces_]:=ReplacePart[ConstantArray[0,{2,15,20}],Map[{
 sz1[#],
-9-Ceiling[(#[[1,2]]+#[[2,2]])/(2*32)],
+15+1-Ceiling[(#[[1,2]]+#[[2,2]])/(2*32)],
 Ceiling[(#[[1,1]]+#[[2,1]])/(2*32)]
 }->1&,faces]];
 
 
-dataset=RandomSample[Table[images[[f]]->faces[[f]],{f,1,Length[faces]}]];
+files=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages1\\*.jpg"]];
+faces=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\DLibFaces1.mx"];
+
+
+dataset=RandomSample[Table[files[[f]]->faces[[f]],{f,1,Length[faces]}]];
 
 
 ndataset=Map[#[[1]]->CZEncoder[#[[2]]]&,dataset];
@@ -45,18 +32,16 @@ net=NetChain[{
    ConvolutionLayer[2,{1,1}],
    LogisticSigmoid
 },
-   "Input"->NetEncoder[{"Image",{256,256},"ColorSpace"->"Grayscale"}]
+   "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]
 ];
 
 
-trained=NetTrain[net,ndataset[[1;;80000]],ValidationSet->ndataset[[80001;;-1]],TargetDevice->"GPU"];
+trained=NetTrain[net,ndataset[[1;;7000]],ValidationSet->ndataset[[7001;;-1]],TargetDevice->"GPU"];
 
 
-(*
-   Validation scores:   7,000 .011
-                        16,000 .0091
-                        40, 000 .0075
-                        80,000  .0065 (early stopping) NB this is where female data included
+(* 7,000
+   Significant learning within 1 batch. Achieved loss .00488, error 0.136%
+   Stopped after 3 training rounds (still learning)
 *)
 
 
@@ -70,8 +55,9 @@ sz[2]:=114/(32*2)
 
 
 (* Takes a net output and returns rectangles *)
-CZDecoder[output_]:=Rectangle@@@Map[32*{{#[[3]]-.5-sz[#[[1]]],8-#[[2]]+.5-sz[#[[1]]]},{#[[3]]-.5+sz[#[[1]]],8-#[[2]]+.5+sz[#[[1]]]}}&,Position[output,x_/;x>.5]]
+CZDecoder[output_]:=Rectangle@@@Map[
+   {{32*(#[[3]]-.5)-32*sz[#[[1]]],32*(15-#[[2]]+.5)-32*sz[#[[1]]]},{32*(#[[3]]-.5)+32*sz[#[[1]]],32*(15-#[[2]]+.5)+32*sz[#[[1]]]}}&,
+   Position[output,x_/;x>.5]]
 
 
-CZHighlightFaces[ img_Image ] := Module[{std=ColorConvert[ImageResize[CZImagePadToSquare@img,256],"Grayscale"]},
-   HighlightImage[ std, CZDecoder@trained@std ] ]
+CZHighlightFaces[ img_Image ] := HighlightImage[ ConformImages[{img},{640,480},"Fit"][[1]], CZDecoder@trained@(ConformImages[{img},{640,480},"Fit"][[1]]) ]
