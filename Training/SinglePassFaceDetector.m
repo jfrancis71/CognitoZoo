@@ -32,10 +32,6 @@ Ceiling[(#[[1,1]]+#[[2,1]])/(2*32)]
 }->1&,faces]];
 
 
-files=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages1\\*.jpg"]];
-faces=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\DLibFaces1.mx"];
-
-
 mfiles1=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages1\\*.jpg"]];
 mfaces1=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\DLibFaces1.mx"];
 mfiles2=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages2\\*.jpg"]];
@@ -68,14 +64,16 @@ ffiles=Join[ffiles1,ffiles2,ffiles3,ffiles4,ffiles5,ffiles6];
 ffaces=Join[ffaces1,ffaces2,ffaces3,ffaces4,ffaces5,ffaces6];
 
 
-files=Join[mfiles1,mfiles2,mfiles3,mfiles4];
-faces=Join[mfaces1,mfaces2,mfaces3,mfaces4];
+files=Join[mfiles,ffiles];
+faces=Join[mfaces,ffaces];
 
 
 dataset=RandomSample[Table[files[[f]]->faces[[f]],{f,1,Length[faces]}]];
 
 
-ndataset=Map[#[[1]]->CZEncoder[#[[2]]]&,dataset];
+ndataset=Map[
+   Association[ "Input"->#[[1]], "FaceArray1"->(CZEncoder[#[[2]]])[[1;;1]], "FaceArray2"->(CZEncoder[#[[2]]])[[2;;2]] ]&,
+   dataset];
 
 
 trunk = NetChain[{
@@ -87,9 +85,13 @@ trunk = NetChain[{
 }];
 
 
+multibox1 = NetChain[ { ConvolutionLayer[1,{1,1}], LogisticSigmoid } ];
+multibox2 = NetChain[ { ConvolutionLayer[1,{1,1}], LogisticSigmoid } ];
+
+
 net = NetGraph[
-   { trunk, ConvolutionLayer[2,{1,1}], LogisticSigmoid },
-   { 1->2, 2->3 },
+   { trunk, ConvolutionLayer[1,{1,1}], LogisticSigmoid, ConvolutionLayer[1,{1,1}], LogisticSigmoid  },
+   { 1->2->3->NetPort["FaceArray1"], 1->4->5->NetPort["FaceArray2"] },
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]
 ];   
 
@@ -97,7 +99,7 @@ net = NetGraph[
 trained=NetTrain[net,ndataset[[1;;80000]],All,ValidationSet->ndataset[[80001;;-1]],TargetDevice->"GPU",TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoints"}];
 
 
-(* Achieves around 0.1% error rate. Should learn quite quickly within first round, five rounds is optimal. In practice works quite well *)
+(* Achieves around .00535 validation error by epoch #2 *)
 
 
 Export["c:\\Users\\julian\\Google Drive\\Personal\\Computer Science\\CZModels\\SinglePassTmp.mx",trained];
