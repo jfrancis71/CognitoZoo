@@ -32,6 +32,13 @@ Ceiling[(#[[1,1]]+#[[2,1]])/(2*32)]
 }->1&,faces]];
 
 
+CZEncoder[faces_] := ReplacePart[
+   {ConstantArray[0,{15,20}],ConstantArray[0,{8,10}]},
+   Map[ If[size[#] < 190, {1,  15+1-Ceiling[(#[[1,2]]+#[[2,2]])/(2*32)], Ceiling[(#[[1,1]]+#[[2,1]])/(2*32)] },
+      {2,  8+1-Ceiling[(#[[1,2]]+#[[2,2]])/(4*32)], Ceiling[(#[[1,1]]+#[[2,1]])/(4*32)] } ]
+->1&,faces]];
+
+
 mfiles1=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages1\\*.jpg"]];
 mfaces1=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\DLibFaces1.mx"];
 mfiles2=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages2\\*.jpg"]];
@@ -68,12 +75,11 @@ files=Join[mfiles,ffiles];
 faces=Join[mfaces,ffaces];
 
 
-dataset=RandomSample[Table[files[[f]]->faces[[f]],{f,1,Length[faces]}]];
-
-
-ndataset=Map[
-   Association[ "Input"->#[[1]], "FaceArray1"->(CZEncoder[#[[2]]])[[1;;1]], "FaceArray2"->(CZEncoder[#[[2]]])[[2;;2]] ]&,
-   dataset];
+ds = Dataset[RandomSample@Table[
+   Association["Input"->files[[k]],
+      "FaceArray1"->CZEncoder[faces[[k]]][[1]],
+      "FaceArray2"->CZEncoder[faces[[k]]][[2]]],
+{k,1,Length[faces]}]];
 
 
 trunk = NetChain[{
@@ -85,8 +91,12 @@ trunk = NetChain[{
 }];
 
 
-multibox1 = NetChain[ { ConvolutionLayer[1,{1,1}], LogisticSigmoid } ];
-multibox2 = NetChain[ { ConvolutionLayer[1,{1,1}], LogisticSigmoid } ];
+block2 = NetChain[{
+   PaddingLayer[{{0,0},{0,1},{0,1}}], ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2] } ];
+
+
+multibox1 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+multibox2 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
 
 
 net = NetGraph[
@@ -96,10 +106,20 @@ net = NetGraph[
 ];   
 
 
-trained=NetTrain[net,ndataset[[1;;80000]],All,ValidationSet->ndataset[[80001;;-1]],TargetDevice->"GPU",TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoints"}];
+net = NetGraph[ {
+   trunk, multibox1, block2, multibox2 },
+   {1->2->NetPort["FaceArray1"], 1->3->4->NetPort["FaceArray2"] },
+   "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]
+];
+
+
+trained=NetTrain[net,ds[[1;;80000]],All,ValidationSet->ds[[80001;;-1]],TargetDevice->"GPU",TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoints"}];
 
 
 (* Achieves around .00535 validation error by epoch #2 *)
+
+
+(* .0079 round 1, .00751, round 7 .00728 *)
 
 
 Export["c:\\Users\\julian\\Google Drive\\Personal\\Computer Science\\CZModels\\SinglePassTmp.mx",trained];
