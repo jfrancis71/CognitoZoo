@@ -19,17 +19,7 @@
 *)
 
 
-sz1[face_]:=If[size[face]>190,2,1];
-
-
 size[face_] := (face[[2,1]]-face[[1,1]])
-
-
-CZEncoder[faces_]:=ReplacePart[ConstantArray[0,{2,15,20}],Map[{
-sz1[#],
-15+1-Ceiling[(#[[1,2]]+#[[2,2]])/(2*32)],
-Ceiling[(#[[1,1]]+#[[2,1]])/(2*32)]
-}->1&,faces]];
 
 
 CZEncoder[faces_] := ReplacePart[
@@ -99,13 +89,6 @@ multibox1 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid
 multibox2 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
 
 
-net = NetGraph[
-   { trunk, ConvolutionLayer[1,{1,1}], LogisticSigmoid, ConvolutionLayer[1,{1,1}], LogisticSigmoid  },
-   { 1->2->3->NetPort["FaceArray1"], 1->4->5->NetPort["FaceArray2"] },
-   "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]
-];   
-
-
 net = NetGraph[ {
    trunk, multibox1, block2, multibox2 },
    {1->2->NetPort["FaceArray1"], 1->3->4->NetPort["FaceArray2"] },
@@ -114,9 +97,6 @@ net = NetGraph[ {
 
 
 trained=NetTrain[net,ds[[1;;80000]],All,ValidationSet->ds[[80001;;-1]],TargetDevice->"GPU",TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoints"}];
-
-
-(* Achieves around .00535 validation error by epoch #2 *)
 
 
 (* .0079 round 1, .00751, round 7 .00728 *)
