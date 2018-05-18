@@ -23,12 +23,11 @@ size[face_] := (face[[2,1]]-face[[1,1]])
 
 
 CZEncoder[faces_] := ReplacePart[
-   {ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{4,5}]},
-   Map[Module[{centre=(#[[1]]+#[[2]])/2},k1=centre;
+   {ConstantArray[0,{15,20}],ConstantArray[0,{15,20}]},
+   Map[Module[{centre=(#[[1]]+#[[2]])/2},
       Which[
-         size[#]<108, {1, 15+1-(1+Floor[(centre[[2]]-1)/32]), (1+Floor[(centre[[1]]-1)/32]) },
-         size[#]>=108 && size[#]<=155, {2, 8+1-(1+Floor[(centre[[2]]-1)/60]), (1+Floor[(centre[[1]]-1)/64]) },
-         size[#] > 155, {3, 4+1- (1+Floor[(centre[[2]]-1)/120]), (1+Floor[(centre[[1]]-1)/128])}
+         size[#]<190, {1, 15+1-(1+Floor[(centre[[2]]-1)/32]), (1+Floor[(centre[[1]]-1)/32]) },
+         size[#] >= 190, {2, 15+1- (1+Floor[(centre[[2]]-1)/32]), (1+Floor[(centre[[1]]-1)/32])}
       ]]
 ->1&,faces]];
 
@@ -72,8 +71,7 @@ faces=Join[mfaces,ffaces];
 ds = Dataset[Table[
    Association["Input"->files[[k]],
       "FaceArray1"->CZEncoder[faces[[k]]][[1]],
-      "FaceArray2"->CZEncoder[faces[[k]]][[2]],
-      "FaceArray3"->CZEncoder[faces[[k]]][[3]]],
+      "FaceArray2"->CZEncoder[faces[[k]]][[2]]],
 {k,1,Length[faces]}]];
 
 
@@ -90,30 +88,22 @@ trunk = NetChain[{
 (* trunk has receptive field of size 94x94 *)
 
 
-block2 = NetChain[{
-   PaddingLayer[{{0,0},{0,1},{0,1}}], ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2] } ];
-(* block2 has receptive field of size 190x190 *)
-
-
-block3 = NetChain[{
-   ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2] } ];
-(* block3 has receptive field of size 382x382 *)
-
-
 multibox1 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
 multibox2 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
-multibox3 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
 
 
 net = NetGraph[ {
-   trunk, block2, block3, multibox1, multibox2, multibox3 },
-   {1->2->3->6->NetPort["FaceArray3"],
-    1->4->NetPort["FaceArray1"], 2->5->NetPort["FaceArray2"] },
+   trunk, multibox1, multibox2 },
+   {1->2->NetPort["FaceArray1"],
+    1->3->NetPort["FaceArray2"] },
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]
 ];
 
 
 trained=NetTrain[net,rds[[1;;80000]],All,ValidationSet->rds[[80001;;-1]],TargetDevice->"GPU",TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoints1"}];
+
+
+.0051
 
 
 (* Validation: .022,.0212 *)
@@ -123,9 +113,8 @@ Export["c:\\Users\\julian\\Google Drive\\Personal\\Computer Science\\CZModels\\S
 
 
 CZDecoder[assoc_] := Join[
-   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]&,Position[assoc["FaceArray1"],x_/;x>.5]],
-   Map[Rectangle[{64*(#[[2]]-.5),480-60*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-60*(#[[1]]-.5)}+{65,65}]&,Position[assoc["FaceArray2"],x_/;x>.5]],
-   Map[Rectangle[{128*(#[[2]]-.5),480-120*(#[[1]]-.5)}-{100,100},{128*(#[[2]]-.5),480-120*(#[[1]]-.5)}+{100,100}]&,Position[assoc["FaceArray3"],x_/;x>.5]]
+   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{57,57},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{57,57}]&,Position[assoc["FaceArray1"],x_/;x>.5]],
+   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{114,114},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{114,114}]&,Position[assoc["FaceArray2"],x_/;x>.5]]
 ]
 
 
