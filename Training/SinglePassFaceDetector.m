@@ -19,17 +19,17 @@
 *)
 
 
-size[face_] := (face[[2,1]]-face[[1,1]])
+size[ face_ ] := (face[[2,1]]-face[[1,1]])
 
 
-CZEncoder[faces_] := ReplacePart[
-   {ConstantArray[0,{15,20}],ConstantArray[0,{15,20}]},
-   Map[Module[{centre=(#[[1]]+#[[2]])/2},
+CZEncoder[ faces_ ] := ReplacePart[
+    {ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{8,10}]},
+    Map[Module[{centre=(#[[1]]+#[[2]])/2},
       Which[
-         size[#]<190, {1, 15+1-(1+Floor[(centre[[2]]-1)/32]), (1+Floor[(centre[[1]]-1)/32]) },
-         size[#] >= 190, {2, 15+1- (1+Floor[(centre[[2]]-1)/32]), (1+Floor[(centre[[1]]-1)/32])}
-      ]]
-->1&,faces]];
+         size[#]<108,{1,15+1-(1+Floor[(centre[[2]]-1)/32]),(1+Floor[(centre[[1]]-1)/32])},
+         size[#]>=108&&size[#]<=155,{2,8+1-(1+Floor[(centre[[2]]-1)/64]),(1+Floor[(centre[[1]]-1)/64])},
+         size[#]>155,{3,8+1-(1+Floor[(centre[[2]]-1)/64]),(1+Floor[(centre[[1]]-1)/64])}]]->1&,
+      faces]];
 
 
 mfiles1=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages1\\*.jpg"]];
@@ -68,11 +68,14 @@ files=Join[mfiles,ffiles];
 faces=Join[mfaces,ffaces];
 
 
-ds = Dataset[Table[
-   Association["Input"->files[[k]],
-      "FaceArray1"->CZEncoder[faces[[k]]][[1]],
-      "FaceArray2"->CZEncoder[faces[[k]]][[2]]],
-{k,1,Length[faces]}]];
+ds = Dataset[
+   Table[
+      Association[
+         "Input"->files[[k]],
+         "FaceArray1"->CZEncoder[faces[[k]]][[1]],
+         "FaceArray2"->CZEncoder[faces[[k]]][[2]],
+         "FaceArray3"->CZEncoder[faces[[k]]][[3]]],
+      {k,1,Length[faces]}]];
 
 
 rds = RandomSample[ds];
@@ -90,32 +93,33 @@ trunk = NetChain[{
 
 multibox1 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
 multibox2 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+multibox3 = NetChain[{ConvolutionLayer[1,{1,1}],PartLayer[1],LogisticSigmoid}];
 
 
-net = NetGraph[ {
-   trunk, multibox1, multibox2 },
-   {1->2->NetPort["FaceArray1"],
-    1->3->NetPort["FaceArray2"] },
-   "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]
-];
+net = NetGraph[
+   {trunk,block2,block3,multibox1,multibox2,multibox3},
+   {1->2->3->6->NetPort["FaceArray3"],1->4->NetPort["FaceArray1"],2->5->NetPort["FaceArray2"]},
+   "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]];
 
 
-trained=NetTrain[net,rds[[1;;80000]],All,ValidationSet->rds[[80001;;-1]],TargetDevice->"GPU",TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoints1"}];
+trained = NetTrain[net,rds[[1;;80000]],All,
+            ValidationSet->rds[[80001;;-1]],TargetDevice->"GPU",
+            TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint3"}];
 
 
-.0051
+(* Took over 20 mins to begin to learn. Trained for 2 rounds, validation: .0134, .0117
+   Using test Table[CZHighlightFaces[Import[mfiles1[[k]]]],{k,1,5000,100}]
+   0 false positives, 0 false negatives
+*)
 
 
-(* Validation: .022,.0212 *)
+Export["c:\\Users\\julian\\TmpFaceDetection.mx",trained];
 
 
-Export["c:\\Users\\julian\\Google Drive\\Personal\\Computer Science\\CZModels\\SinglePassTmp.mx",trained];
-
-
-CZDecoder[assoc_] := Join[
-   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{57,57},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{57,57}]&,Position[assoc["FaceArray1"],x_/;x>.5]],
-   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{114,114},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{114,114}]&,Position[assoc["FaceArray2"],x_/;x>.5]]
-]
+CZDecoder[ assoc_ ] := Join[
+   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]&,Position[assoc["FaceArray1"],x_/;x>.25]],
+   Map[Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]&,Position[assoc["FaceArray2"],x_/;x>.25]],
+   Map[Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]&,Position[assoc["FaceArray3"],x_/;x>.25]]]
 
 
 CZHighlightFaces[ img_Image ] := HighlightImage[ ConformImages[{img},{640,480},"Fit"][[1]], CZDecoder@trained@(ConformImages[{img},{640,480},"Fit"][[1]]) ]
