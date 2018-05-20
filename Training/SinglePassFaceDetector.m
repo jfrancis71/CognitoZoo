@@ -129,14 +129,9 @@ trained = NetTrain[ inet, trainingSet, All,
             TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint4"}];
 
 
-(* validation .0138 on 1st round. Note importance of initialisation method.
+(* validation .0119 on 2nd round. Note importance of initialisation method.
    Using test Table[CZHighlightFaces[Import[mfiles1[[k]]]],{k,1,5000,100}]
-   0 false positives, 3 false negatives
-*)
-
-
-(* Training can be very difficult. Is this training/validation split? Initialisation? Just tried initialising from yolo.
-   Would increasing number of convolutional filters near the end help?
+   0 false positives, 2 false negatives
 *)
 
 
@@ -153,6 +148,4 @@ Options[ CZHighlightFaces ] = {
    Threshold->0.997,
    TargetDevice->"CPU"
 };
-
-
 CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[ ConformImages[{img},{640,480},"Fit"][[1]], CZDecoder@trained[(ConformImages[{img},{640,480},"Fit"][[1]]), opts] ]
