@@ -90,12 +90,9 @@ ds = Dataset[
 { trainingSet, validationSet } = { ds[[rnds[[1;;80000]] ]], ds[[rnds[[80001;;]] ]] };
 
 
-CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
-
-
 trunk = NetChain[{
-   ConvolutionLayer[16,{3,3},"Weights"->NetExtract[CZYoloNet,{1,"Weights"}],"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
-   ConvolutionLayer[32,{3,3},"Weights"->NetExtract[CZYoloNet,{5,"Weights"}],"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
+   ConvolutionLayer[16,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
+   ConvolutionLayer[32,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[64,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[128,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]
@@ -124,14 +121,17 @@ net = NetGraph[
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]];
 
 
-trained = NetTrain[ net, trainingSet, All,
+inet = NetInitialize[net, Method->"Orthogonal"];
+
+
+trained = NetTrain[ inet, trainingSet, All,
             ValidationSet->validationSet,TargetDevice->"GPU",
             TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint4"}];
 
 
-(* Took over 20 mins to begin to learn. Trained for 2 rounds, validation: .0134, .0117
+(* validation .0138 on 1st round. Note importance of initialisation method.
    Using test Table[CZHighlightFaces[Import[mfiles1[[k]]]],{k,1,5000,100}]
-   0 false positives, 0 false negatives
+   0 false positives, 3 false negatives
 *)
 
 
