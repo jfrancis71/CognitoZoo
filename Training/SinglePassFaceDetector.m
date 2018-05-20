@@ -68,6 +68,15 @@ files=Join[mfiles,ffiles];
 faces=Join[mfaces,ffaces];
 
 
+(* rnds = RandomSample@Range[ Length[ faces ] ]; *)
+
+
+(* Export["c:\\Users\\julian\\ImageDataSets\\FaceScrub\\VGATrainingRandomisation.mx",rnds]; *)
+
+
+rnds = Import["c:\\Users\\julian\\ImageDataSets\\FaceScrub\\VGATrainingRandomisation.mx"];
+
+
 ds = Dataset[
    Table[
       Association[
@@ -78,17 +87,30 @@ ds = Dataset[
       {k,1,Length[faces]}]];
 
 
-rds = RandomSample[ds];
+{ trainingSet, validationSet } = { ds[[rnds[[1;;80000]] ]], ds[[rnds[[80001;;]] ]] };
+
+
+CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
 trunk = NetChain[{
-   ConvolutionLayer[16,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
-   ConvolutionLayer[32,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
+   ConvolutionLayer[16,{3,3},"Weights"->NetExtract[CZYoloNet,{1,"Weights"}],"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
+   ConvolutionLayer[32,{3,3},"Weights"->NetExtract[CZYoloNet,{5,"Weights"}],"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[64,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[128,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]
 }];
 (* trunk has receptive field of size 94x94 *)
+
+
+block2 = NetChain[{
+   PaddingLayer[{{0,0},{0,1},{0,1}}], ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2] } ];
+(* block2 has receptive field of size 190x190 *)
+
+
+block3 = NetChain[{
+   ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp } ];
+(* block3 has receptive field of size 382x382 *)
 
 
 multibox1 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
@@ -102,14 +124,19 @@ net = NetGraph[
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]];
 
 
-trained = NetTrain[net,rds[[1;;80000]],All,
-            ValidationSet->rds[[80001;;-1]],TargetDevice->"GPU",
-            TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint3"}];
+trained = NetTrain[ net, trainingSet, All,
+            ValidationSet->validationSet,TargetDevice->"GPU",
+            TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint4"}];
 
 
 (* Took over 20 mins to begin to learn. Trained for 2 rounds, validation: .0134, .0117
    Using test Table[CZHighlightFaces[Import[mfiles1[[k]]]],{k,1,5000,100}]
    0 false positives, 0 false negatives
+*)
+
+
+(* Training can be very difficult. Is this training/validation split? Initialisation? Just tried initialising from yolo.
+   Would increasing number of convolutional filters near the end help?
 *)
 
 
