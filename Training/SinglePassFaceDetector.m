@@ -144,8 +144,13 @@ CZDecoder[ assoc_ ] := Join[
    Map[Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]&,Position[assoc["FaceArray3"],x_/;x>.25]]]
 
 
-Options[ CZHighlightFaces ] = {
-   Threshold->0.997,
+Options[ CZDetectFaces ] = {
    TargetDevice->"CPU"
 };
-CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[ ConformImages[{img},{640,480},"Fit"][[1]], CZDecoder@trained[(ConformImages[{img},{640,480},"Fit"][[1]]), opts] ]
+CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := CZDecoder@trained[(ConformImages[{img},{640,480},"Fit"][[1]]), opts ]
+
+
+Options[ CZHighlightFaces ] = {
+   TargetDevice->"CPU"
+};
+CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[ ConformImages[{img},{640,480},"Fit"][[1]], CZDetectFaces[ img, opts ] ]
