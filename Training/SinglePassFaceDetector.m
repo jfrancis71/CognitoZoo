@@ -138,19 +138,30 @@ trained = NetTrain[ inet, trainingSet, All,
 Export["c:\\Users\\julian\\TmpFaceDetection.mx",trained];
 
 
-CZDecoder[ assoc_ ] := Join[
-   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]&,Position[assoc["FaceArray1"],x_/;x>.25]],
-   Map[Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]&,Position[assoc["FaceArray2"],x_/;x>.25]],
-   Map[Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]&,Position[assoc["FaceArray3"],x_/;x>.25]]]
+CZDecoder[ assoc_, threshold_ ] := Join[
+   Map[Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]&,Position[assoc["FaceArray1"],x_/;x>threshold]],
+   Map[Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]&,Position[assoc["FaceArray2"],x_/;x>threshold]],
+   Map[Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]&,Position[assoc["FaceArray3"],x_/;x>threshold]]]
 
 
 Options[ CZDetectFaces ] = {
-   TargetDevice->"CPU"
+   Threshold->0.5,
+   TargetDevice->"CPU",
+   OverlappingWindows->False
 };
-CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := CZDecoder@trained[ img, opts ]
+CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := If[ OptionValue["OverlappingWindows"] == False,
+   CZDecoder[ trained[ img, TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"] ],
+   Join[
+      CZDecoder[ trained[ img, TargetDevice->OptionValue["TargetDevice"]  ], OptionValue["Threshold"] ],
+      Map[Rectangle[#1[[1]]-{16,16},#1[[2]]-{16,16}]&,CZDecoder[ trained[ ImagePad[ img, { { 16, -16}, {16, -16} } ], TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"]] ],
+      Map[Rectangle[#1[[1]]-{32,32},#1[[2]]-{32,32}]&,CZDecoder[ trained[ ImagePad[ img, { { 32, -32}, {32, -32} } ], TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"]] ]
+   ]
+]
 
 
 Options[ CZHighlightFaces ] = {
-   TargetDevice->"CPU"
+   TargetDevice->"CPU",
+   Threshold->0.5,
+   OverlappingWindows->False
 };
 CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[ ConformImages[{img},{640,480},"Fit"][[1]], CZDetectFaces[ (ConformImages[{img},{640,480},"Fit"][[1]]), opts ] ]
