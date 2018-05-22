@@ -117,8 +117,8 @@ multibox3 = NetChain[{ConvolutionLayer[1,{1,1}],PartLayer[1],LogisticSigmoid}];
 
 
 net = NetGraph[
-   {trunk,block2,block3,multibox1,multibox2,multibox3},
-   {1->2->3->6->NetPort["FaceArray3"],1->4->NetPort["FaceArray1"],2->5->NetPort["FaceArray2"]},
+   <|"trunk"->trunk,"block2"->block2,"block3"->block3,"multibox1"->multibox1,"multibox2"->multibox2,"multibox3"->multibox3|>,
+   {"trunk"->"block2"->"block3"->"multibox3"->NetPort["FaceArray3"],"trunk"->"multibox1"->NetPort["FaceArray1"],"block2"->"multibox2"->NetPort["FaceArray2"]},
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]];
 
 
