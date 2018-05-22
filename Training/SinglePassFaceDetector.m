@@ -122,7 +122,15 @@ net = NetGraph[
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]];
 
 
-inet = NetInitialize[net, Method->"Orthogonal"];
+lossNet = NetGraph[ <|
+   "net"->net, "L1"->CrossEntropyLossLayer["Binary"], "L2"->CrossEntropyLossLayer["Binary"], "L3"->CrossEntropyLossLayer["Binary"] |>, {
+   NetPort[{"net","FaceArray1"}] -> NetPort[{"L1","Input"}], NetPort["FaceArray1"]->NetPort[{"L1","Target"}],
+   NetPort[{"net","FaceArray2"}] -> NetPort[{"L2","Input"}], NetPort["FaceArray2"]->NetPort[{"L2","Target"}],
+   NetPort[{"net","FaceArray3"}] -> NetPort[{"L3","Input"}], NetPort["FaceArray3"]->NetPort[{"L3","Target"}]
+    } ];
+
+
+inet = NetInitialize[lossNet, Method->"Orthogonal"];
 
 
 trained = NetTrain[ inet, trainingSet, All,
