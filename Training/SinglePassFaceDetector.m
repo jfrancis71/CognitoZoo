@@ -22,13 +22,14 @@
 size[ face_ ] := (face[[2,1]]-face[[1,1]])
 
 
+(* Note we're encoding from the top so 1st row is 417-480 inclusive *)
 CZEncoder[ faces_ ] := ReplacePart[
     {ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{8,10}]},
     Map[Module[{centre=(#[[1]]+#[[2]])/2},
       Which[
-         size[#]<108,{1,15+1-(1+Floor[(centre[[2]]-1)/32]),(1+Floor[(centre[[1]]-1)/32])},
-         size[#]>=108&&size[#]<=155,{2,8+1-(1+Floor[(centre[[2]]-1)/64]),(1+Floor[(centre[[1]]-1)/64])},
-         size[#]>155,{3,8+1-(1+Floor[(centre[[2]]-1)/64]),(1+Floor[(centre[[1]]-1)/64])}]]->1&,
+         size[#]<108,{1,Ceiling[(1+480-centre[[2]])/32],(1+Floor[(centre[[1]]-1)/32])},
+         size[#]>=108&&size[#]<=155,{2,Ceiling[(1+480-centre[[2]])/64],(1+Floor[(centre[[1]]-1)/64])},
+         size[#]>155,{3,Ceiling[(1+480-centre[[2]])/64],(1+Floor[(centre[[1]]-1)/64])}]]->1&,
       faces]];
 
 
@@ -129,9 +130,11 @@ trained = NetTrain[ inet, trainingSet, All,
             TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint4"}];
 
 
-(* validation .0119 on 2nd round. Note importance of initialisation method.
-   Using test Table[CZHighlightFaces[Import[mfiles1[[k]]]],{k,1,5000,100}]
-   0 false positives, 2 false negatives
+(*
+   validation .0123, .0121 (2nd round). Note importance of initialisation method.
+   Using test:
+      Table[CZHighlightFaces[Import@files[[rnds[[k]]]],Threshold\[Rule].5,OverlappingWindows\[Rule]True],{k,80001,80100}]
+   achieves 0 false positives and 2 false negatives
 *)
 
 
