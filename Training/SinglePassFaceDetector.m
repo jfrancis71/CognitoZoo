@@ -3,10 +3,9 @@
 (*
    Training file for a single pass face detector.
    Input image should be of size VGA.
-   
-   Please note, have had some problems regarding training bug, please ensure that no other kernel
-   instances are running, and may wish to try CPU. Not sure if it is a GPU/CPU issue, or problems
-   with decoding as we are doing out of core training.
+
+   Performance: CZHighlightFaces[img,{OverlappingWindows\[Rule]True,Threshold\[Rule]0.5}]
+      takes 0.6 secs.
 *)
 
 
