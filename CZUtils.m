@@ -27,12 +27,12 @@ CZIntersectionOverUnion[a_, b_]:=
 
 
 (*
-   Note: requires format list of {prob,{{xmin,ymin},{xmax,ymax}}}
+   Note: requires format list of {prob,Rectangle[{xmin,ymin},{xmax,ymax}]}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
 *)
-CZDeleteOverlappingWindows[ {} ] := {};
-CZDeleteOverlappingWindows[ objects_ ] :=
+CZNonMaxSuppression[ {} ] := {};
+CZNonMaxSuppression[ objects_ ] :=
    Map[Rectangle[#[[1]],#[[2]]]&,Extract[objects,
       Position[
          Total[Table[
@@ -46,11 +46,9 @@ CZDeleteOverlappingWindows[ objects_ ] :=
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
 *)
-CZNonMaxSuppressionByClass[objectsInClass_]:=
-   Map[{objectsInClass[[1,1]],Rectangle[#[[1]],#[[2]]]}&,CZDeleteOverlappingWindows[Map[{#[[2]],#[[3]]}&,objectsInClass]]];
 (* Does Non Max Suppression seperately by object class *)
-CZNonMaxSuppression[objects_]:=
-      Flatten[Map[CZNonMaxSuppressionByClass,GatherBy[objects,#[[1]]&]],1]
+CZPerClassNonMaxSuppression[objects_]:=
+      Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#}&/@CZNonMaxSuppression[objectsInClass[[All,2;;3]]]],GatherBy[objects,#[[1]]&]],1]
 
 
 (*

@@ -61,7 +61,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppression@CZResizeObjects[ CZDecoder@SSDNet[ CZEncoder@image, opts ], image ]
+   CZPerClassNonMaxSuppression@CZResizeObjects[ CZDecoder@SSDNet[ CZEncoder@image, opts ], image ]
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -129,7 +129,7 @@ CZDecoder[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=(
    w=Exp[slocs[[All,3]]*0.2]*anchorsw;
    h=Exp[slocs[[All,4]]*0.2]*anchorsh;
 
-   MapThread[{#1,#2,300*{{#3-#5/2,1-(#4+#6/2)},{#3+#5/2,1-(#4-#6/2)}}}&,{
+   MapThread[{#1,#2,Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}]}&,{
       CZPascalClasses[[rec[[All,4]]]],
       Extract[probs,rec],
       Extract[cx,rec[[All,1;;3]]],
@@ -153,4 +153,4 @@ CZDecoder[ netOutput_ ] :=
 
 CZResizeObjects[ {}, _ ] := {};
 CZResizeObjects[ objects_, image_ ] :=
-   Transpose[ { objects[[All,1]], objects[[All,2]], Transpose[ImageDimensions[ image ] * Transpose[objects[[All,3]],{2,3,1}],{3,1,2}]/300 } ] 
+   MapAt[ImageDimensions[image]*#/300&, objects[[1;;3]],{All,3,1;;2}]
