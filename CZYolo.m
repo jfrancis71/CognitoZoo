@@ -74,7 +74,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ image_, opts:OptionsPattern[] ]:=
-   CZNonMaxSuppression@CZResizeObjects[ CZDecoder@CZYoloNet[ CZEncoder@image, opts ], image ];
+   CZPerClassNonMaxSuppression@CZResizeObjects[ CZDecoder@CZYoloNet[ CZEncoder@image, opts ], image ];
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -99,7 +99,7 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
    w=(1/13)*Exp[conv15[[3+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],1]];
    h=
       (1/13)*(Exp[conv15[[4+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],2]]);
-   {416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}}
+   Rectangle[416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}]
 )
 
 

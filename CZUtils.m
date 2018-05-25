@@ -55,7 +55,9 @@ CZPerClassNonMaxSuppression[objects_]:=
    Maps rectangles from the neural net input layer space to the input image
    correcting for the resizing and padding.
 *)
-CZResizeBoundingBoxes[ boxes_, image_, netSize_ ] :=
+CZResizeBoundingBoxes[ rboxes_, image_, netSize_ ] :=
+Module[{boxes=Map[{#[[1]],#[[2]]}&,rboxes]},
+Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&,
    If[ImageAspectRatio[image]<1,
       Transpose[Transpose[ImageDimensions[image][[1]]*boxes/netSize,{2,3,1}]-
             {0,(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
@@ -63,4 +65,4 @@ CZResizeBoundingBoxes[ boxes_, image_, netSize_ ] :=
       Transpose[Transpose[ImageDimensions[image][[2]]*boxes/netSize,{2,3,1}]-
             {(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,0},
          {3,1,2}]
-]
+]]]

@@ -51,7 +51,7 @@ Options[ CZDetectObjects ] = {
    TargetDevice->"CPU"
 };
 CZDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[]] := 
-   CZDeleteOverlappingWindows@CZResizeObjects[ CZDecoder[ multiScaleNet[ CZEncoder@image, opts  ], OptionValue[Threshold] ], image ];
+   CZNonMaxSuppression@CZResizeObjects[ CZDecoder[ multiScaleNet[ CZEncoder@image, opts  ], OptionValue[Threshold] ], image ];
 
 
 CZGender::usage = "
