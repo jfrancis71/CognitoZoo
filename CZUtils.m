@@ -42,7 +42,7 @@ CZNonMaxSuppression[ objects_ ] :=
 
 
 (*
-   Note: requires format list of {class, prob, {{xmin,ymin},{xmax,ymax}}}
+   Note: requires format list of {class, prob, Rectangle[{xmin,ymin},{xmax,ymax}]}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
 *)
