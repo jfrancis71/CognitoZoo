@@ -74,7 +74,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ image_, opts:OptionsPattern[] ]:=
-   CZPerClassNonMaxSuppression@CZResizeObjects[ CZDecoder@CZYoloNet[ CZEncoder@image, opts ], image ];
+   CZPerClassNonMaxSuppression@CZDeconformObjects[ CZDecoder@CZYoloNet[ CZEncoder@image, opts ], image, {416, 416}, "Fit" ];
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -117,11 +117,6 @@ CZDecoder[ netOutput_ ] := (
    slotPositions = Position[slots, x_/;x>.24];
    Map[{CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZGetBoundingBox[#,netOutput]}&,slotPositions]
 )
-
-
-CZResizeObjects[ {}, _ ] := {};
-CZResizeObjects[ objects_, image_ ] :=
-   Transpose[ MapAt[ CZResizeBoundingBoxes[ #, image, 416 ]&, Transpose[ objects ], 3 ] ]
 
 
 (*

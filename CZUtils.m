@@ -51,18 +51,29 @@ CZPerClassNonMaxSuppression[objects_]:=
       Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#}&/@CZNonMaxSuppression[objectsInClass[[All,2;;3]]]],GatherBy[objects,#[[1]]&]],1]
 
 
-(*
-   Maps rectangles from the neural net input layer space to the input image
-   correcting for the resizing and padding.
+CZDeconformRectangles[ {}, _, _, _ ] := {};
+CZDeconformRectangles[ rboxes_, image_, netDims_, "Fit" ] := 
+   Module[ {
+      boxes = Map[{#[[1]],#[[2]]}&,rboxes],
+      padding = If [ ImageAspectRatio[image] < 1,
+         {0,(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
+         {(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,0}
+         ],
+      scale = If [ ImageAspectRatio[image] < 1, ImageDimensions[image][[1]], ImageDimensions[image][[2]] ]
+      },
+      Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[Transpose[boxes,{2,3,1}]*scale/netDims - padding,{3,1,2}]]
+   ];
+CZDeconformRectangles[ rboxes_, image_, netDims_, "Stretch" ] := 
+   Module[ {
+      boxes = Map[{#[[1]],#[[2]]}&,rboxes] },
+      Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[Transpose[boxes,{2,3,1}]*ImageDimensions[image]/netDims,{3,1,2}]]
+   ]
+
+
+(* Implicitly assumes that the rectangles are the last entry in the list of objects.
+   So { {class1, prob1, rect1 }, ... }
+   or { {prob1, rect1}, ... }
 *)
-CZResizeBoundingBoxes[ rboxes_, image_, netSize_ ] :=
-Module[{boxes=Map[{#[[1]],#[[2]]}&,rboxes]},
-Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&,
-   If[ImageAspectRatio[image]<1,
-      Transpose[Transpose[ImageDimensions[image][[1]]*boxes/netSize,{2,3,1}]-
-            {0,(ImageDimensions[image][[1]]-ImageDimensions[image][[2]])/2},
-         {3,1,2}],
-      Transpose[Transpose[ImageDimensions[image][[2]]*boxes/netSize,{2,3,1}]-
-            {(ImageDimensions[image][[2]]-ImageDimensions[image][[1]])/2,0},
-         {3,1,2}]
-]]]
+CZDeconformObjects[ {}, _ ] := {};
+CZDeconformObjects[ objects_, image_, netDims_, fitting_ ] :=
+   Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], -1 ] ]
