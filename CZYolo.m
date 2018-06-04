@@ -103,9 +103,6 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
 )
 
 
-CZMapSlotPositionToObject[ slotPos_, conv15_ ]:={CZPascalClasses[[slotPos[[4]]]],CZGetBoundingBox[slotPos, conv15]}
-
-
 CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
