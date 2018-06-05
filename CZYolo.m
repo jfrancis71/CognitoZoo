@@ -74,7 +74,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ image_, opts:OptionsPattern[] ]:=
-   CZNonMaxSuppressionPerClass@CZDeconformObjects[ CZDecoder@CZYoloNet[ CZEncoder@image, opts ], image, {416, 416}, "Fit" ];
+   CZNonMaxSuppressionPerClass@CZDeconformObjects[ CZOutputDecode@CZYoloNet[ CZConformImage[image, {416,416}, "Fit" ], opts ], image, {416, 416}, "Fit" ];
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -106,10 +106,7 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
 CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
-CZEncoder[ image_ ] := CZImagePadToSquare[image]
-
-
-CZDecoder[ netOutput_ ] := (
+CZOutputDecode[ netOutput_ ] := (
    slots = LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
    slotPositions = Position[slots, x_/;x>.24];
    Map[{CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZGetBoundingBox[#,netOutput]}&,slotPositions]

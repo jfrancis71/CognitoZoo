@@ -6,7 +6,7 @@
 trained = Import["CZModels/VisiNetv1.wlnet"];
 
 
-CZDecoder[ assoc_, threshold_ ] := Join[
+CZOutputDecode[ assoc_, threshold_ ] := Join[
    Map[{Extract[assoc["FaceArray1"],#],Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]}&,Position[assoc["FaceArray1"],x_/;x>threshold]],
    Map[{Extract[assoc["FaceArray2"],#],Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]}&,Position[assoc["FaceArray2"],x_/;x>threshold]],
    Map[{Extract[assoc["FaceArray3"],#],Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]}&,Position[assoc["FaceArray3"],x_/;x>threshold]],
@@ -21,7 +21,7 @@ Options[ CZDetectFaces ] = {
    TargetDevice->"CPU"
 };
 CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := 
-   (CZDeconformObjects[ CZDecoder[ trained[ ConformImages[{img},{640,480},"Fit"][[1]], TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"] ], img, {640,480}, "Fit" ])[[All,2]];
+   CZNonMaxSuppression@CZDeconformObjects[ CZOutputDecode[ trained[ CZConformImage[img,{640,480},"Fit"], TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"] ], img, {640,480}, "Fit" ];
 
 
 Options[ CZHighlightFaces ] = {
