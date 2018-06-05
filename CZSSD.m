@@ -61,7 +61,7 @@ Options[ CZDetectObjects ] = {
 TargetDevice->"CPU"
 };
 CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
-   CZPerClassNonMaxSuppression@CZDeconformObjects[ CZDecoder@SSDNet[ CZEncoder@image, opts ], image, {300, 300}, "Stretch"  ]
+   CZNonMaxSuppressionPerClass@CZDeconformObjects[ CZDecoder@SSDNet[ CZEncoder@image, opts ], image, {300, 300}, "Stretch"  ]
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];

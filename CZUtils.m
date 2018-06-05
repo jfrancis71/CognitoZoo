@@ -47,7 +47,7 @@ CZNonMaxSuppression[ objects_ ] :=
    work if it is wrong way round (ie corners in wrong order)
 *)
 (* Does Non Max Suppression seperately by object class *)
-CZPerClassNonMaxSuppression[objects_]:=
+CZNonMaxSuppressionPerClass[objects_]:=
       Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#}&/@CZNonMaxSuppression[objectsInClass[[All,2;;3]]]],GatherBy[objects,#[[1]]&]],1]
 
 
