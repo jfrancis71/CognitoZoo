@@ -24,7 +24,7 @@ CZDetectFaces[ img_Image, opts:OptionsPattern[] ] :=
 <<CZUtils.m
 
 
-trained = Import["CZModels/VisiNetv1.wlnet"];
+trained = Import[LocalCache@CloudObject["VisiNetv1"],"WLNet"];
 
 
 CZDecodeOutput[ assoc_, threshold_ ] := Join[
