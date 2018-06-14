@@ -30,8 +30,8 @@ CZIntersectionOverUnion[a_, b_]:=
 *)
 CZTakeMaxProbRectangle[ objects_ ] := (First@SortBy[objects,-#[[1]]&])[[2]]
 CZTakeWeightedRectangle[ objects_ ] := Rectangle@@Round[Total[objects[[All,1]]*List@@@objects[[All,2]]]/Total[objects[[All,1]]]]
-CZNonMaxSuppression[ objects_, weighted_: False ] := CZTakeMaxProbRectangle/@Gather[dets,(CZIntersectionOverUnion[#1[[2]],#2[[2]]]>.25)&]
-CZNonMaxSuppression[ objects_, True ] := CZTakeWeightedRectangle/@Gather[dets,(CZIntersectionOverUnion[#1[[2]],#2[[2]]]>.25)&]
+CZNonMaxSuppression[ objects_, weighted_: False ] := CZTakeMaxProbRectangle/@Gather[objects,(CZIntersectionOverUnion[#1[[2]],#2[[2]]]>.25)&]
+CZNonMaxSuppression[ objects_, True ] := CZTakeWeightedRectangle/@Gather[objects,(CZIntersectionOverUnion[#1[[2]],#2[[2]]]>.25)&]
 
 
 (*
