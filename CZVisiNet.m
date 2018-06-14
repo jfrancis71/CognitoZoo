@@ -31,7 +31,7 @@ CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := (
 <<CZUtils.m
 
 
-trained = Import[LocalCache@CloudObject["VisiNetv1"],"WLNet"];
+trained = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/VisiNetv1"],"WLNet"];
 
 
 CZDecodeOutput[ assoc_, threshold_ ] := Join[
