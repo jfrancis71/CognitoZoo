@@ -3,19 +3,26 @@
 (* Public Interface *)
 
 
+SyntaxInformation[NonMaximumSuppression]={"ArgumentsPattern"->{_}};
 Options[ CZHighlightFaces ] = {
    TargetDevice->"CPU",
-   Threshold->0.5
+   Threshold->0.5,
+   NonMaximumSuppression->"Max"
 };
 CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[ img, CZDetectFaces[ img, opts ] ]
 
 
 Options[ CZDetectFaces ] = {
    Threshold->0.5,
-   TargetDevice->"CPU"
+   TargetDevice->"CPU",
+   NonMaximumSuppression->"Max"
 };
-CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := 
-   CZNonMaxSuppression@CZDeconformObjects[ CZDecodeOutput[ trained[ CZConformImage[img,{640,480},"Fit"], TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"] ], img, {640,480}, "Fit" ];
+CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := (
+   Switch[ OptionValue["NonMaximumSuppression"],
+   "Max",CZNonMaxSuppression,
+   "False",Identity,
+   "Weighted",CZNonMaxSuppression[#,True]&]
+   [CZDeconformObjects[ CZDecodeOutput[ trained[ CZConformImage[img,{640,480},"Fit"], TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"] ], img, {640,480}, "Fit" ]] );
 
 
 (* Private Code *)

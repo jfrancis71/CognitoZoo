@@ -28,14 +28,10 @@ CZIntersectionOverUnion[a_, b_]:=
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
 *)
-CZNonMaxSuppression[ {} ] := {};
-CZNonMaxSuppression[ objects_ ] :=
-   Map[Rectangle[#[[1]],#[[2]]]&,Extract[objects,
-      Position[
-         Total[Table[
-         Table[If[CZIntersectionOverUnion[objects[[a,2]],objects[[b,2]]]>.25&&objects[[a,1]]<objects[[b,1]],1,0],{b,1,Length[objects]}]
-            ,{a,1,Length[objects]}],{2}],
-         0]][[All,2]]]
+CZTakeMaxProbRectangle[ objects_ ] := (First@SortBy[objects,-#[[1]]&])[[2]]
+CZTakeWeightedRectangle[ objects_ ] := Rectangle@@Round[Total[objects[[All,1]]*List@@@objects[[All,2]]]/Total[objects[[All,1]]]]
+CZNonMaxSuppression[ objects_, weighted_: False ] := CZTakeMaxProbRectangle/@Gather[dets,(CZIntersectionOverUnion[#1[[2]],#2[[2]]]>.25)&]
+CZNonMaxSuppression[ objects_, True ] := CZTakeWeightedRectangle/@Gather[dets,(CZIntersectionOverUnion[#1[[2]],#2[[2]]]>.25)&]
 
 
 (*
@@ -44,8 +40,8 @@ CZNonMaxSuppression[ objects_ ] :=
    work if it is wrong way round (ie corners in wrong order)
 *)
 (* Does Non Max Suppression seperately by object class *)
-CZNonMaxSuppressionPerClass[objects_]:=
-      Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#}&/@CZNonMaxSuppression[objectsInClass[[All,2;;3]]]],GatherBy[objects,#[[1]]&]],1]
+CZNonMaxSuppressionPerClass[objects_, weighted_ : False ]:=
+      Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#}&/@CZNonMaxSuppression[ objectsInClass[[All,2;;3]], weighted ]],GatherBy[objects,#[[1]]&]],1]
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};
