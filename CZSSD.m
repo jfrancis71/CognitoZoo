@@ -12,42 +12,18 @@
    1.3 secs for MacBook Air
    1.1 secs Desktop CPU
    .34 secs Desktop GPU
-   
-
-   You need to ensure the following files are installed in a CZModels subfolder on your search path:
-      SSDVGG300.wlnet
-   Files found in: https://drive.google.com/open?id=0Bzhe0pgVZtNUVGJJak1GWDQ3S1U 
 *)
 
 (*
    Credit:
-   
-   Paul Balanca's Tensorflow implementation was used as a reference implementation:
-      https://github.com/balancap/SSD-Tensorflow
+   This implementation is based on Changan Wang's Tensorflow code:
+      https://github.com/HiKapok/SSD.TensorFlow
       
    SSD VGG 300 is based on the following paper:
    https://arxiv.org/abs/1512.02325
    Title: SSD: Single Shot MultiBox Detector
    Authors: Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed,
    Cheng-Yang Fu, Alexander C. Berg
-*)
-(*
-The following copyright notice applies to the neural network weight file only (ssd.hdf )
-   which has been converted from Paul Balanca's TensorFlow checkpoint file.
-
-# Copyright 2016 Paul Balanca. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 *)
 
 
@@ -79,41 +55,41 @@ CZHighlightObjects[ img_, opts:OptionsPattern[] ] := (
 
 anchorsx1 = Table[{2*x/75},{y,1,38},{x,.5,37.5}];
 anchorsy1 = Table[{2*y/75},{y,.5,37.5},{x,1,38}];
-anchorsw1 = {0.070,0.102,0.098,0.049};
-anchorsh1 = {0.070,0.102,0.049,0.098};
+anchorsw1 = {0.141,0.141,0.070};
+anchorsh1 = {0.141,0.070,0.141};
 
 
 anchorsx2 = Table[{4*x/75},{y,1,19},{x,.5,18.5}];
 anchorsy2 = Table[{4*y/75},{y,.5,18.5},{x,1,19}];
-anchorsw2 = {0.150,0.222,0.212,0.106,0.259,0.086};
-anchorsh2 = {0.150,0.222,0.106,0.212,0.086,0.259};
+anchorsw2 = {0.273,0.282,0.346,0.141,0.115};
+anchorsh2 = {0.273,0.141,0.115,0.282,0.346};
 
 
 anchorsx3 = Table[{8*x/75},{y,1,10},{x,.5,9.5}];
 anchorsy3 = Table[{8*y/75},{y,.5,9.5},{x,1,10}];
-anchorsw3 = {0.330,0.410,0.466,0.233,0.571,0.190};
-anchorsh3 = {0.330,0.410,0.233,0.466,0.190,0.571};
+anchorsw3 = {0.454,0.530,0.649,0.265,0.216};
+anchorsh3 = {0.454,0.265,0.216,0.530,0.649};
 
 
 anchorsx4 = Table[{16*x/75},{y,1,5},{x,.5,4.5}];
 anchorsy4 = Table[{16*y/75},{y,.5,4.5},{x,1,5}];
-anchorsw4 = {0.509,0.593,0.721,0.360,0.883,0.294};
-anchorsh4 = {0.509,0.593,0.360,0.721,0.294,0.883};
+anchorsw4 = {0.631,0.777,0.952,0.388,0.317};
+anchorsh4 = {0.631,0.388,0.317,0.777,0.952};
 
 
 anchorsx5 = Table[{x/3},{y,1,3},{x,.5,2.5}];
 anchorsy5 = Table[{y/3},{y,.5,2.5},{x,1,3}];
-anchorsw5 = {0.689,0.774,0.975,0.487};
-anchorsh5 = {0.689,0.774,0.487,0.975};
+anchorsw5 = {0.807,1.02,0.512};
+anchorsh5 = {0.807,0.512,1.02};
 
 
 anchorsx6 = Table[{x/2},{y,1,1},{x,1,1}];
 anchorsy6 = Table[{y/2},{y,1,1},{x,1,1}];
-anchorsw6 = {0.870,0.955,1.230,0.615};
-anchorsh6 = {0.870,0.955,0.615,1.230};
+anchorsw6 = {0.983,1.27,0.636};
+anchorsh6 = {0.983,0.636,1.27};
 
 
-SSDNet=Import["CZModels/SSDVGG300.wlnet"];
+SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/CZSSDVGG300.wlnet"],"WLNet"];
 
 
 CZEncodeInput[ image_ ] :=
@@ -126,8 +102,8 @@ CZDecodeOutput[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=(
    rec=Position[probs,x_/;x>.5];
    cx=Map[#+anchorsx[[All,All,1]]&,slocs[[All,1]]*anchorsw*0.1];
    cy=Map[#+anchorsy[[All,All,1]]&,slocs[[All,2]]*anchorsh*0.1];
-   w=Exp[slocs[[All,3]]*0.2]*anchorsw;
-   h=Exp[slocs[[All,4]]*0.2]*anchorsh;
+   w=Exp[slocs[[All,4]]*0.2]*anchorsw;
+   h=Exp[slocs[[All,3]]*0.2]*anchorsh;
 
    MapThread[{#1,#2,Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}]}&,{
       CZPascalClasses[[rec[[All,4]]]],
