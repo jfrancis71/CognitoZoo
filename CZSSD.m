@@ -100,8 +100,8 @@ CZDecodeOutput[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=(
 (* slocs format A{xywh}HW *)
    slocs=Partition[locs,4];
    rec=Position[probs,x_/;x>.5];
-   cx=Map[#+anchorsx[[All,All,1]]&,slocs[[All,1]]*anchorsw*0.1];
-   cy=Map[#+anchorsy[[All,All,1]]&,slocs[[All,2]]*anchorsh*0.1];
+   cx=Map[#+anchorsx[[All,All,1]]&,slocs[[All,2]]*anchorsw*0.1];
+   cy=Map[#+anchorsy[[All,All,1]]&,slocs[[All,1]]*anchorsh*0.1];
    w=Exp[slocs[[All,4]]*0.2]*anchorsw;
    h=Exp[slocs[[All,3]]*0.2]*anchorsh;
 
