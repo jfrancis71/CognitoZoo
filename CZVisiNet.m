@@ -3,32 +3,27 @@
 (* Public Interface *)
 
 
-SyntaxInformation[NonMaximumSuppression]={"ArgumentsPattern"->{_}};
-Options[ CZHighlightFaces ] = {
+<<CZUtils.m
+
+
+Options[ CZDetectFaces ] = Join[{
    TargetDevice->"CPU",
-   Threshold->0.5,
-   NonMaximumSuppression->"Max"
-};
+   Threshold->.5
+}, Options[ CZNonMaxSuppression ] ];
+CZDetectFaces[ image_, opts:OptionsPattern[] ] :=
+   CZNonMaxSuppression[
+      CZDeconformObjects[ CZDecodeOutput[
+            trained[ CZConformImage[image,{640,480},"Fit"], TargetDevice->OptionValue[ TargetDevice ] ],
+            OptionValue[ Threshold ] ],
+         image, {640, 480}, "Fit"  ],
+      FilterRules[ {opts}, Options[ CZNonMaxSuppression ] ] ];
+
+
+Options[ CZHighlightFaces ] = Options[ CZDetectFaces ];
 CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[ img, CZDetectFaces[ img, opts ] ]
 
 
-Options[ CZDetectFaces ] = {
-   Threshold->0.5,
-   TargetDevice->"CPU",
-   NonMaximumSuppression->"Max"
-};
-CZDetectFaces[ img_Image, opts:OptionsPattern[] ] := (
-   Switch[ OptionValue["NonMaximumSuppression"],
-   "Max",CZNonMaxSuppression,
-   "False",Identity,
-   "Weighted",CZNonMaxSuppression[#,True]&]
-   [CZDeconformObjects[ CZDecodeOutput[ trained[ CZConformImage[img,{640,480},"Fit"], TargetDevice->OptionValue["TargetDevice"] ], OptionValue["Threshold"] ], img, {640,480}, "Fit" ]] );
-
-
 (* Private Code *)
-
-
-<<CZUtils.m
 
 
 trained = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/VisiNetv1"],"WLNet"];

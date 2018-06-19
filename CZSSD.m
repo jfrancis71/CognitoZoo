@@ -33,24 +33,30 @@
 (* Public Interface Code *)
 
 
-Options[ CZDetectObjects ] = {
-TargetDevice->"CPU"
-};
-CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppressionPerClass@CZDeconformObjects[ CZDecodeOutput@SSDNet[ CZEncodeInput@CZConformImage[image,{300,300},"Stretch"], opts ], image, {300, 300}, "Stretch"  ]
+<<CZutils.m
+
+
+Options[ CZDetectObjects ] = Join[{
+   TargetDevice->"CPU",
+   Threshold->.5
+}, Options[ CZNonMaxSuppressionPerClass ] ];
+CZDetectObjects[ image_Image, opts:OptionsPattern[] ] :=
+   CZNonMaxSuppressionPerClass[
+      CZDeconformObjects[ CZDecodeOutput[
+            SSDNet[ CZEncodeInput@CZConformImage[image,{300,300},"Stretch"], TargetDevice->OptionValue[ TargetDevice ] ],
+            OptionValue[ Threshold ] ],
+         image, {300, 300}, "Stretch"  ],
+      FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ];
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
-CZHighlightObjects[ img_, opts:OptionsPattern[] ] := (
+CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
    HighlightImage[img,
       CZDisplayObject /@ CZDetectObjects[ img, opts ]]
 )
 
 
 (* Private Implementation Code *)
-
-
-<<CZutils.m
 
 
 anchorsx1 = Table[{2*x/75},{y,1,38},{x,.5,37.5}];
@@ -96,10 +102,10 @@ CZEncodeInput[ image_ ] :=
    (ImageData[image,Interleaving->False]*256)-{123,117,104};
 
 
-CZDecodeOutput[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=( 
+CZDecodeOutput[ locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}, threshold_:.5 ]:=( 
 (* slocs format A{xywh}HW *)
    slocs=Partition[locs,4];
-   rec=Position[probs,x_/;x>.5];
+   rec=Position[probs,x_/;x>threshold];
    cx=Map[#+anchorsx[[All,All,1]]&,slocs[[All,2]]*anchorsw*0.1];
    cy=Map[#+anchorsy[[All,All,1]]&,slocs[[All,1]]*anchorsh*0.1];
    w=Exp[slocs[[All,4]]*0.2]*anchorsw;
@@ -116,12 +122,12 @@ CZDecodeOutput[locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}]:=(
 )
 
 
-CZDecodeOutput[ netOutput_ ] :=
+CZDecodeOutput[ netOutput_, threshold_:.5 ] :=
    Join[
-      CZDecodeOutput[netOutput["Locs1"],netOutput["ObjMap1"][[All,All,All,2;;21]],{anchorsx1,anchorsy1,anchorsw1,anchorsh1}],
-      CZDecodeOutput[netOutput["Locs2"],netOutput["ObjMap2"][[All,All,All,2;;21]],{anchorsx2,anchorsy2,anchorsw2,anchorsh2}],
-      CZDecodeOutput[netOutput["Locs3"],netOutput["ObjMap3"][[All,All,All,2;;21]],{anchorsx3,anchorsy3,anchorsw3,anchorsh3}],
-      CZDecodeOutput[netOutput["Locs4"],netOutput["ObjMap4"][[All,All,All,2;;21]],{anchorsx4,anchorsy4,anchorsw4,anchorsh4}],
-      CZDecodeOutput[netOutput["Locs5"],netOutput["ObjMap5"][[All,All,All,2;;21]],{anchorsx5,anchorsy5,anchorsw5,anchorsh5}],
-      CZDecodeOutput[netOutput["Locs6"],netOutput["ObjMap6"][[All,All,All,2;;21]],{anchorsx6,anchorsy6,anchorsw6,anchorsh6}]
+      CZDecodeOutput[netOutput["Locs1"],netOutput["ObjMap1"][[All,All,All,2;;21]],{anchorsx1,anchorsy1,anchorsw1,anchorsh1}, threshold],
+      CZDecodeOutput[netOutput["Locs2"],netOutput["ObjMap2"][[All,All,All,2;;21]],{anchorsx2,anchorsy2,anchorsw2,anchorsh2}, threshold],
+      CZDecodeOutput[netOutput["Locs3"],netOutput["ObjMap3"][[All,All,All,2;;21]],{anchorsx3,anchorsy3,anchorsw3,anchorsh3}, threshold],
+      CZDecodeOutput[netOutput["Locs4"],netOutput["ObjMap4"][[All,All,All,2;;21]],{anchorsx4,anchorsy4,anchorsw4,anchorsh4}, threshold],
+      CZDecodeOutput[netOutput["Locs5"],netOutput["ObjMap5"][[All,All,All,2;;21]],{anchorsx5,anchorsy5,anchorsw5,anchorsh5}, threshold],
+      CZDecodeOutput[netOutput["Locs6"],netOutput["ObjMap6"][[All,All,All,2;;21]],{anchorsx6,anchorsy6,anchorsw6,anchorsh6}, threshold]
 ];

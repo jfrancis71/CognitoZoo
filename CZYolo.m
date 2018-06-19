@@ -70,11 +70,20 @@ THE REAL LICENSE:
 (* Public Interface Code *)
 
 
-Options[ CZDetectObjects ] = {
-TargetDevice->"CPU"
-};
-CZDetectObjects[ image_, opts:OptionsPattern[] ]:=
-   CZNonMaxSuppressionPerClass@CZDeconformObjects[ CZDecodeOutput@CZYoloNet[ CZConformImage[image, {416,416}, "Fit" ], opts ], image, {416, 416}, "Fit" ];
+<<CZUtils.m
+
+
+Options[ CZDetectObjects ] = Join[{
+   TargetDevice->"CPU",
+   Threshold->.24
+}, Options[ CZNonMaxSuppression ] ];
+CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
+   CZNonMaxSuppressionPerClass[
+      CZDeconformObjects[ CZDecodeOutput[
+            CZYoloNet[ CZConformImage[image,{416,416},"Fit"], TargetDevice->OptionValue[ TargetDevice ] ],
+            OptionValue[ Threshold ] ],
+         image, {416, 416}, "Fit"  ],
+      FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ];
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -82,9 +91,6 @@ CZHighlightObjects[ img_,  opts:OptionsPattern[] ] := HighlightImage[img, CZDisp
 
 
 (* Private Implementation Code *)
-
-
-<<CZUtils.m
 
 
 biases={{1.08,1.19},{3.42,4.41},{6.63,11.38},{9.42,5.11},{16.62,10.52}};
@@ -106,9 +112,9 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
 CZYoloNet = Import["CZModels/TinyYolov2.wlnet"];
 
 
-CZDecodeOutput[ netOutput_ ] := (
+CZDecodeOutput[ netOutput_, threshold_:.24 ] := (
    slots = LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
-   slotPositions = Position[slots, x_/;x>.24];
+   slotPositions = Position[slots, x_/;x>threshold];
    Map[{CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],CZGetBoundingBox[#,netOutput]}&,slotPositions]
 )
 
