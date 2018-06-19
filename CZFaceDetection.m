@@ -28,7 +28,7 @@ Options[ CZDetectFaces ] = {
    Threshold->0.997,
    TargetDevice->"CPU"
 };
-(* Works like FindFaces, ie returns { {{x1,y1},{x2,y2}},... }
+(* Works like FindFaces, ie returns { Rectangle[{x1,y1},{x2,y2}],... }
    On the Caltech 1999 face dataset, we achieve a recognition rate of around 92% with
    an average of 14% of false positives/image.
    The Caltech dataset has 450 images where most faces are quite close to camera,
@@ -37,7 +37,7 @@ Options[ CZDetectFaces ] = {
    Reference comparison, FindFances achieves 99.6% recognition, but 56% average false positive rate/image
 *)
 CZDetectFaces::usage="
-CZDetectFaces[img,options] returns {{xmin1,ymin1},{xmax1,ymax1},...
+CZDetectFaces[img,options] returns Rectangle[{xmin1,ymin1},{xmax1,ymax1}],...
 Options are: Threshold
 
 Example usage: HighlightImage[img,Rectangle@@@CZDetectFaces[img]].
