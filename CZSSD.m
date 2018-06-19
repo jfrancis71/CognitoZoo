@@ -41,12 +41,9 @@ Options[ CZDetectObjects ] = Join[{
    Threshold->.5
 }, Options[ CZNonMaxSuppressionPerClass ] ];
 CZDetectObjects[ image_Image, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppressionPerClass[
-      CZDeconformObjects[ CZDecodeOutput[
-            SSDNet[ CZEncodeInput@CZConformImage[image,{300,300},"Stretch"], TargetDevice->OptionValue[ TargetDevice ] ],
-            OptionValue[ Threshold ] ],
-         image, {300, 300}, "Stretch"  ],
-      FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ];
+   CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
+      CZObjectsDeconformer[ image, {300, 300}, "Stretch" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+            (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZEncodeInput@CZImageConformer[{300,300},"Stretch"]@image;
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -122,7 +119,7 @@ CZDecodeOutput[ locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}, thresho
 )
 
 
-CZDecodeOutput[ netOutput_, threshold_:.5 ] :=
+CZOutputDecoder[ threshold_:.5 ] := Function[ { netOutput },
    Join[
       CZDecodeOutput[netOutput["Locs1"],netOutput["ObjMap1"][[All,All,All,2;;21]],{anchorsx1,anchorsy1,anchorsw1,anchorsh1}, threshold],
       CZDecodeOutput[netOutput["Locs2"],netOutput["ObjMap2"][[All,All,All,2;;21]],{anchorsx2,anchorsy2,anchorsw2,anchorsh2}, threshold],
@@ -130,4 +127,4 @@ CZDecodeOutput[ netOutput_, threshold_:.5 ] :=
       CZDecodeOutput[netOutput["Locs4"],netOutput["ObjMap4"][[All,All,All,2;;21]],{anchorsx4,anchorsy4,anchorsw4,anchorsh4}, threshold],
       CZDecodeOutput[netOutput["Locs5"],netOutput["ObjMap5"][[All,All,All,2;;21]],{anchorsx5,anchorsy5,anchorsw5,anchorsh5}, threshold],
       CZDecodeOutput[netOutput["Locs6"],netOutput["ObjMap6"][[All,All,All,2;;21]],{anchorsx6,anchorsy6,anchorsw6,anchorsh6}, threshold]
-];
+] ];

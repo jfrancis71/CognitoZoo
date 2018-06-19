@@ -46,12 +46,14 @@ CZDetectFaces[image_?ImageQ, opts:OptionsPattern[]] :=
    CZDetectObjects[ image, CZMultiScaleFaceNet, opts ]
 
 
-Options[ CZDetectObjects ] = {
+Options[ CZDetectObjects ] = Join[{
    Threshold->0.997,
    TargetDevice->"CPU"
-};
+}, Options[ CZNonMaxSuppression ] ];
 CZDetectObjects[image_?ImageQ, multiScaleNet_, opts:OptionsPattern[]] := 
-   CZNonMaxSuppression@CZDeconformObjects[ CZDecodeOutput[ multiScaleNet[ CZConformImage[ image, { 512, 512 }, "Fit" ], opts ], OptionValue[Threshold] ], image, {512, 512}, "Fit" ];
+   CZNonMaxSuppression[FilterRules[ {opts}, Options[ CZNonMaxSuppression ] ] ]@
+      CZObjectsDeconformer[ image, {512, 512}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+            (multiScaleNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{512,512},"Fit"]@image;
 
 
 CZGender::usage = "
@@ -87,10 +89,10 @@ CZBuildMultiScaleObjectNet[ baseNet_ ] := NetGraph[
 CZMultiScaleFaceNet = CZBuildMultiScaleObjectNet[ CZFaceNet ];
 
 
-CZDecodeOutput[ netOutput_, threshold_ ] := Flatten[Table[
+CZOutputDecoder[ threshold_ ] := Function[ { netOutput }, Flatten[Table[
    extractPositions=Position[netOutput[[k,1]],x_/;x>threshold];
    origCoords=Map[{Extract[netOutput[[k,1]],#],4*#[[2]] + (16-4),scales[[k]]-4*#[[1]]+4-16}&,extractPositions];
-   Map[{#[[1]],(512./scales[[k]])*{{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}}&,origCoords],{k,1,16}],1]
+   Map[{#[[1]],(512./scales[[k]])*{{#[[2]]-15,#[[3]]-15},{#[[2]]+16,#[[3]]+16}}}&,origCoords],{k,1,16}],1] ]
 
 
 GenderNet = Import["CZModels/GenderNet.wlnet"];
