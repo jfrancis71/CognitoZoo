@@ -43,7 +43,7 @@ Options[ CZDetectObjects ] = Join[{
 CZDetectObjects[ image_Image, opts:OptionsPattern[] ] :=
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
       CZObjectsDeconformer[ image, {300, 300}, "Stretch" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
-            (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZEncodeInput@CZImageConformer[{300,300},"Stretch"]@image;
+            (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZInputEncoder@CZImageConformer[{300,300},"Stretch"]@image;
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -95,7 +95,7 @@ anchorsh6 = {0.983,0.636,1.27};
 SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/CZSSDVGG300.wlnet"],"WLNet"];
 
 
-CZEncodeInput[ image_ ] :=
+CZInputEncoder[ image_ ] :=
    (ImageData[image,Interleaving->False]*256)-{123,117,104};
 
 
