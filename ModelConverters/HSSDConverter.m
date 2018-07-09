@@ -13,10 +13,9 @@
 
    The weight file used here was initialised using the VOC2007+2012 trained model
    referenced in the repository: https://github.com/HiKapok/SSD.TensorFlow
-   and then was trained for a further approximately 30,000 steps, batch_size=4,
-   learning_rate=0.00025. No mAP was monitored, and due to short additional training
-   no great improvement is expected, but performance seems good to begin with
-   around .778
+   and then was trained for a further approximately 400,000 steps, batch_size=4,
+   learning_rate=0.00025. mAP was around 0.777. (No great improvement on the
+   original measured at .776)
 *)
 
 
