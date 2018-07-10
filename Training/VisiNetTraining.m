@@ -24,16 +24,17 @@ size[ face_ ] := (face[[2,1]]-face[[1,1]])
 CZReplacePart[array_,rules_] := ReplacePart[ array, Select[ rules, #[[1,1]] > 0 && #[[1,2]] > 0 && #[[1,3]] > 0 & ] ]
 
 
+CZCentroidsToArray[ centroids_, inputDims_, arrayDims_, stride_, offset_ ] :=
+   CZReplacePart[ ConstantArray[ 0, arrayDims ], kt=Map[{Ceiling[(1+inputDims[[2]]-#[[2]])/stride+offset],(1+Floor[(#[[1]]-1)/stride-offset])}->1&,centroids] ]
+
+
 (* Note we're encoding from the top so 1st row is 417-480 inclusive *)
 (* offset has the grid shifted to the right and up, so grid cell 8,1 (at level 2) represents 17-32, 17-32 *)
-CZEncoder[ faces_, offset_ ] := CZReplacePart[
-    {ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{8,10}]},
-    Map[Module[{centre=(#[[1]]+#[[2]])/2},
-      Which[
-         size[#]<108,{1,Ceiling[(1+480-centre[[2]])/32+offset],(1+Floor[(centre[[1]]-1)/32-offset])},
-         size[#]>=108&&size[#]<=155,{2,Ceiling[(1+480-centre[[2]])/64+offset],(1+Floor[(centre[[1]]-1)/64-offset])},
-         size[#]>155,{3,Ceiling[(1+480-centre[[2]])/64+offset],(1+Floor[(centre[[1]]-1)/64-offset])}]]->1&,
-      faces]];
+CZEncodeTarget[ faces_, offset_ ] := {
+   CZCentroidsToArray[ RegionCentroid/@Select[faces,size[#]<108&], { 640, 480 }, { 15, 20 }, 32, offset ],
+   CZCentroidsToArray[ RegionCentroid/@Select[faces,size[#]>=108&&size[#]<=155&], { 640, 480 }, { 8, 10 }, 64, offset ],
+   CZCentroidsToArray[ RegionCentroid/@Select[faces,size[#]>155&], { 640, 480 }, { 8, 10 }, 64, offset ]
+};
 
 
 mfiles1=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages1\\*.jpg"]];
@@ -85,12 +86,12 @@ ds = Dataset[
    Table[
       Association[
          "Input"->files[[k]],
-         "FaceArray1"->CZEncoder[faces[[k]],0.0][[1]],
-         "FaceArray2"->CZEncoder[faces[[k]],0.0][[2]],
-         "FaceArray3"->CZEncoder[faces[[k]],0.0][[3]],
-         "FaceArray1Offset"->CZEncoder[faces[[k]],0.5][[1]],
-         "FaceArray2Offset"->CZEncoder[faces[[k]],0.5][[2]],
-         "FaceArray3Offset"->CZEncoder[faces[[k]],0.5][[3]]
+         "FaceArray1"->CZEncodeTarget[faces[[k]],0.0][[1]],
+         "FaceArray2"->CZEncodeTarget[faces[[k]],0.0][[2]],
+         "FaceArray3"->CZEncodeTarget[faces[[k]],0.0][[3]],
+         "FaceArray1Offset"->CZEncodeTarget[faces[[k]],0.5][[1]],
+         "FaceArray2Offset"->CZEncodeTarget[faces[[k]],0.5][[2]],
+         "FaceArray3Offset"->CZEncodeTarget[faces[[k]],0.5][[3]]
          ],
       {k,1,Length[faces]}]];
 
