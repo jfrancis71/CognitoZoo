@@ -21,7 +21,7 @@
 size[ face_ ] := (face[[2,1]]-face[[1,1]])
 
 
-CZReplacePart[array_,rules_] := ReplacePart[ array, Select[ rules, #[[1,1]] > 0 && #[[1,2]] > 0 && #[[1,3]] > 0 & ] ]
+CZReplacePart[array_,rules_] := ReplacePart[ array, Select[ rules, #[[1,1]] > 0 && #[[1,2]] > 0 & ] ]
 
 
 CZCentroidsToArray[ centroids_, inputDims_, arrayDims_, stride_, offset_ ] :=
