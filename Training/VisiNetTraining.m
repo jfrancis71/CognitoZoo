@@ -37,6 +37,24 @@ CZEncodeTarget[ faces_, offset_ ] := {
 };
 
 
+(*
+The gender data used is built here. It is best saved in datafile as it takes significant time.
+
+<<DataSetUtils\FaceScrub.m
+actors=CZReadFaceScrubDatabase[ "C:\\Users\\julian\\ImageDataSets\\FaceScrub\\facescrub_actors.txt"];
+actresses=CZReadFaceScrubDatabase[ "C:\\Users\\julian\\ImageDataSets\\FaceScrub\\facescrub_actresses.txt"];
+FaceScrubIntersectionOverUnion[originalFile_,vgaFile_File,vgaFaces_,database_]:=
+   Map[CZIntersectionOverUnion[
+   #,
+   Rectangle@@CZBoundingBox[CZGetRecordNo[vgaFile],database,originalFile]
+  ]&,
+  CZDeconformRectangles[ vgaFaces, originalFile,{640,480},"Fit"]
+  ];
+In the format, 0 means don't know, 1 is female, 2 is male
+mgenders1=2*Table[UnitStep[FaceScrubIntersectionOverUnion[mfiles1[[f]],mfaces1[[f]],actors]-0.5],{f,1,Length[mfaces1]}];
+*)
+
+
 mfiles1=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages1\\*.jpg"]];
 mfaces1=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\DLibFaces1.mx"];
 mfiles2=Map[File,FileNames["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\ActorImages2\\*.jpg"]];
@@ -69,8 +87,23 @@ ffiles=Join[ffiles1,ffiles2,ffiles3,ffiles4,ffiles5,ffiles6];
 ffaces=Join[ffaces1,ffaces2,ffaces3,ffaces4,ffaces5,ffaces6];
 
 
+mgender1=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\Gender1.mx"];
+mgender2=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\Gender2.mx"];
+mgender3=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\Gender3.mx"];
+mgender4=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\Gender4.mx"];
+mgender5=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\Gender5.mx"];
+mgender6=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActorImages\\VGA\\Gender6.mx"];
+fgender1=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActressImages\\VGA\\Gender1.mx"];
+fgender2=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActressImages\\VGA\\Gender2.mx"];
+fgender3=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActressImages\\VGA\\Gender3.mx"];
+fgender4=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActressImages\\VGA\\Gender4.mx"];
+fgender5=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActressImages\\VGA\\Gender5.mx"];
+fgender6=Import["C:\\Users\\julian\\ImageDataSets\\FaceScrub\\ActressImages\\VGA\\Gender6.mx"];
+
+
 files=Join[mfiles,ffiles];
 faces=Join[mfaces,ffaces];
+genders=Join[mgender1,mgender2,mgender3,mgender4,mgender5,mgender6,fgender1,fgender2,fgender3,fgender4,fgender5,fgender6];
 
 
 (* rnds = RandomSample@Range[ Length[ faces ] ]; *)
@@ -86,12 +119,30 @@ ds = Dataset[
    Table[
       Association[
          "Input"->files[[k]],
+         
          "FaceArray1"->CZEncodeTarget[faces[[k]],0.0][[1]],
+         "GenderMask1"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.0][[1]],
+         "GenderArray1"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.0][[1]],
+         
          "FaceArray2"->CZEncodeTarget[faces[[k]],0.0][[2]],
+         "GenderMask2"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.0][[2]],
+         "GenderArray2"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.0][[2]],
+         
          "FaceArray3"->CZEncodeTarget[faces[[k]],0.0][[3]],
+         "GenderMask3"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.0][[3]],
+         "GenderArray3"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.0][[3]],
+         
          "FaceArray1Offset"->CZEncodeTarget[faces[[k]],0.5][[1]],
+         "GenderMask1Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.0][[1]],
+         "GenderArray1Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.0][[1]],
+         
          "FaceArray2Offset"->CZEncodeTarget[faces[[k]],0.5][[2]],
-         "FaceArray3Offset"->CZEncodeTarget[faces[[k]],0.5][[3]]
+         "GenderMask2Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.5][[2]],
+         "GenderArray2Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.5][[2]],
+         
+         "FaceArray3Offset"->CZEncodeTarget[faces[[k]],0.5][[3]],
+         "GenderMask3Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.5][[3]],
+         "GenderArray3Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.5][[3]]
          ],
       {k,1,Length[faces]}]];
 
@@ -126,26 +177,55 @@ multibox1Offset = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticS
 multibox2Offset = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
 multibox3Offset = NetChain[{ConvolutionLayer[1,{1,1}],PartLayer[1],LogisticSigmoid}];
 
+multiboxGender1 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+multiboxGender2 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+multiboxGender3 = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+multiboxGender1Offset = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+multiboxGender2Offset = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+multiboxGender3Offset = NetChain[ { ConvolutionLayer[1,{1,1}], PartLayer[1], LogisticSigmoid } ];
+
 
 net = NetGraph[
    <|"trunk"->trunk,"block2"->block2,"block3"->block3,"multibox1"->multibox1,"multibox2"->multibox2,"multibox3"->multibox3,
-   "multibox1Offset"->multibox1Offset,"multibox2Offset"->multibox2Offset,"multibox3Offset"->multibox3Offset|>,
+   "multibox1Offset"->multibox1Offset,"multibox2Offset"->multibox2Offset,"multibox3Offset"->multibox3Offset,
+   "multiboxGender1"->multiboxGender1,"multiboxGender2"->multiboxGender2,"multiboxGender3"->multiboxGender3,
+   "multiboxGender1Offset"->multiboxGender1Offset,"multiboxGender2Offset"->multiboxGender2Offset,"multiboxGender3Offset"->multiboxGender3Offset
+   |>,
    {"trunk"->"block2"->"block3"->"multibox3"->NetPort["FaceArray3"],"trunk"->"multibox1"->NetPort["FaceArray1"],"block2"->"multibox2"->NetPort["FaceArray2"],
    "trunk"->"multibox1Offset","block2"->"multibox2Offset","block3"->"multibox3Offset",
-   "multibox1Offset"->NetPort["FaceArray1Offset"],"multibox2Offset"->NetPort["FaceArray2Offset"],"multibox3Offset"->NetPort["FaceArray3Offset"]},
+   "multibox1Offset"->NetPort["FaceArray1Offset"],"multibox2Offset"->NetPort["FaceArray2Offset"],"multibox3Offset"->NetPort["FaceArray3Offset"],
+   "trunk"->"multiboxGender1"->NetPort["GenderArray1"],
+   "trunk"->"multiboxGender1Offset"->NetPort["GenderArray1Offset"],
+   "block2"->"multiboxGender2"->NetPort["GenderArray2"],"block2"->"multiboxGender2Offset"->NetPort["GenderArray2Offset"],
+   "block3"->"multiboxGender3"->NetPort["GenderArray3"],"block3"->"multiboxGender3Offset"->NetPort["GenderArray3Offset"]
+   },
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]];
+
+
+GenderLossLayer = NetGraph[ <| "t1"->ThreadingLayer[Times], "t2"->ThreadingLayer[Times], "crossentropy"->CrossEntropyLossLayer["Binary"]|>,{
+   {NetPort["Input"],NetPort["Mask"]}->1, {NetPort["Target"],NetPort["Mask"]}->2, 1->NetPort[{3,"Input"}], 2->NetPort[{3,"Target"}]
+   }
+];
 
 
 lossNet = NetGraph[ <|
    "net"->net, 
    "L1"->CrossEntropyLossLayer["Binary"], "L2"->CrossEntropyLossLayer["Binary"], "L3"->CrossEntropyLossLayer["Binary"],
-   "L1O"->CrossEntropyLossLayer["Binary"], "L2O"->CrossEntropyLossLayer["Binary"], "L3O"->CrossEntropyLossLayer["Binary"] |>, {
+   "L1O"->CrossEntropyLossLayer["Binary"], "L2O"->CrossEntropyLossLayer["Binary"], "L3O"->CrossEntropyLossLayer["Binary"],
+   "LG1"->GenderLossLayer,"LG2"->GenderLossLayer,"LG3"->GenderLossLayer,"LG1O"->GenderLossLayer,"LG2O"->GenderLossLayer,"LG3O"->GenderLossLayer
+    |>, {
    NetPort[{"net","FaceArray1"}] -> NetPort[{"L1","Input"}], NetPort["FaceArray1"]->NetPort[{"L1","Target"}],
    NetPort[{"net","FaceArray2"}] -> NetPort[{"L2","Input"}], NetPort["FaceArray2"]->NetPort[{"L2","Target"}],
    NetPort[{"net","FaceArray3"}] -> NetPort[{"L3","Input"}], NetPort["FaceArray3"]->NetPort[{"L3","Target"}],
    NetPort[{"net","FaceArray1Offset"}] -> NetPort[{"L1O","Input"}], NetPort["FaceArray1Offset"]->NetPort[{"L1O","Target"}],
    NetPort[{"net","FaceArray2Offset"}] -> NetPort[{"L2O","Input"}], NetPort["FaceArray2Offset"]->NetPort[{"L2O","Target"}],
-   NetPort[{"net","FaceArray3Offset"}] -> NetPort[{"L3O","Input"}], NetPort["FaceArray3Offset"]->NetPort[{"L3O","Target"}]
+   NetPort[{"net","FaceArray3Offset"}] -> NetPort[{"L3O","Input"}], NetPort["FaceArray3Offset"]->NetPort[{"L3O","Target"}],
+   NetPort[{"net","GenderArray1"}]->NetPort[{"LG1","Input"}], NetPort["GenderArray1"]->NetPort[{"LG1","Target"}],NetPort["GenderMask1"]->NetPort[{"LG1","Mask"}],
+   NetPort[{"net","GenderArray2"}]->NetPort[{"LG2","Input"}], NetPort["GenderArray2"]->NetPort[{"LG2","Target"}],NetPort["GenderMask2"]->NetPort[{"LG2","Mask"}],
+   NetPort[{"net","GenderArray3"}]->NetPort[{"LG3","Input"}], NetPort["GenderArray3"]->NetPort[{"LG3","Target"}],NetPort["GenderMask3"]->NetPort[{"LG3","Mask"}],
+   NetPort[{"net","GenderArray1Offset"}]->NetPort[{"LG1O","Input"}], NetPort["GenderArray1Offset"]->NetPort[{"LG1O","Target"}],NetPort["GenderMask1Offset"]->NetPort[{"LG1O","Mask"}],
+   NetPort[{"net","GenderArray2Offset"}]->NetPort[{"LG2O","Input"}], NetPort["GenderArray2Offset"]->NetPort[{"LG2O","Target"}],NetPort["GenderMask2Offset"]->NetPort[{"LG2O","Mask"}],
+   NetPort[{"net","GenderArray3Offset"}]->NetPort[{"LG3O","Input"}], NetPort["GenderArray3Offset"]->NetPort[{"LG3O","Target"}],NetPort["GenderMask3Offset"]->NetPort[{"LG3O","Mask"}]
     } ];
 
 
@@ -154,14 +234,15 @@ inet = NetInitialize[lossNet, Method->"Orthogonal"];
 
 trained = NetTrain[ inet, trainingSet, All,
             ValidationSet->validationSet,TargetDevice->"GPU",
-            TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint5"}];
+            TrainingProgressCheckpointing->{"Directory","c:\\users\\julian\\checkpoint7"}
+];
 
 
 (*
-   validation .0244, .0237 (2nd round). Note importance of initialisation method.
+   validation .0277, .0258( I think!) (2nd round). Note importance of initialisation method.
    Using test:
-      Table[CZHighlightFaces[Import@files[[rnds[[k]]]],Threshold\[Rule].5,OverlappingWindows\[Rule]True],{k,80001,80100}]
-   achieves 0 false positives and 3 false negatives
+      Table[CZHighlightFaces[Import@files[[rnds[[k]]]],Detail\[Rule]"VGA"],{k,80001,80100}]
+   achieves 1 false positives (well an eye detected) and 3 false negatives
 *)
 
 
