@@ -1,5 +1,38 @@
 (* ::Package:: *)
 
+(*
+   Implements Face Detection
+   Usage: HighlightImage[img,CZDetectFaces[img]]
+   or:    CZHightFaces[img]
+   
+Timing:
+   All Timings for a 640x480 image preimported. GPU is Quadro K4200
+
+   CZDetectFaces[img]//AbsoluteTiming
+   1.6 secs
+   
+   CZDetectFaces[img,Detail\[Rule]"VGA"]//AbsoluteTiming
+   0.19 secs
+   
+   CZDetectFaces[img,TargetDevice\[Rule]"GPU"]//AbsoluteTiming
+   1.52 secs
+   
+   CZDetectFaces[img,TargetDevice\[Rule]"GPU",Detail\[Rule]"VGA"]//AbsoluteTiming
+   0.04 secs
+*)
+
+
+(* Credit
+
+   Training net comes from ./Training/VisiNet.m
+   That training session used images from the Face Scrub data set:
+   http: http://vintage.winklerbros.net/facescrub.html
+   H.-W. Ng, S. Winkler.
+   A data-driven approach to cleaning large face datasets.
+   Proc. IEEE International Conference on Image Processing (ICIP), Paris, France, Oct. 27-30, 2014.
+*)
+
+
 (* Public Interface *)
 
 
