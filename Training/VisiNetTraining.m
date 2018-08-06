@@ -241,8 +241,10 @@ trained = NetTrain[ inet, trainingSet, All,
 (*
    validation .0277, .0258( I think!) (2nd round). Note importance of initialisation method.
    Using test:
-      Table[CZHighlightFaces[Import@files[[rnds[[k]]]],Detail\[Rule]"VGA"],{k,80001,80100}]
+      Table[CZHighlightFaces[Import@files[[rnds[[k]]]],Detail\[Rule]"VGA",GenderDetection\[Rule]True],{k,80001,80100}]
    achieves 1 false positives (well an eye detected) and 3 false negatives
+   In the above small validaton set, there appear to be 4 gender misclassifications.
+   (Or 5 gender misclassifications using TakeWeightedRectangle)
 *)
 
 
@@ -251,6 +253,6 @@ Export["c:\\Users\\julian\\TmpFaceDetection.mx",trained];
 
 (*
 trained=NetReplacePart[NetExtract[Import["c:\\Users\\julian\\checkpoint5\\2018-05-23T09-02-29_0_02_053334_2.29e-2_2.37e-2.wlnet"],"net"],"Input"\[Rule]NetEncoder[{"Image",{640,480},ColorSpace\[Rule]"RGB"}]];
-CloudPut[trained,"VisiNetv1.wlnet"]
+CloudExport[trained,"WLNET","VisiNetv2.wlnet"];
 Export["c:\\Users\\julian\\Google Drive\\Personal\\Computer Science\\CZModels\\VisiNetv1.wlnet",trained]
 *)

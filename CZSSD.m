@@ -41,9 +41,9 @@ Options[ CZDetectObjects ] = Join[{
    Threshold->.5
 }, Options[ CZNonMaxSuppressionPerClass ] ];
 CZDetectObjects[ image_Image, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
+   (CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
       CZObjectsDeconformer[ image, {300, 300}, "Stretch" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
-            (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZInputEncoder@CZImageConformer[{300,300},"Stretch"]@image;
+            (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZInputEncoder@CZImageConformer[{300,300},"Stretch"]@image)[[All,{1,3}]];
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -92,7 +92,7 @@ anchorsw6 = {0.983,1.27,0.636};
 anchorsh6 = {0.983,0.636,1.27};
 
 
-SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/CZSSDVGG300.wlnet"],"WLNet"];
+SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG300.wlnet"],"WLNet"];
 
 
 CZInputEncoder[ image_ ] :=
@@ -108,7 +108,7 @@ CZDecodeOutput[ locs_, probs_,{anchorsx_,anchorsy_,anchorsw_,anchorsh_}, thresho
    w=Exp[slocs[[All,4]]*0.2]*anchorsw;
    h=Exp[slocs[[All,3]]*0.2]*anchorsh;
 
-   MapThread[{#1,#2,Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}]}&,{
+   MapThread[{#1,#2,{},Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}]}&,{
       CZPascalClasses[[rec[[All,4]]]],
       Extract[probs,rec],
       Extract[cx,rec[[All,1;;3]]],

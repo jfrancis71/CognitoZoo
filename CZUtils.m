@@ -24,12 +24,14 @@ CZIntersectionOverUnion[a_, b_]:=
 
 
 (*
-   Note: requires format list of {prob,Rectangle[{xmin,ymin},{xmax,ymax}]}
+   Note: requires format list of {prob,metrics,Rectangle[{xmin,ymin},{xmax,ymax}]}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
 *)
-CZTakeMaxProbRectangle[ objects_ ] := (First@SortBy[objects,-#[[1]]&])[[2]];
-CZTakeWeightedRectangle[ objects_ ] := Rectangle@@Round[Total[objects[[All,1]]*List@@@objects[[All,2]]]/Total[objects[[All,1]]]];
+CZTakeMaxProbRectangle[ objects_ ] := (First@SortBy[objects,-#[[1]]&])[[{2,3}]];
+CZTakeWeightedRectangle[ objects_ ] := {
+   Round[Total[objects[[All,1]]*List@@@objects[[All,2]]]/Total[objects[[All,1]]]],
+   Rectangle@@Round[Total[objects[[All,1]]*List@@@objects[[All,3]]]/Total[objects[[All,1]]]]};
 SyntaxInformation[ NMSMethod ]= {"ArgumentsPattern"->{_}};
 SyntaxInformation[ NMSIntersectionOverUnionThreshold ]= {"ArgumentsPattern"->{_}};
 Options[ CZNonMaxSuppression ] = {
@@ -37,18 +39,18 @@ Options[ CZNonMaxSuppression ] = {
    NMSIntersectionOverUnionThreshold->.25
 };
 CZNonMaxSuppression[ opts:OptionsPattern[] ] := Function[ {objects},
-   OptionValue[ NMSMethod ] /@ Gather[ objects, (CZIntersectionOverUnion[#1[[2]],#2[[2]]]>OptionValue[ NMSIntersectionOverUnionThreshold] )& ] ];
+   OptionValue[ NMSMethod ] /@ Gather[ objects, (CZIntersectionOverUnion[#1[[3]],#2[[3]]]>OptionValue[ NMSIntersectionOverUnionThreshold] )& ] ];
 
 
 (*
-   Note: requires format list of {class, prob, Rectangle[{xmin,ymin},{xmax,ymax}]}
+   Note: requires format list of {class, prob, metrics, Rectangle[{xmin,ymin},{xmax,ymax}]}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
 *)
 (* Does Non Max Suppression seperately by object class *)
 Options[ CZNonMaxSuppressionPerClass ] = Options[ CZNonMaxSuppression ];
 CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ] := Function[ { objects },
-      Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#}&/@CZNonMaxSuppression[ opts ][objectsInClass[[All,2;;3]] ]],GatherBy[objects,#[[1]]&]],1]]
+      Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#[[1]],#[[2]]}&/@CZNonMaxSuppression[ opts ][objectsInClass[[All,2;;4]] ]],GatherBy[objects,#[[1]]&]],1]]
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};
@@ -71,9 +73,8 @@ CZDeconformRectangles[ rboxes_, image_, netDims_, "Stretch" ] :=
    ]
 
 
-(* Implicitly assumes that the rectangles are the last entry in the list of objects.
-   So { {class1, prob1, rect1 }, ... }
-   or { {prob1, rect1}, ... }
+(* Implicitly assumes that the rectangles are last entry 4 in the list of objects.
+   So { {class1, prob1, metrics1, rect1 }, ... }
 *)
 CZObjectsDeconformer[ image_, netDims_, fitting_ ] := Function[{ objects },
    If[

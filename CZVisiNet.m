@@ -40,23 +40,31 @@ Timing:
 
 
 SyntaxInformation[ Detail ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ GenderDetection ]= {"ArgumentsPattern"->{_}};
 Options[ CZDetectFaces ] = Join[{
    TargetDevice->"CPU",
    Threshold->.5,
-   Detail->"XGA"
+   Detail->"XGA",
+   GenderDetection->False
 }, Options[ CZNonMaxSuppression ] ];
 
 
 CZDetectFaces[ image_Image, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppression[FilterRules[ {opts}, Options[ CZNonMaxSuppression ] ] ]@
-   If[OptionValue[Detail]=="VGA",
+   Function[detections,If[OptionValue[GenderDetection],Map[{CZGenderClassify[#[[2,1]]],#[[3]]}&,detections],detections[[All,3]]]]@
+   CZNonMaxSuppressionPerClass[ FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@If[OptionValue[Detail]=="VGA",
       CZObjectsDeconformer[ image, {640, 480}, "Fit" ]@(CZVGADetectFaces[#,FilterRules[{opts},Options[ CZVGADetectFaces ] ] ]&)@CZImageConformer[{640,480},"Fit"]@image,
       CZObjectsDeconformer[ image, {1280, 960}, "Fit" ]@(CZXGADetectFaces[#,FilterRules[{opts},Options[ CZXGADetectFaces ] ] ]&)@CZImageConformer[{1280,960},"Fit"]@image
    ]   
 
 
 Options[ CZHighlightFaces ] = Options[ CZDetectFaces ];
-CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[ img, CZDetectFaces[ img, opts ] ]
+CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[
+   img,
+   If[ OptionValue[GenderDetection],
+      # /. "Male"->Blue /. "Female" ->Pink,
+      # ]&
+      @CZDetectFaces[ img, opts ]
+]
 
 
 (* Private Code *)
@@ -67,7 +75,7 @@ Options[ CZVGADetectFaces ] = {
    Threshold->.5
 };
 CZVGADetectFaces[ image_Image, opts:OptionsPattern[] ] :=
-   CZOutputDecoder[ OptionValue[ Threshold ] ]@(trained[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@image;
+   CZOutputDecoder[ OptionValue[ Threshold ] ]@(CZVisiNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@image;
 
 
 CZMapAt[_,{},_]:={};
@@ -81,7 +89,7 @@ Options[ CZXGADetectFaces ] = {
 CZXGADetectFaces[ image_Image, opts:OptionsPattern[] ] := Join[
    CZObjectsDeconformer[ image, {640, 480}, "Fit" ]@CZVGADetectFaces[ CZImageConformer[{640,480},"Fit"]@image, opts ],
    Flatten[MapThread[
-      Function[{objects,offset},CZMapAt[(#+offset)&,objects,{All,2,All}]],{
+      Function[{objects,offset},CZMapAt[(#+offset)&,objects,{All,4,All}]],{
       Map[CZVGADetectFaces,ImageTrim[image,{
       {{1,1},{640,480}},(*bottom left*)
       {{1,481},{641,960}},(*top left*)
@@ -96,16 +104,49 @@ CZXGADetectFaces[ image_Image, opts:OptionsPattern[] ] := Join[
 ];
 
 
-trained = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/VisiNetv1"],"WLNet"];
+CZVisiNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/CZVisiNetv2.wlnet"],"WLNet"];
+
+
+CZGenderClassify[ maleness_ ] := If[ maleness >= .5, "Male", "Female" ]
 
 
 CZOutputDecoder[ threshold_ ] := Function[ { assoc }, Join[
-   Map[{Extract[assoc["FaceArray1"],#],Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]}&,Position[assoc["FaceArray1"],x_/;x>threshold]],
-   Map[{Extract[assoc["FaceArray2"],#],Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]}&,Position[assoc["FaceArray2"],x_/;x>threshold]],
-   Map[{Extract[assoc["FaceArray3"],#],Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]}&,Position[assoc["FaceArray3"],x_/;x>threshold]],
-   Map[{Extract[assoc["FaceArray1Offset"],#],Rectangle[{32*(#[[2]]),480-32*(#[[1]]-1)}-{37,37},{32*(#[[2]]),480-32*(#[[1]]-1)}+{37,37}]}&,Position[assoc["FaceArray1Offset"],x_/;x>threshold]],
-   Map[{Extract[assoc["FaceArray2Offset"],#],Rectangle[{64*(#[[2]]),480-64*(#[[1]]-1)}-{65,65},{64*(#[[2]]),480-64*(#[[1]]-1)}+{65,65}]}&,Position[assoc["FaceArray2Offset"],x_/;x>threshold]],
-   Map[{Extract[assoc["FaceArray3Offset"],#],Rectangle[{64*(#[[2]]),480-64*(#[[1]]-1)}-{100,100},{64*(#[[2]]),480-64*(#[[1]]-1)}+{100,100}]}&,Position[assoc["FaceArray3Offset"],x_/;x>threshold]]
+   Map[{
+         "Face",
+         Extract[assoc["FaceArray1"],#],
+         {Extract[assoc["GenderArray1"],#]},
+         Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]}&,
+      Position[assoc["FaceArray1"],x_/;x>threshold]],
+   Map[{
+         "Face",
+         Extract[assoc["FaceArray2"],#],
+         {Extract[assoc["GenderArray2"],#]},
+         Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]}&,
+      Position[assoc["FaceArray2"],x_/;x>threshold]],
+   Map[{
+         "Face",
+         Extract[assoc["FaceArray3"],#],
+         {Extract[assoc["GenderArray3"],#]},
+         Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]}&,
+      Position[assoc["FaceArray3"],x_/;x>threshold]],
+   Map[{
+         "Face",
+         Extract[assoc["FaceArray1Offset"],#],
+         {Extract[assoc["GenderArray1Offset"],#]},
+         Rectangle[{32*(#[[2]]),480-32*(#[[1]]-1)}-{37,37},{32*(#[[2]]),480-32*(#[[1]]-1)}+{37,37}]}&,
+      Position[assoc["FaceArray1Offset"],x_/;x>threshold]],
+   Map[{
+         "Face",
+         Extract[assoc["FaceArray2Offset"],#],
+         {Extract[assoc["GenderArray2Offset"],#]},
+         Rectangle[{64*(#[[2]]),480-64*(#[[1]]-1)}-{65,65},{64*(#[[2]]),480-64*(#[[1]]-1)}+{65,65}]}&,
+      Position[assoc["FaceArray2Offset"],x_/;x>threshold]],
+   Map[{
+         "Face",
+         Extract[assoc["FaceArray3Offset"],#],
+         {Extract[assoc["GenderArray3Offset"],#]},
+         Rectangle[{64*(#[[2]]),480-64*(#[[1]]-1)}-{100,100},{64*(#[[2]]),480-64*(#[[1]]-1)}+{100,100}]}&,
+      Position[assoc["FaceArray3Offset"],x_/;x>threshold]]
 ] ]
 
 
