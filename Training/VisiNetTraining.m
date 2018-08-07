@@ -133,8 +133,8 @@ ds = Dataset[
          "GenderArray3"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.0][[3]],
          
          "FaceArray1Offset"->CZEncodeTarget[faces[[k]],0.5][[1]],
-         "GenderMask1Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.0][[1]],
-         "GenderArray1Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.0][[1]],
+         "GenderMask1Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.5][[1]],
+         "GenderArray1Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],2]],0.5][[1]],
          
          "FaceArray2Offset"->CZEncodeTarget[faces[[k]],0.5][[2]],
          "GenderMask2Offset"->CZEncodeTarget[Extract[faces[[k]],Position[genders[[k]],x_/;x!=0]],0.5][[2]],
@@ -239,12 +239,11 @@ trained = NetTrain[ inet, trainingSet, All,
 
 
 (*
-   validation .0277, .0258( I think!) (2nd round). Note importance of initialisation method.
+   validation .0291, .0256, .0251, .0254. Note importance of initialisation method.
    Using test:
       Table[CZHighlightFaces[Import@files[[rnds[[k]]]],Detail\[Rule]"VGA",GenderDetection\[Rule]True],{k,80001,80100}]
-   achieves 1 false positives (well an eye detected) and 3 false negatives
-   In the above small validaton set, there appear to be 4 gender misclassifications.
-   (Or 5 gender misclassifications using TakeWeightedRectangle)
+   achieves 0 false positives and 0 false negatives
+   In the above small validaton set, there appear to be 7 gender misclassifications.
 *)
 
 

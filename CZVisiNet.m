@@ -104,7 +104,7 @@ CZXGADetectFaces[ image_Image, opts:OptionsPattern[] ] := Join[
 ];
 
 
-CZVisiNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/CZVisiNetv2.wlnet"],"WLNet"];
+CZVisiNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/CZVisiNetVGAFaceScrubv2.wlnet"],"WLNet"];
 
 
 CZGenderClassify[ maleness_ ] := If[ maleness >= .5, "Male", "Female" ]
