@@ -19,6 +19,10 @@ Timing:
    
    CZDetectFaces[img,TargetDevice\[Rule]"GPU",Detail\[Rule]"VGA"]//AbsoluteTiming
    0.04 secs
+   
+   Performance on gender detection:
+      7% error tested on a BBC Question Time video (with detail\[Rule]"VGA")
+      5% with adding CZTakeWeightedRectangles
 *)
 
 
