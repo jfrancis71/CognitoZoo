@@ -244,6 +244,7 @@ trained = NetTrain[ inet, trainingSet, All,
       Table[CZHighlightFaces[Import@files[[rnds[[k]]]],Detail\[Rule]"VGA",GenderDetection\[Rule]True],{k,80001,80100}]
    achieves 0 false positives and 0 false negatives
    In the above small validaton set, there appear to be 7 gender misclassifications.
+   For reference: training with 40,000 gave validation loss .0316,.0284,.0278
 *)
 
 
