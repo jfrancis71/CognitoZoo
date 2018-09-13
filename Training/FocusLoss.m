@@ -1,0 +1,20 @@
+(* ::Package:: *)
+
+(* ::Input:: *)
+(*pt=NetGraph[<|"negt"->ElementwiseLayer[1-#&],"negi"->ElementwiseLayer[1-#&],*)
+(*"falsebr"->ThreadingLayer[Times],"truebr"->ThreadingLayer[Times],"sum"->ThreadingLayer[Plus]|>,*)
+(*{NetPort["Target"]->"negt",NetPort["Input"]->"negi",*)
+(*{"negt","negi"}->"falsebr",*)
+(*{NetPort["Target"],NetPort["Input"]}->"truebr",*)
+(*{"falsebr","truebr"}->"sum"*)
+(*}*)
+(*];*)
+
+
+(* ::Input:: *)
+(*FocusLossLayer=NetGraph[<|"pt"->pt,"sq"->ElementwiseLayer[-((1-#)^2)&],"crossentropy"->ElementwiseLayer[Log],"times"->ThreadingLayer[Times],"res"->SummationLayer[]|>,*)
+(*{"pt"->"sq",*)
+(*"pt"->"crossentropy",*)
+(*{"sq","crossentropy"}->"times",*)
+(*"times"->"res","res"->NetPort["Loss"]*)
+(*}];*)
