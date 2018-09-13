@@ -81,3 +81,18 @@ CZObjectsDeconformer[ image_, netDims_, fitting_ ] := Function[{ objects },
       objects=={},
       {},
       Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], -1 ] ] ] ]
+
+
+CZConformRectangles[ rboxes_, image_, netDims_, "Fit" ]:=
+   With[{netAspectRatio = netDims[[2]]/netDims[[1]]},
+      With[ {
+         boxes = Map[{#[[1]],#[[2]]}&,rboxes],
+         padding = If [ ImageAspectRatio[image] < netAspectRatio,
+            {0,(ImageDimensions[image][[1]]*netAspectRatio-ImageDimensions[image][[2]])/2},
+            {(ImageDimensions[image][[2]]*(1/netAspectRatio)-ImageDimensions[image][[1]])/2,0}
+            ],
+         scale = If [ ImageAspectRatio[image] < netAspectRatio, ImageDimensions[image][[1]]/netDims[[1]], ImageDimensions[image][[2]]/netDims[[2]] ]
+         },rt1=netAspectRatio;rt2=scale;
+         Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[(Transpose[boxes,{2,3,1}]+ padding)/scale,{3,1,2}]]
+   ]];
+
