@@ -18,7 +18,12 @@
    Credit:
    This implementation is based on Changan Wang's Tensorflow code:
       https://github.com/HiKapok/SSD.TensorFlow
-      
+   
+   The neural net file: SSDVGG300HiKapok.wlnet
+   has been converted from TensorFlow checkpoint to Mathematica WLNET format
+   The file is used with permission of the Apache 2.0 license:
+   https://github.com/HiKapok/SSD.TensorFlow/LICENSE
+
    SSD VGG 300 is based on the following paper:
    https://arxiv.org/abs/1512.02325
    Title: SSD: Single Shot MultiBox Detector
@@ -92,7 +97,7 @@ anchorsw6 = {0.983,1.27,0.636};
 anchorsh6 = {0.983,0.636,1.27};
 
 
-SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG300.wlnet"],"WLNet"];
+SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG300HiKapok.wlnet"],"WLNet"];
 
 
 CZInputEncoder[ image_ ] :=
