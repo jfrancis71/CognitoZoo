@@ -67,18 +67,18 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
 SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSD300VGGHikapokNet20180618.wlnet"],"WLNet"];
 
 
-CZDecodeOutput[ locs_, probs_, threshold_:.5 ]:=( 
-   detections=Position[probs,x_/;x>threshold];
+CZDecodeOutput[ locs_, probs_, threshold_:.5 ]:=Module[{
+   detections = Position[probs,x_/;x>threshold]},
 
    MapThread[{#1,#2,{},Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}]}&,{
       CZPascalClasses[[detections[[All,4]]]],
       Extract[probs,detections],
-      Extract[locs[[1]],detections[[All,1;;3]]],
-      Extract[locs[[2]],detections[[All,1;;3]]],
-      Extract[locs[[3]],detections[[All,1;;3]]],
-      Extract[locs[[4]],detections[[All,1;;3]]]
+      Extract[locs[[1]],detections[[All,1;;3]]], (*cx*)
+      Extract[locs[[2]],detections[[All,1;;3]]], (*cy*)
+      Extract[locs[[3]],detections[[All,1;;3]]], (*width*)
+      Extract[locs[[4]],detections[[All,1;;3]]]  (*height*)
 }]
-)
+]
 
 
 CZOutputDecoder[ threshold_:.5 ] := Function[ { netOutput },
