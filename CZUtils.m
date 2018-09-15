@@ -96,3 +96,23 @@ CZConformRectangles[ rboxes_, image_, netDims_, "Fit" ]:=
          Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[(Transpose[boxes,{2,3,1}]+ padding)/scale,{3,1,2}]]
    ]];
 
+
+
+(*
+   Utility. Gives an indication of how many MULADDS are involved in a net.
+   Presumably requires the net to know about its input size to calculate this.
+*)
+CZNetInformation[conv_ConvolutionLayer]:=Apply[Times,NetExtract[conv,"Output"]]*NetExtract[conv,"Input"][[1]]*Apply[Times,NetExtract[conv,"KernelSize"]];
+CZNetInformation[elem_ElementwiseLayer]:=0;
+CZNetInformation[pool_PoolingLayer]:=0;
+CZNetInformation[pad_PaddingLayer]:=0;
+CZNetInformation[cat_CatenateLayer]:=0;
+CZNetInformation[plus_ConstantPlusLayer]:=0;
+CZNetInformation[times_ConstantTimesLayer]:=0;
+CZNetInformation[part_PartLayer]:=0;
+CZNetInformation[reshape_ReshapeLayer]:=0;
+CZNetInformation[soft_SoftmaxLayer]:=0;
+CZNetInformation[trans_TransposeLayer]:=0;
+CZNetInformation[trans_BatchNormalizationLayer]:=0;
+CZNetInformation[net_NetChain]:=Total@Table[CZNetInformation[net[[l]]],{l,1,Length[net]}];
+CZNetInformation[net_NetGraph]:=Total@Table[CZNetInformation[net[[l]]],{l,1,Length[net]}]
