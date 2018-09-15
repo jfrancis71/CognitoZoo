@@ -13,17 +13,51 @@
 
    The weight file used here was initialised using the VOC2007+2012 trained model
    referenced in the repository: https://github.com/HiKapok/SSD.TensorFlow
-   and then was trained for a further approximately 400,000 steps, batch_size=4,
-   learning_rate=0.00025. mAP was around 0.777. (No great improvement on the
-   original measured at .776)
+   (Downloaded 18 June 2018)
 *)
 
 
-SSDFileName="CZModels/Hssd.hdf";
+SSDFileName="CZModels/SSD300VGGHikapokNet20180618.hdf";
+
+
+anchorsx1 = Table[2*x/75,{y,1,38},{x,.5,37.5}];
+anchorsy1 = Table[2*y/75,{y,.5,37.5},{x,1,38}];
+anchorsw1 = {0.141,0.141,0.070};
+anchorsh1 = {0.141,0.070,0.141};
+
+
+anchorsx2 = Table[4*x/75,{y,1,19},{x,.5,18.5}];
+anchorsy2 = Table[4*y/75,{y,.5,18.5},{x,1,19}];
+anchorsw2 = {0.273,0.282,0.346,0.141,0.115};
+anchorsh2 = {0.273,0.141,0.115,0.282,0.346};
+
+
+anchorsx3 = Table[8*x/75,{y,1,10},{x,.5,9.5}];
+anchorsy3 = Table[8*y/75,{y,.5,9.5},{x,1,10}];
+anchorsw3 = {0.454,0.530,0.649,0.265,0.216};
+anchorsh3 = {0.454,0.265,0.216,0.530,0.649};
+
+
+anchorsx4 = Table[16*x/75,{y,1,5},{x,.5,4.5}];
+anchorsy4 = Table[16*y/75,{y,.5,4.5},{x,1,5}];
+anchorsw4 = {0.631,0.777,0.952,0.388,0.317};
+anchorsh4 = {0.631,0.388,0.317,0.777,0.952};
+
+
+anchorsx5 = Table[x/3,{y,1,3},{x,.5,2.5}];
+anchorsy5 = Table[y/3,{y,.5,2.5},{x,1,3}];
+anchorsw5 = {0.807,1.02,0.512};
+anchorsh5 = {0.807,0.512,1.02};
+
+
+anchorsx6 = Table[x/2,{y,1,1},{x,1,1}];
+anchorsy6 = Table[y/2,{y,1,1},{x,1,1}];
+anchorsw6 = {0.983,1.27,0.636};
+anchorsh6 = {0.983,0.636,1.27};
 
 
 (* Looks like the HiKapok version has BGR ordering for some obscure reason *)
-conv1W1=Reverse[Transpose[Import[SSDFileName,{"Datasets","/conv1_1W"}],{3,4,2,1}],2];
+conv1W1=Reverse[Transpose[Import[SSDFileName,{"Datasets","/conv1_1W"}],{3,4,2,1}],2]*256.;
 conv1W2=Transpose[Import[SSDFileName,{"Datasets","/conv1_2W"}],{3,4,2,1}];
 conv1B1=Import[SSDFileName,{"Datasets","/conv1_1B"}];
 conv1B2=Import[SSDFileName,{"Datasets","/conv1_2B"}];
@@ -195,49 +229,45 @@ MultiBoxNetLayer1=NetGraph[{
  },{1->2,2->3,3->4,4->5,5->6,
     6->7,7->8,8->9,9->10,10->11,
     6->12,
-    11->NetPort["ObjMap1"],12->NetPort["Locs1"]}];
-
+    11->NetPort["ObjMap1"],12->NetPort["SSDLocs1"]}];
 
 
 MultiBoxNetLayer2=NetGraph[{
    ConvolutionLayer[105,{3,3},"Biases"->block7ClassesB,"Weights"->block7ClassesW,"PaddingSize"->1],
    ReshapeLayer[{5,21,19,19}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
    ConvolutionLayer[20,{3,3},"Biases"->block7LocB,"Weights"->block7LocW,"PaddingSize"->1]
- },{1->2,2->3,3->4,4->5,5->NetPort["ObjMap2"],6->NetPort["Locs2"]}];
-
+ },{1->2,2->3,3->4,4->5,5->NetPort["ObjMap2"],6->NetPort["SSDLocs2"]}];
 
 
 MultiBoxNetLayer3=NetGraph[{
    ConvolutionLayer[105,{3,3},"Biases"->block8ClassesB,"Weights"->block8ClassesW,"PaddingSize"->1],
    ReshapeLayer[{5,21,10,10}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
    ConvolutionLayer[20,{3,3},"Biases"->block8LocB,"Weights"->block8LocW,"PaddingSize"->1]},
-   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap3"],6->NetPort["Locs3"]}];
-
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap3"],6->NetPort["SSDLocs3"]}];
 
 
 MultiBoxNetLayer4=NetGraph[{
    ConvolutionLayer[105,{3,3},"Biases"->block9ClassesB,"Weights"->block9ClassesW,"PaddingSize"->1],
    ReshapeLayer[{5,21,5,5}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],   
    ConvolutionLayer[20,{3,3},"Biases"->block9LocB,"Weights"->block9LocW,"PaddingSize"->1]},
-   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap4"],6->NetPort["Locs4"]}];
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap4"],6->NetPort["SSDLocs4"]}];
 
 
 MultiBoxNetLayer5=NetGraph[{
    ConvolutionLayer[63,{3,3},"Biases"->block10ClassesB,"Weights"->block10ClassesW,"PaddingSize"->1],
    ReshapeLayer[{3,21,3,3}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
    ConvolutionLayer[12,{3,3},"Biases"->block10LocB,"Weights"->block10LocW,"PaddingSize"->1]},
-   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap5"],6->NetPort["Locs5"]}];
-
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap5"],6->NetPort["SSDLocs5"]}];
 
 
 MultiBoxNetLayer6=NetGraph[{
    ConvolutionLayer[63,{3,3},"Biases"->block11ClassesB,"Weights"->block11ClassesW,"PaddingSize"->1],
    ReshapeLayer[{3,21,1,1}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[],
    ConvolutionLayer[12,{3,3},"Biases"->block11LocB,"Weights"->block11LocW,"PaddingSize"->1]},
-   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap6"],6->NetPort["Locs6"]}];
+   {1->2,2->3,3->4,4->5,5->NetPort["ObjMap6"],6->NetPort["SSDLocs6"]}];
 
 
-SSDNet=NetGraph[{
+SSDNetMain=NetGraph[{
    blockNet4,
    blockNet7,
    blockNet8,
@@ -252,8 +282,58 @@ SSDNet=NetGraph[{
    MultiBoxNetLayer6},
    {1->2->3->4->5->6,
    1->7,2->8,3->9,
-   4->10,5->11,6->12},
-   "Input"->{3,300,300}];
+   4->10,5->11,6->12}];
 
 
-(* CloudExport[ SSDNet, "WLNET","CZSSDVGG300.wlnet" ] *)
+(*
+   Output format is 4*Anchors*Height*Width in x,y,width,height order where x and y represent the centre of the rectangle
+*)
+MultiBoxLocationDecoder[ anchorsx_, anchorsy_, anchorsw_, anchorsh_ ] :=
+   Module[{width=Dimensions[anchorsx][[1]],height=Dimensions[anchorsx][[2]],anchors=Length[anchorsh]},
+      NetGraph[{
+         ReshapeLayer[{Length[anchorsh],4,height,width}],
+   
+         PartLayer[{All,2}],
+         ConstantTimesLayer["Scaling"->Table[0.1*anchorsw[[b]],{b,1,anchors},{height},{width}]],
+         ConstantPlusLayer["Biases"->ConstantArray[anchorsx,{anchors}]],
+   
+         PartLayer[{All,1}],
+         ConstantTimesLayer["Scaling"->Table[0.1*anchorsh[[b]],{b,1,anchors},{height},{width}]],
+         ConstantPlusLayer["Biases"->ConstantArray[anchorsy,{anchors}]],
+
+         PartLayer[{All,4}],
+         ElementwiseLayer[Exp[#*0.2]&],
+         ConstantTimesLayer["Scaling"->Table[anchorsw[[b]],{b,1,anchors},{height},{width}]],
+
+         PartLayer[{All,3}],
+         ElementwiseLayer[Exp[#*0.2]&],
+         ConstantTimesLayer["Scaling"->Table[anchorsh[[b]],{b,1,anchors},{height},{width}]],
+
+         CatenateLayer[],
+         ReshapeLayer[{4,anchors,height,width}]
+   },
+   {1->{2,5,8,11},2->3->4,5->6->7,8->9->10,11->12->13,{4,7,10,13}->14->15}]
+];
+
+
+SSDNet = NetGraph[{
+   SSDNetMain,
+   MultiBoxLocationDecoder[anchorsx1,anchorsy1,anchorsw1,anchorsh1],
+   MultiBoxLocationDecoder[anchorsx2,anchorsy2,anchorsw2,anchorsh2],
+   MultiBoxLocationDecoder[anchorsx3,anchorsy3,anchorsw3,anchorsh3],
+   MultiBoxLocationDecoder[anchorsx4,anchorsy4,anchorsw4,anchorsh4],
+   MultiBoxLocationDecoder[anchorsx5,anchorsy5,anchorsw5,anchorsh5],
+   MultiBoxLocationDecoder[anchorsx6,anchorsy6,anchorsw6,anchorsh6]
+},
+   {
+   NetPort[{1,"SSDLocs1"}]->2->NetPort["Locs1"],
+   NetPort[{1,"SSDLocs2"}]->3->NetPort["Locs2"],
+   NetPort[{1,"SSDLocs3"}]->4->NetPort["Locs3"],
+   NetPort[{1,"SSDLocs4"}]->5->NetPort["Locs4"],
+   NetPort[{1,"SSDLocs5"}]->6->NetPort["Locs5"],
+   NetPort[{1,"SSDLocs6"}]->7->NetPort["Locs6"]
+   },
+   "Input"->NetEncoder[{"Image",{300,300},"ColorSpace"->"RGB","MeanImage"->{123,117,104}/256.}]];
+
+
+(* CloudExport[ SSDNet, "WLNET","SSD300VGGHikapokNet20180618.wlnet" ] *)
