@@ -16,13 +16,10 @@
 
 (*
    Credit:
-   This implementation is based on Changan Wang's Tensorflow code:
-      https://github.com/HiKapok/SSD.TensorFlow
    
-   The neural net file: SSDVGG300HiKapok.wlnet
-   has been converted from TensorFlow checkpoint to Mathematica WLNET format
-   The file is used with permission of the Apache 2.0 license:
-   https://github.com/HiKapok/SSD.TensorFlow/LICENSE
+   Wei Liu's CAFFE model was the reference model for this Mathematia implementation:
+      https://github.com/weiliu89/caffe/tree/ssd (Downloaded 21/09/2018)
+   and uses weights from VGG_VOC0712_SSD_300x300_iter_120000.caffemodel (Downloaded 20/09/2018)
 
    SSD VGG 300 is based on the following paper:
    https://arxiv.org/abs/1512.02325
@@ -43,7 +40,7 @@
 
 Options[ CZDetectObjects ] = Join[{
    TargetDevice->"CPU",
-   Threshold->.5
+   Threshold->.6
 }, Options[ CZNonMaxSuppressionPerClass ] ];
 CZDetectObjects[ image_Image, opts:OptionsPattern[] ] :=
    (
@@ -64,7 +61,7 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
 (* Private Implementation Code *)
 
 
-SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSD300VGGHikapokNet20180618.wlnet"],"WLNet"];
+SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG300PascalVOCReference20180920.wlnet"],"WLNet"];
 
 
 CZDecodeOutput[ locs_, probs_, threshold_:.5 ]:=Module[{
