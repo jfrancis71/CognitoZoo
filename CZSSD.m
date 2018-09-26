@@ -49,7 +49,7 @@ CZDetectObjects[ img_Image, opts:OptionsPattern[] ] :=
    CZObjectsDeconformer[ img, {300, 300}, "Stretch" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
    (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
    CZImageConformer[{300,300},"Stretch"]@img
-   )[[All,{1,3}]];
+   )[[All,{1,3}]]; (*Strip out metrics, output is just classes and rectangles*)
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];

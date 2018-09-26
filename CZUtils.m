@@ -27,6 +27,15 @@ CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:=
    Note: requires format list of {prob,metrics,Rectangle[{xmin,ymin},{xmax,ymax}]}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
+   
+   This NonMaxSuppression algorithm implements a fairly standard non max suppression algorithm
+   with two exceptions. The standard algorithm takes the largest probability detection as the
+   result of overlapping detections which is the default here. But you have the option of specifying
+   CZTakeWeightedRectangle instead which computes a weighted average (by their probability) of the
+   overlapping detections (both metrics and rectangles) so the metrics argument needs to be numeric
+   ie can multiply by a scalar and add. In the case of Yolo and SSD it is just an empty list,
+   but for example for face detection it can compute gender estimate or anything else chosen to be
+   placed there.
 *)
 CZTakeMaxProbRectangle[ objects_ ] := (First@SortBy[objects,-#[[1]]&])[[{2,3}]];
 CZTakeWeightedRectangle[ objects_ ] := {
