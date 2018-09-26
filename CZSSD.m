@@ -40,7 +40,8 @@
 
 Options[ CZDetectObjects ] = Join[{
    TargetDevice->"CPU",
-   Threshold->.6
+   Threshold->.6,
+   NMSIntersectionOverUnionThreshold->.45 (* This is the Wei Liu default setting for this implementation *)
 }, Options[ CZNonMaxSuppressionPerClass ] ];
 CZDetectObjects[ image_Image, opts:OptionsPattern[] ] :=
    (
