@@ -43,12 +43,12 @@ Options[ CZDetectObjects ] = Join[{
    Threshold->.6,
    NMSIntersectionOverUnionThreshold->.45 (* This is the Wei Liu default setting for this implementation *)
 }, Options[ CZNonMaxSuppressionPerClass ] ];
-CZDetectObjects[ image_Image, opts:OptionsPattern[] ] :=
+CZDetectObjects[ img_Image, opts:OptionsPattern[] ] :=
    (
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
-   CZObjectsDeconformer[ image, {300, 300}, "Stretch" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   CZObjectsDeconformer[ img, {300, 300}, "Stretch" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
    (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
-   CZImageConformer[{300,300},"Stretch"]@image
+   CZImageConformer[{300,300},"Stretch"]@img
    )[[All,{1,3}]];
 
 
