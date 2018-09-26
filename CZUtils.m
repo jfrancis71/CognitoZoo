@@ -63,7 +63,7 @@ CZDeconformRectangles[ rboxes_, image_, netDims_, "Fit" ] :=
             {(ImageDimensions[image][[2]]*(1/netAspectRatio)-ImageDimensions[image][[1]])/2,0}
             ],
          scale = If [ ImageAspectRatio[image] < netAspectRatio, ImageDimensions[image][[1]]/netDims[[1]], ImageDimensions[image][[2]]/netDims[[2]] ]
-         },rt1=netAspectRatio;rt2=scale;
+         },
          Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[Transpose[boxes,{2,3,1}]*scale - padding,{3,1,2}]]
    ]];
 CZDeconformRectangles[ rboxes_, image_, netDims_, "Stretch" ] := 
@@ -92,7 +92,7 @@ CZConformRectangles[ rboxes_, image_, netDims_, "Fit" ]:=
             {(ImageDimensions[image][[2]]*(1/netAspectRatio)-ImageDimensions[image][[1]])/2,0}
             ],
          scale = If [ ImageAspectRatio[image] < netAspectRatio, ImageDimensions[image][[1]]/netDims[[1]], ImageDimensions[image][[2]]/netDims[[2]] ]
-         },rt1=netAspectRatio;rt2=scale;
+         },
          Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[(Transpose[boxes,{2,3,1}]+ padding)/scale,{3,1,2}]]
    ]];
 
