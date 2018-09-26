@@ -10,16 +10,16 @@ CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car
 CZImageConformer[ dims_, fitting_ ] := Function[{image},First@ConformImages[ {image}, dims, fitting ]];
 
 
-CZIntersection[a_, b_] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
+CZIntersection[a_Rectangle, b_Rectangle] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
    If[xa>xb||ya>yb,0,(xb-xa+1)*(yb-ya+1)]]
-CZArea[a_] := ( a[[1,1]]-a[[2,1]] ) * ( a[[1,2]]-a[[2,2]] )
-CZUnion[a_,b_] := CZArea[a] + CZArea[b] - CZIntersection[a, b]
+CZArea[a_Rectangle] := ( a[[1,1]]-a[[2,1]] ) * ( a[[1,2]]-a[[2,2]] )
+CZUnion[a_Rectangle,b_Rectangle] := CZArea[a] + CZArea[b] - CZIntersection[a, b]
 
 
 (* Had considered using RegionIntersection/RegionUnion but this was overly general and unacceptably slow in practice.
    Not uncommon to see 100 raw detections, hence 10,000 pairs to evaluate.
 *)
-CZIntersectionOverUnion[a_, b_]:= 
+CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:= 
    CZIntersection[ a, b ] / CZUnion[a, b]
 
 
@@ -54,7 +54,7 @@ CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ] := Function[ { objects },
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};
-CZDeconformRectangles[ rboxes_, image_, netDims_, "Fit" ] :=
+CZDeconformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ] :=
    With[{netAspectRatio = netDims[[2]]/netDims[[1]]},
       With[ {
          boxes = Map[{#[[1]],#[[2]]}&,rboxes],
@@ -66,7 +66,7 @@ CZDeconformRectangles[ rboxes_, image_, netDims_, "Fit" ] :=
          },
          Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[Transpose[boxes,{2,3,1}]*scale - padding,{3,1,2}]]
    ]];
-CZDeconformRectangles[ rboxes_, image_, netDims_, "Stretch" ] := 
+CZDeconformRectangles[ rboxes_List, image_Image, netDims_List, "Stretch" ] := 
    Module[ {
       boxes = Map[{#[[1]],#[[2]]}&,rboxes] },
       Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[Transpose[boxes,{2,3,1}]*ImageDimensions[image]/netDims,{3,1,2}]]
@@ -76,14 +76,14 @@ CZDeconformRectangles[ rboxes_, image_, netDims_, "Stretch" ] :=
 (* Implicitly assumes that the rectangles are last entry 4 in the list of objects.
    So { {class1, prob1, metrics1, rect1 }, ... }
 *)
-CZObjectsDeconformer[ image_, netDims_, fitting_ ] := Function[{ objects },
+CZObjectsDeconformer[ image_Image, netDims_List, fitting_String ] := Function[{ objects },
    If[
       objects=={},
       {},
       Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], -1 ] ] ] ]
 
 
-CZConformRectangles[ rboxes_, image_, netDims_, "Fit" ]:=
+CZConformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ]:=
    With[{netAspectRatio = netDims[[2]]/netDims[[1]]},
       With[ {
          boxes = Map[{#[[1]],#[[2]]}&,rboxes],
