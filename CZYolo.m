@@ -78,9 +78,9 @@ Options[ CZDetectObjects ] = Join[{
    Threshold->.24
 }, Options[ CZNonMaxSuppression ] ];
 CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
-   (CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
-      CZObjectsDeconformer[ image, {416, 416}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
-            (YoloNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{416,416},"Fit"]@image)[[All,{1,3}]];
+   CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
+   CZObjectsDeconformer[ image, {416, 416}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   (YoloNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{416,416},"Fit"]@image;
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -113,7 +113,7 @@ CZOutputDecoder[ threshold_:.24 ] := Function[
    {netOutput},
    slots = LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
    slotPositions = Position[slots, x_/;x>threshold];
-   Map[{CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]],{},CZGetBoundingBox[#,netOutput]}&,slotPositions]
+   Map[{CZGetBoundingBox[#,netOutput],CZPascalClasses[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]]}&,slotPositions]
 ]
 
 

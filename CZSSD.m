@@ -40,16 +40,14 @@
 
 Options[ CZDetectObjects ] = Join[{
    TargetDevice->"CPU",
-   Threshold->.6,
+   Threshold->.6,(* This is the Wei Liu default setting for this implementation *)
    NMSIntersectionOverUnionThreshold->.45 (* This is the Wei Liu default setting for this implementation *)
 }, Options[ CZNonMaxSuppressionPerClass ] ];
 CZDetectObjects[ img_Image, opts:OptionsPattern[] ] :=
-   (
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
    CZObjectsDeconformer[ img, {300, 300}, "Stretch" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
    (SSDNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
-   CZImageConformer[{300,300},"Stretch"]@img
-   )[[All,{1,3}]]; (*Strip out metrics, output is just classes and rectangles*)
+   CZImageConformer[{300,300},"Stretch"]@img;
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -68,7 +66,7 @@ SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/jul
 CZDecodeOutput[ locs_, probs_, threshold_:.5 ]:=Module[{
    detections = Position[probs,x_/;x>threshold]},
 
-   MapThread[{#1,#2,{},Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}]}&,{
+   MapThread[{Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}],#1,#2}&,{
       CZPascalClasses[[detections[[All,4]]]],
       Extract[probs,detections],
       Extract[locs[[1]],detections[[All,1;;3]]], (*cx*)

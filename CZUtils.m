@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-CZDisplayObject[object_]:={object[[2]],Text[Style[object[[1]],White,12],{20,20}+object[[2,1]],Background->Black]}
+CZDisplayObject[object_]:={object[[1]],Text[Style[object[[2]],White,12],{20,20}+object[[1,1]],Background->Black]}
 
 
 CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -24,7 +24,7 @@ CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:=
 
 
 (*
-   Note: requires format list of {prob,metrics,Rectangle[{xmin,ymin},{xmax,ymax}]}
+   Note: requires format list of {Rectangle[{xmin,ymin},{xmax,ymax}],prob,metrics}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
    
@@ -37,10 +37,13 @@ CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:=
    but for example for face detection it can compute gender estimate or anything else chosen to be
    placed there.
 *)
-CZTakeMaxProbRectangle[ objects_ ] := (First@SortBy[objects,-#[[1]]&])[[{2,3}]];
+CZTakeMaxProbRectangle[ objects_ ] := First@SortBy[objects,-#[[2]]&];
 CZTakeWeightedRectangle[ objects_ ] := {
-   Round[Total[objects[[All,1]]*List@@@objects[[All,2]]]/Total[objects[[All,1]]]],
-   Rectangle@@Round[Total[objects[[All,1]]*List@@@objects[[All,3]]]/Total[objects[[All,1]]]]};
+   Rectangle@@Round[Total[objects[[All,2]]*List@@@objects[[All,1]]]/Total[objects[[All,2]]]],
+   Max[objects[[All,3]]],(* Note we aren't doing a weighted average for the probs here, the prob of
+   detection is the maximum of detections in that region *)
+   Round[Total[objects[[All,2]]*List@@@objects[[All,3]]]/Total[objects[[All,2]]]]
+};
 SyntaxInformation[ NMSMethod ]= {"ArgumentsPattern"->{_}};
 SyntaxInformation[ NMSIntersectionOverUnionThreshold ]= {"ArgumentsPattern"->{_}};
 Options[ CZNonMaxSuppression ] = {
@@ -48,18 +51,22 @@ Options[ CZNonMaxSuppression ] = {
    NMSIntersectionOverUnionThreshold->.25
 };
 CZNonMaxSuppression[ opts:OptionsPattern[] ] := Function[ {objects},
-   OptionValue[ NMSMethod ] /@ Gather[ objects, (CZIntersectionOverUnion[#1[[3]],#2[[3]]]>OptionValue[ NMSIntersectionOverUnionThreshold] )& ] ];
+   OptionValue[ NMSMethod ] /@ Gather[ objects, (CZIntersectionOverUnion[#1[[1]],#2[[1]]]>OptionValue[ NMSIntersectionOverUnionThreshold] )& ] ];
 
 
 (*
-   Note: requires format list of {class, prob, metrics, Rectangle[{xmin,ymin},{xmax,ymax}]}
+   Note: requires format list of { Rectangle[{xmin,ymin},{xmax,ymax}],class, prob }
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
 *)
 (* Does Non Max Suppression seperately by object class *)
 Options[ CZNonMaxSuppressionPerClass ] = Options[ CZNonMaxSuppression ];
 CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ] := Function[ { objects },
-      Flatten[Map[Function[{objectsInClass},{objectsInClass[[1,1]],#[[1]],#[[2]]}&/@CZNonMaxSuppression[ opts ][objectsInClass[[All,2;;4]] ]],GatherBy[objects,#[[1]]&]],1]]
+      Flatten[
+         Map[
+            Function[{objectsInClass},{#[[1]],objectsInClass[[1,2]]}&/@CZNonMaxSuppression[ opts ][objectsInClass[[All,{1,3,4}]] ]],
+            k1=GatherBy[{#[[1]],#[[2]],#[[3]],{}}&/@objects,#[[2]]&]
+         ],1]]
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};
@@ -82,14 +89,14 @@ CZDeconformRectangles[ rboxes_List, image_Image, netDims_List, "Stretch" ] :=
    ]
 
 
-(* Implicitly assumes that the rectangles are last entry 4 in the list of objects.
-   So { {class1, prob1, metrics1, rect1 }, ... }
+(* Implicitly assumes that the rectangles are first entry in the list of objects.
+   So { {rect1, class1, prob1 }, ... }
 *)
 CZObjectsDeconformer[ image_Image, netDims_List, fitting_String ] := Function[{ objects },
    If[
       objects=={},
       {},
-      Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], -1 ] ] ] ]
+      Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], 1 ] ] ] ]
 
 
 CZConformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ]:=

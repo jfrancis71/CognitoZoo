@@ -54,16 +54,16 @@ Options[ CZDetectFaces ] = Join[{
 
 
 CZDetectFaces[ image_Image, opts:OptionsPattern[] ] :=
-   Function[detections,If[OptionValue[GenderDetection],Map[{CZGenderClassify[#[[2,1]]],#[[3]]}&,detections],detections[[All,3]]]]@
-   CZNonMaxSuppressionPerClass[ FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@If[OptionValue[Detail]=="VGA",
+   Function[detections,If[OptionValue[GenderDetection],Map[{#[[1]],CZGenderClassify[#[[3,1]]]}&,detections],detections[[All,1]]]]@
+   CZNonMaxSuppression[ FilterRules[ {opts}, Options[ CZNonMaxSuppression ] ] ]@If[OptionValue[Detail]=="VGA",
       CZObjectsDeconformer[ image, {640, 480}, "Fit" ]@(CZVGADetectFaces[#,FilterRules[{opts},Options[ CZVGADetectFaces ] ] ]&)@CZImageConformer[{640,480},"Fit"]@image,
       CZObjectsDeconformer[ image, {1280, 960}, "Fit" ]@(CZXGADetectFaces[#,FilterRules[{opts},Options[ CZXGADetectFaces ] ] ]&)@CZImageConformer[{1280,960},"Fit"]@image
-   ]   
+   ]
 
 
 Options[ CZHighlightFaces ] = Options[ CZDetectFaces ];
 CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[
-   img,
+   img,Reverse/@(*We want to set the colour before drawing the rectangle (not after!*)
    If[ OptionValue[GenderDetection],
       # /. "Male"->Blue /. "Female" ->Pink,
       # ]&
@@ -105,40 +105,40 @@ CZGenderClassify[ maleness_ ] := If[ maleness >= .5, "Male", "Female" ]
 
 CZOutputDecoder[ threshold_, { width_, height_ } ] := Function[ { assoc }, Join[
    Map[{
-         "Face",
+         Rectangle[{32*(#[[2]]-.5),height-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),height-32*(#[[1]]-.5)}+{37,37}],
          Extract[assoc["FaceArray1"],#],
-         {Extract[assoc["GenderArray1"],#]},
-         Rectangle[{32*(#[[2]]-.5),height-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),height-32*(#[[1]]-.5)}+{37,37}]}&,
+         {Extract[assoc["GenderArray1"],#]}
+         }&,
       Position[assoc["FaceArray1"],x_/;x>threshold]],
    Map[{
-         "Face",
+         Rectangle[{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}+{65,65}],
          Extract[assoc["FaceArray2"],#],
-         {Extract[assoc["GenderArray2"],#]},
-         Rectangle[{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}+{65,65}]}&,
+         {Extract[assoc["GenderArray2"],#]}
+         }&,
       Position[assoc["FaceArray2"],x_/;x>threshold]],
    Map[{
-         "Face",
+         Rectangle[{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}+{100,100}],
          Extract[assoc["FaceArray3"],#],
-         {Extract[assoc["GenderArray3"],#]},
-         Rectangle[{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}+{100,100}]}&,
+         {Extract[assoc["GenderArray3"],#]}
+         }&,
       Position[assoc["FaceArray3"],x_/;x>threshold]],
    Map[{
-         "Face",
+         Rectangle[{32*(#[[2]]),height-32*(#[[1]]-1)}-{37,37},{32*(#[[2]]),height-32*(#[[1]]-1)}+{37,37}],
          Extract[assoc["FaceArray1Offset"],#],
-         {Extract[assoc["GenderArray1Offset"],#]},
-         Rectangle[{32*(#[[2]]),height-32*(#[[1]]-1)}-{37,37},{32*(#[[2]]),height-32*(#[[1]]-1)}+{37,37}]}&,
+         {Extract[assoc["GenderArray1Offset"],#]}
+         }&,
       Position[assoc["FaceArray1Offset"],x_/;x>threshold]],
    Map[{
-         "Face",
+         Rectangle[{64*(#[[2]]),height-64*(#[[1]]-1)}-{65,65},{64*(#[[2]]),height-64*(#[[1]]-1)}+{65,65}],
          Extract[assoc["FaceArray2Offset"],#],
-         {Extract[assoc["GenderArray2Offset"],#]},
-         Rectangle[{64*(#[[2]]),height-64*(#[[1]]-1)}-{65,65},{64*(#[[2]]),height-64*(#[[1]]-1)}+{65,65}]}&,
+         {Extract[assoc["GenderArray2Offset"],#]}
+         }&,
       Position[assoc["FaceArray2Offset"],x_/;x>threshold]],
    Map[{
-         "Face",
+         Rectangle[{64*(#[[2]]),height-64*(#[[1]]-1)}-{100,100},{64*(#[[2]]),height-64*(#[[1]]-1)}+{100,100}],
          Extract[assoc["FaceArray3Offset"],#],
-         {Extract[assoc["GenderArray3Offset"],#]},
-         Rectangle[{64*(#[[2]]),height-64*(#[[1]]-1)}-{100,100},{64*(#[[2]]),height-64*(#[[1]]-1)}+{100,100}]}&,
+         {Extract[assoc["GenderArray3Offset"],#]}
+         }&,
       Position[assoc["FaceArray3Offset"],x_/;x>threshold]]
 ] ]
 
