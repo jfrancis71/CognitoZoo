@@ -103,44 +103,44 @@ CZXGAVisiNet=NetReplacePart[CZVisiNet,"Input"->NetEncoder[{"Image",{1280,960},Co
 CZGenderClassify[ maleness_ ] := If[ maleness >= .5, "Male", "Female" ]
 
 
-CZOutputDecoder[ threshold_, { width_, height_ } ] := Function[ { assoc }, Join[
+CZOutputDecoder[ threshold_, { width_, height_ } ][ netOutput_ ] :=Join[
    Map[{
          Rectangle[{32*(#[[2]]-.5),height-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),height-32*(#[[1]]-.5)}+{37,37}],
-         Extract[assoc["FaceArray1"],#],
-         {Extract[assoc["GenderArray1"],#]}
+         Extract[netOutput["FaceArray1"],#],
+         {Extract[netOutput["GenderArray1"],#]}
          }&,
-      Position[assoc["FaceArray1"],x_/;x>threshold]],
+      Position[netOutput["FaceArray1"],x_/;x>threshold]],
    Map[{
          Rectangle[{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}+{65,65}],
-         Extract[assoc["FaceArray2"],#],
-         {Extract[assoc["GenderArray2"],#]}
+         Extract[netOutput["FaceArray2"],#],
+         {Extract[netOutput["GenderArray2"],#]}
          }&,
-      Position[assoc["FaceArray2"],x_/;x>threshold]],
+      Position[netOutput["FaceArray2"],x_/;x>threshold]],
    Map[{
          Rectangle[{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),height-64*(#[[1]]-.5)}+{100,100}],
-         Extract[assoc["FaceArray3"],#],
-         {Extract[assoc["GenderArray3"],#]}
+         Extract[netOutput["FaceArray3"],#],
+         {Extract[netOutput["GenderArray3"],#]}
          }&,
-      Position[assoc["FaceArray3"],x_/;x>threshold]],
+      Position[netOutput["FaceArray3"],x_/;x>threshold]],
    Map[{
          Rectangle[{32*(#[[2]]),height-32*(#[[1]]-1)}-{37,37},{32*(#[[2]]),height-32*(#[[1]]-1)}+{37,37}],
-         Extract[assoc["FaceArray1Offset"],#],
-         {Extract[assoc["GenderArray1Offset"],#]}
+         Extract[netOutput["FaceArray1Offset"],#],
+         {Extract[netOutput["GenderArray1Offset"],#]}
          }&,
-      Position[assoc["FaceArray1Offset"],x_/;x>threshold]],
+      Position[netOutput["FaceArray1Offset"],x_/;x>threshold]],
    Map[{
          Rectangle[{64*(#[[2]]),height-64*(#[[1]]-1)}-{65,65},{64*(#[[2]]),height-64*(#[[1]]-1)}+{65,65}],
-         Extract[assoc["FaceArray2Offset"],#],
-         {Extract[assoc["GenderArray2Offset"],#]}
+         Extract[netOutput["FaceArray2Offset"],#],
+         {Extract[netOutput["GenderArray2Offset"],#]}
          }&,
-      Position[assoc["FaceArray2Offset"],x_/;x>threshold]],
+      Position[netOutput["FaceArray2Offset"],x_/;x>threshold]],
    Map[{
          Rectangle[{64*(#[[2]]),height-64*(#[[1]]-1)}-{100,100},{64*(#[[2]]),height-64*(#[[1]]-1)}+{100,100}],
-         Extract[assoc["FaceArray3Offset"],#],
-         {Extract[assoc["GenderArray3Offset"],#]}
+         Extract[netOutput["FaceArray3Offset"],#],
+         {Extract[netOutput["GenderArray3Offset"],#]}
          }&,
-      Position[assoc["FaceArray3Offset"],x_/;x>threshold]]
-] ]
+      Position[netOutput["FaceArray3Offset"],x_/;x>threshold]]
+];
 
 
 (*

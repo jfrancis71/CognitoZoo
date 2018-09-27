@@ -7,7 +7,7 @@ CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car
    "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
 
-CZImageConformer[ dims_, fitting_ ] := Function[{image},First@ConformImages[ {image}, dims, fitting ]];
+CZImageConformer[ dims_, fitting_ ][ image_ ] := First@ConformImages[ {image}, dims, fitting ];
 
 
 CZIntersection[a_Rectangle, b_Rectangle] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
@@ -50,8 +50,8 @@ Options[ CZNonMaxSuppression ] = {
    NMSMethod->CZTakeMaxProbRectangle,
    NMSIntersectionOverUnionThreshold->.25
 };
-CZNonMaxSuppression[ opts:OptionsPattern[] ] := Function[ {objects},
-   OptionValue[ NMSMethod ] /@ Gather[ objects, (CZIntersectionOverUnion[#1[[1]],#2[[1]]]>OptionValue[ NMSIntersectionOverUnionThreshold] )& ] ];
+CZNonMaxSuppression[ opts:OptionsPattern[] ][ objects_ ] := 
+   OptionValue[ NMSMethod ] /@ Gather[ objects, (CZIntersectionOverUnion[#1[[1]],#2[[1]]]>OptionValue[ NMSIntersectionOverUnionThreshold] )& ];
 
 
 (*
@@ -61,12 +61,12 @@ CZNonMaxSuppression[ opts:OptionsPattern[] ] := Function[ {objects},
 *)
 (* Does Non Max Suppression seperately by object class *)
 Options[ CZNonMaxSuppressionPerClass ] = Options[ CZNonMaxSuppression ];
-CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ] := Function[ { objects },
-      Flatten[
-         Map[
-            Function[{objectsInClass},{#[[1]],objectsInClass[[1,2]]}&/@CZNonMaxSuppression[ opts ][objectsInClass[[All,{1,3,4}]] ]],
-            k1=GatherBy[{#[[1]],#[[2]],#[[3]],{}}&/@objects,#[[2]]&]
-         ],1]]
+CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ][ objects_ ] :=
+   Flatten[
+      Map[
+         Function[{objectsInClass},{#[[1]],objectsInClass[[1,2]]}&/@CZNonMaxSuppression[ opts ][objectsInClass[[All,{1,3,4}]] ]],
+         GatherBy[{#[[1]],#[[2]],#[[3]],{}}&/@objects,#[[2]]&]
+      ],1];
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};
@@ -92,14 +92,14 @@ CZDeconformRectangles[ rboxes_List, image_Image, netDims_List, "Stretch" ] :=
 (* Implicitly assumes that the rectangles are first entry in the list of objects.
    So { {rect1, class1, prob1 }, ... }
 *)
-CZObjectsDeconformer[ image_Image, netDims_List, fitting_String ] := Function[{ objects },
+CZObjectsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ] :=
    If[
       objects=={},
       {},
-      Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], 1 ] ] ] ]
+      Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], 1 ] ] ];
 
 
-CZConformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ]:=
+CZConformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ] :=
    With[{netAspectRatio = netDims[[2]]/netDims[[1]]},
       With[ {
          boxes = Map[{#[[1]],#[[2]]}&,rboxes],
