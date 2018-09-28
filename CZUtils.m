@@ -24,7 +24,7 @@ CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:=
 
 
 (*
-   Note: requires format list of {Rectangle[{xmin,ymin},{xmax,ymax}],prob,metrics}
+   Note: requires format list of {Rectangle[{xmin,ymin},{xmax,ymax}],prob,(metrics...)}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
    
@@ -38,12 +38,14 @@ CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:=
    placed there.
 *)
 CZTakeMaxProbRectangle[ objects_ ] := First@SortBy[objects,-#[[2]]&];
-CZTakeWeightedRectangle[ objects_ ] := {
+CZTakeWeightedRectangle[ objects_ ] :=
+{
    Rectangle@@Round[Total[objects[[All,2]]*List@@@objects[[All,1]]]/Total[objects[[All,2]]]],
-   Max[objects[[All,3]]],(* Note we aren't doing a weighted average for the probs here, the prob of
-   detection is the maximum of detections in that region *)
-   Round[Total[objects[[All,2]]*List@@@objects[[All,3]]]/Total[objects[[All,2]]]]
-};
+   Max[objects[[All,3]]],
+   If[ Length[objects[[1]]] > 2,
+      Round[Total[objects[[All,2]]*List@@@objects[[All,3]]]/Total[objects[[All,2]]]],
+      Nothing ]
+}
 SyntaxInformation[ NMSMethod ]= {"ArgumentsPattern"->{_}};
 SyntaxInformation[ NMSIntersectionOverUnionThreshold ]= {"ArgumentsPattern"->{_}};
 Options[ CZNonMaxSuppression ] = {
@@ -63,10 +65,7 @@ CZNonMaxSuppression[ opts:OptionsPattern[] ][ objects_ ] :=
 Options[ CZNonMaxSuppressionPerClass ] = Options[ CZNonMaxSuppression ];
 CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ][ objects_ ] :=
    Flatten[
-      Map[
-         Function[{objectsInClass},{#[[1]],objectsInClass[[1,2]]}&/@CZNonMaxSuppression[ opts ][objectsInClass[[All,{1,3,4}]] ]],
-         GatherBy[{#[[1]],#[[2]],#[[3]],{}}&/@objects,#[[2]]&]
-      ],1];
+      Map[ Function[ objectsInClass, {#[[1]],objectsInClass[[1,2]],#[[2]]}&/@CZNonMaxSuppression[ opts ][ objectsInClass[[All,{1,3}]] ] ], GatherBy[ objects, #[[2]]& ] ], 1 ]
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};
