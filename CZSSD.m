@@ -1,9 +1,10 @@
 (* ::Package:: *)
 
-(* Implements SSD VGG 300 on Mathematica version 11.
+(* Implements SSD VGG 300 Pascal VOC on Mathematica version 11.
 
-   SSD VGG 300 is a computer vision object detection and localisation model designed to detect
+   SSD VGG 300 Pascal VOC is a computer vision object detection and localisation model designed to detect
    20 object categories (e.g. people, horses, dogs etc)
+   Performance: mAP 77.2% on PascalVOC2007Test
    
    Usage: HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
    or:    CZHighlightObjects[ img ]
