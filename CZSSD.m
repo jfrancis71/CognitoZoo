@@ -26,6 +26,7 @@
    Title: SSD: Single Shot MultiBox Detector
    Authors: Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed,
    Cheng-Yang Fu, Alexander C. Berg
+   Year: 2016
 *)
 
 
@@ -60,6 +61,9 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
 (* Private Implementation Code *)
 
 
+(* The weights in this file have been converted from: https://github.com/weiliu89/caffe/tree/ssd
+   See model reference: Pascal VOC 07+12 SSD300
+*)
 SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG300PascalVOCReference20180920.wlnet"],"WLNet"];
 
 
