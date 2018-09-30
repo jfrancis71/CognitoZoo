@@ -84,10 +84,10 @@ CZDecodeOutput[ locs_, probs_, threshold_:.5 ]:=Module[{
 
 CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] :=
    Join[
-      CZDecodeOutput[netOutput["Locs1"],netOutput["ObjMap1"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Locs2"],netOutput["ObjMap2"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Locs3"],netOutput["ObjMap3"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Locs4"],netOutput["ObjMap4"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Locs5"],netOutput["ObjMap5"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Locs6"],netOutput["ObjMap6"][[All,All,All,2;;21]], threshold]
+      CZDecodeOutput[netOutput["Boxes1"],netOutput["ClassProb1"][[All,All,All,2;;21]], threshold],
+      CZDecodeOutput[netOutput["Boxes2"],netOutput["ClassProb2"][[All,All,All,2;;21]], threshold],
+      CZDecodeOutput[netOutput["Boxes3"],netOutput["ClassProb3"][[All,All,All,2;;21]], threshold],
+      CZDecodeOutput[netOutput["Boxes4"],netOutput["ClassProb4"][[All,All,All,2;;21]], threshold],
+      CZDecodeOutput[netOutput["Boxes5"],netOutput["ClassProb5"][[All,All,All,2;;21]], threshold],
+      CZDecodeOutput[netOutput["Boxes6"],netOutput["ClassProb6"][[All,All,All,2;;21]], threshold]
 ];
