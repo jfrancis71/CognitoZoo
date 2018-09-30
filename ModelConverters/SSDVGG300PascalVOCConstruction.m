@@ -126,7 +126,7 @@ multiBoxLayer6 = NetGraph[{
    {"multiboxClasses"->NetPort["ClassProb6"],"multiboxLocs"->NetPort["Boxes6"]}];
 
 
-ssdNet = NetGraph[{
+ssdMultiboxNet = NetGraph[{
    "blockNet4"->blockNet4,
    "blockNet7"->blockNet7,
    "blockNet8"->blockNet8,
@@ -147,5 +147,56 @@ ssdNet = NetGraph[{
    "blockNet9"->"multiboxLayer4",
    "blockNet10"->"multiboxLayer5",
    "blockNet11"->"multiboxLayer6"
+   }];
+
+
+ssdConcatenationNet = NetGraph[{
+   "classProb1"->FlattenLayer[2],
+   "classProb2"->FlattenLayer[2],
+   "classProb3"->FlattenLayer[2],
+   "classProb4"->FlattenLayer[2],
+   "classProb5"->FlattenLayer[2],
+   "classProb6"->FlattenLayer[2],   
+   "classProb"->CatenateLayer[],
+   "boxes1"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
+   "boxes2"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
+   "boxes3"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
+   "boxes4"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
+   "boxes5"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
+   "boxes6"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
+   "boxes"->CatenateLayer[]
+   },
+   {
+   NetPort["ClassProb1"]->"classProb1",
+   NetPort["ClassProb2"]->"classProb2",
+   NetPort["ClassProb3"]->"classProb3",
+   NetPort["ClassProb4"]->"classProb4",
+   NetPort["ClassProb5"]->"classProb5",
+   NetPort["ClassProb6"]->"classProb6",   
+   {"classProb1","classProb2","classProb3","classProb4","classProb5","classProb6"}->"classProb"->NetPort["ClassProb"],
+   NetPort["Boxes1"]->"boxes1",
+   NetPort["Boxes2"]->"boxes2",
+   NetPort["Boxes3"]->"boxes3",
+   NetPort["Boxes4"]->"boxes4",
+   NetPort["Boxes5"]->"boxes5",
+   NetPort["Boxes6"]->"boxes6",
+   {"boxes1","boxes2","boxes3","boxes4","boxes5","boxes6"}->"boxes"->NetPort["Boxes"]
+   }];
+
+
+ssdNet = NetGraph[{ssdMultiboxNet,ssdConcatenationNet},
+   {
+   NetPort[1,"ClassProb1"]->NetPort[2,"ClassProb1"],
+   NetPort[1,"ClassProb2"]->NetPort[2,"ClassProb2"],
+   NetPort[1,"ClassProb3"]->NetPort[2,"ClassProb3"],
+   NetPort[1,"ClassProb4"]->NetPort[2,"ClassProb4"],
+   NetPort[1,"ClassProb5"]->NetPort[2,"ClassProb5"],
+   NetPort[1,"ClassProb6"]->NetPort[2,"ClassProb6"],
+   NetPort[1,"Boxes1"]->NetPort[2,"Boxes1"],
+   NetPort[1,"Boxes2"]->NetPort[2,"Boxes2"],
+   NetPort[1,"Boxes3"]->NetPort[2,"Boxes3"],
+   NetPort[1,"Boxes4"]->NetPort[2,"Boxes4"],
+   NetPort[1,"Boxes5"]->NetPort[2,"Boxes5"],
+   NetPort[1,"Boxes6"]->NetPort[2,"Boxes6"]
    },
    "Input"->NetEncoder[{"Image",{300,300},"ColorSpace"->"RGB","MeanImage"->{123,117,104}/255.}]];

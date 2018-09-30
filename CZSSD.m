@@ -68,26 +68,15 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
 SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG300PascalVOCReference20180920.wlnet"],"WLNet"];
 
 
-CZDecodeOutput[ locs_, probs_, threshold_:.5 ]:=Module[{
-   detections = Position[probs,x_/;x>threshold]},
-
+CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[{
+   detections = Position[netOutput["ClassProb"][[All,2;;21]],x_/;x>threshold]},
+   
    MapThread[{Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}],#1,#2}&,{
-      CZPascalClasses[[detections[[All,4]]]],
-      Extract[probs,detections],
-      Extract[locs[[1]],detections[[All,1;;3]]], (*cx*)
-      Extract[locs[[2]],detections[[All,1;;3]]], (*cy*)
-      Extract[locs[[3]],detections[[All,1;;3]]], (*width*)
-      Extract[locs[[4]],detections[[All,1;;3]]]  (*height*)
+      CZPascalClasses[[detections[[All,2]]]],
+      Extract[netOutput["ClassProb"][[All,2;;21]],detections],
+      netOutput["Boxes"][[All,1]][[detections[[All,1]]]], (*cx*)
+      netOutput["Boxes"][[All,2]][[detections[[All,1]]]], (*cy*)
+      netOutput["Boxes"][[All,3]][[detections[[All,1]]]], (*width*)
+      netOutput["Boxes"][[All,4]][[detections[[All,1]]]]  (*height*)
 }]
 ]
-
-
-CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] :=
-   Join[
-      CZDecodeOutput[netOutput["Boxes1"],netOutput["ClassProb1"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Boxes2"],netOutput["ClassProb2"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Boxes3"],netOutput["ClassProb3"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Boxes4"],netOutput["ClassProb4"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Boxes5"],netOutput["ClassProb5"][[All,All,All,2;;21]], threshold],
-      CZDecodeOutput[netOutput["Boxes6"],netOutput["ClassProb6"][[All,All,All,2;;21]], threshold]
-];
