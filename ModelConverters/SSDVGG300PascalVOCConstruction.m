@@ -67,10 +67,10 @@ multiBoxLocationDecoder[ numberOfAnchors_, width_, height_ ] :=
    NetGraph[{
       "convloc"->{ConvolutionLayer[ numberOfAnchors*4, {3,3}, "PaddingSize"->1 ]},
       "reshape"->ReshapeLayer[{numberOfAnchors, 4, height, width }],
-      "cx"->{PartLayer[{All,1}],ConstantTimesLayer[],ConstantPlusLayer[]},
-      "cy"->{PartLayer[{All,2}],ConstantTimesLayer[],ConstantPlusLayer[]},
-      "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[]},
-      "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[]},
+      "cx"->{PartLayer[{All,1}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[#*300.&]},
+      "cy"->{PartLayer[{All,2}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[(1-#)*300.&]},
+      "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
+      "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
       "catenate"->CatenateLayer[],
       "locs"->ReshapeLayer[{4,numberOfAnchors,height,width}]},{
       

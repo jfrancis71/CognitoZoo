@@ -71,7 +71,7 @@ SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/jul
 CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[{
    detections = Position[netOutput["ClassProb"][[All,2;;21]],x_/;x>threshold]},
    
-   MapThread[{Rectangle[300*{#3-#5/2,1-(#4+#6/2)},300*{#3+#5/2,1-(#4-#6/2)}],#1,#2}&,{
+   MapThread[{Rectangle[{#3-#5/2,#4-#6/2},{#3+#5/2,#4+#6/2}],#1,#2}&,{
       CZPascalClasses[[detections[[All,2]]]],
       Extract[netOutput["ClassProb"][[All,2;;21]],detections],
       netOutput["Boxes"][[All,1]][[detections[[All,1]]]], (*cx*)
