@@ -69,14 +69,24 @@ SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/jul
 
 
 CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[{
-   detections = Position[netOutput["ClassProb"][[All,2;;21]],x_/;x>threshold]},
+   detections = Position[netOutput["ClassProb"],x_/;x>threshold]},
    
-   MapThread[{Rectangle[{#3-#5/2,#4-#6/2},{#3+#5/2,#4+#6/2}],#1,#2}&,{
+   MapThread[{Rectangle[{#3,#4},{#5,#6}],#1,#2}&,{
       CZPascalClasses[[detections[[All,2]]]],
-      Extract[netOutput["ClassProb"][[All,2;;21]],detections],
+      Extract[netOutput["ClassProb"],detections],
       netOutput["Boxes"][[All,1]][[detections[[All,1]]]], (*cx*)
       netOutput["Boxes"][[All,2]][[detections[[All,1]]]], (*cy*)
       netOutput["Boxes"][[All,3]][[detections[[All,1]]]], (*width*)
       netOutput["Boxes"][[All,4]][[detections[[All,1]]]]  (*height*)
 }]
 ]
+
+
+CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[{
+   detections = Position[netOutput["ClassProb"],x_/;x>threshold]},
+   Transpose[{
+      Rectangle@@@({{#[[1]],#[[2]]},{#[[3]],#[[4]]}}&/@Extract[netOutput["Boxes"],detections[[All,1;;1]]]),
+      Extract[CZPascalClasses,detections[[All,2;;2]]],
+      Extract[netOutput["ClassProb"], detections ]
+   }]
+];

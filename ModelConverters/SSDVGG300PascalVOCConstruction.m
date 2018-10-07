@@ -64,7 +64,7 @@ blockNet11 = NetChain[{
 
 
 multiBoxClassesDecoder[ numberOfAnchors_, width_, height_ ] :=
-   NetChain[{ ConvolutionLayer[ numberOfAnchors*21, {3,3}, "PaddingSize"->1 ],ReshapeLayer[{numberOfAnchors,21,height,width}], SoftmaxLayer[2] }];
+   NetChain[{ ConvolutionLayer[ numberOfAnchors*21, {3,3}, "PaddingSize"->1 ],ReshapeLayer[{numberOfAnchors,21,height,width}], SoftmaxLayer[2], PartLayer[{All,2;;21,All,All}] }];
 
 
 multiBoxLocationDecoder[ numberOfAnchors_, width_, height_ ] :=
@@ -174,13 +174,18 @@ ssdFlatNet = NetGraph[{
    }];
 
 
-ssdLocsToBoxesNet = NetGraph[ {
+ssdLocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
    "cx"->{PartLayer[{All,1}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[#*300.&]},
    "cy"->{PartLayer[{All,2}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[(1-#)*300.&]},
    "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
    "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
+   "minx"->ThreadingLayer[#1-#2/2&],
+   "miny"->ThreadingLayer[#1-#2/2&],
+   "maxx"->ThreadingLayer[#1+#2/2&],
+   "maxy"->ThreadingLayer[#1+#2/2&],
    "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 8732} ], "transpose"->TransposeLayer[] }, {
-   {"cx","cy","width","height"}->"cat"->"reshape"->"transpose"->NetPort["Boxes"]}];
+   {"cx","width"}->"minx",{"cx","width"}->"maxx",{"cy","height"}->"miny",{"cy","height"}->"maxy",
+   {"minx","miny","maxx","maxy"}->"cat"->"reshape"->"transpose"->NetPort["Boxes"]}];
 
 
 ssdNet = NetGraph[ {
@@ -189,3 +194,6 @@ ssdNet = NetGraph[ {
    NetPort[1,"ClassProb"]->NetPort["ClassProb"],
    NetPort[1,"Locs"]->NetPort[2,"Input"]},
    "Input"->NetEncoder[{"Image",{300,300},"ColorSpace"->"RGB","MeanImage"->{123,117,104}/255.}]];
+
+
+NetExtract[ssdNet,2]
