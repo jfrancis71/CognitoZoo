@@ -63,27 +63,21 @@ blockNet11 = NetChain[{
 }];
 
 
+multiBoxClassesDecoder[ numberOfAnchors_, width_, height_ ] :=
+   NetChain[{ ConvolutionLayer[ numberOfAnchors*21, {3,3}, "PaddingSize"->1 ],ReshapeLayer[{numberOfAnchors,21,height,width}], SoftmaxLayer[2] }];
+
+
 multiBoxLocationDecoder[ numberOfAnchors_, width_, height_ ] :=
    NetGraph[{
       "convloc"->{ConvolutionLayer[ numberOfAnchors*4, {3,3}, "PaddingSize"->1 ]},
-      "reshape"->ReshapeLayer[{numberOfAnchors, 4, height, width }],
-      "cx"->{PartLayer[{All,1}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[#*300.&]},
-      "cy"->{PartLayer[{All,2}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[(1-#)*300.&]},
-      "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
-      "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
-      "catenate"->CatenateLayer[],
-      "locs"->ReshapeLayer[{4,numberOfAnchors,height,width}]},{
-      
-      "convloc"->"reshape"->{"cx","cy","width","height"}->"catenate"->"locs"}]
-
-
-multiBoxClassesDecoder[ numberOfAnchors_, width_, height_ ] :=
-   NetChain[{ ConvolutionLayer[ numberOfAnchors*21, {3,3}, "PaddingSize"->1 ], ReshapeLayer[{numberOfAnchors,21,height,width}],TransposeLayer[2->4],TransposeLayer[2->3],SoftmaxLayer[] }];
+      "reshape"->ReshapeLayer[{numberOfAnchors,4,height,width}]
+      },{
+      "convloc"->"reshape"}];
 
 
 channelNormalizationNet = NetChain[{
    TransposeLayer[1->3],
-   ElementwiseLayer[Log[Max[#^2,10^-6]]&],SoftmaxLayer[],
+   ElementwiseLayer[Log[Max[#^2,10^-20]]&],SoftmaxLayer[],
    ElementwiseLayer[Sqrt],TransposeLayer[1->3],
    ConstantTimesLayer[]
 }];
@@ -93,40 +87,40 @@ multiBoxLayer1 = NetGraph[{
    "channelNorm1"->channelNormalizationNet,
    "multiboxClasses"->multiBoxClassesDecoder[ 4, 38, 38 ],
    "multiboxLocs"->multiBoxLocationDecoder[ 4, 38, 38 ]},
-   {"channelNorm1"->{"multiboxClasses"->NetPort["ClassProb1"],"multiboxLocs"->NetPort["Boxes1"]}}];
+   {"channelNorm1"->{"multiboxClasses"->NetPort["ClassProb1"],"multiboxLocs"->NetPort["Locs1"]}}];
 
 
 multiBoxLayer2 = NetGraph[{
    "multiboxClasses"->multiBoxClassesDecoder[ 6, 19, 19 ],
    "multiboxLocs"->multiBoxLocationDecoder[ 6, 19, 19 ]},
-   {"multiboxClasses"->NetPort["ClassProb2"],"multiboxLocs"->NetPort["Boxes2"]}];
+   {"multiboxClasses"->NetPort["ClassProb2"],"multiboxLocs"->NetPort["Locs2"]}];
 
 
 multiBoxLayer3 = NetGraph[{
    "multiboxClasses"->multiBoxClassesDecoder[ 6, 10, 10 ],
    "multiboxLocs"->multiBoxLocationDecoder[ 6, 10, 10 ]},
-   {"multiboxClasses"->NetPort["ClassProb3"],"multiboxLocs"->NetPort["Boxes3"]}];
+   {"multiboxClasses"->NetPort["ClassProb3"],"multiboxLocs"->NetPort["Locs3"]}];
 
 
 multiBoxLayer4 = NetGraph[{
    "multiboxClasses"->multiBoxClassesDecoder[ 6, 5, 5 ],
    "multiboxLocs"->multiBoxLocationDecoder[ 6, 5, 5 ]},
-   {"multiboxClasses"->NetPort["ClassProb4"],"multiboxLocs"->NetPort["Boxes4"]}];
+   {"multiboxClasses"->NetPort["ClassProb4"],"multiboxLocs"->NetPort["Locs4"]}];
 
 
 multiBoxLayer5 = NetGraph[{
    "multiboxClasses"->multiBoxClassesDecoder[ 4, 3, 3 ],
    "multiboxLocs"->multiBoxLocationDecoder[ 4, 3, 3 ]},
-   {"multiboxClasses"->NetPort["ClassProb5"],"multiboxLocs"->NetPort["Boxes5"]}];
+   {"multiboxClasses"->NetPort["ClassProb5"],"multiboxLocs"->NetPort["Locs5"]}];
 
 
 multiBoxLayer6 = NetGraph[{
    "multiboxClasses"->multiBoxClassesDecoder[ 4, 1, 1 ],
    "multiboxLocs"->multiBoxLocationDecoder[ 4, 1, 1 ]},
-   {"multiboxClasses"->NetPort["ClassProb6"],"multiboxLocs"->NetPort["Boxes6"]}];
+   {"multiboxClasses"->NetPort["ClassProb6"],"multiboxLocs"->NetPort["Locs6"]}];
 
 
-ssdMultiboxNet = NetGraph[{
+ssdConvNet = NetGraph[{
    "blockNet4"->blockNet4,
    "blockNet7"->blockNet7,
    "blockNet8"->blockNet8,
@@ -150,20 +144,46 @@ ssdMultiboxNet = NetGraph[{
    }];
 
 
+multiBoxDecoder[ numberOfAnchors_, width_, height_ ]:= NetGraph[{
+      "cx"->{PartLayer[{All,1}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[#*300.&]},
+      "cy"->{PartLayer[{All,2}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[(1-#)*300.&]},
+      "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
+      "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
+      "catenate"->CatenateLayer[],(* (C*A)*Y*X *)
+      "reshape"->ReshapeLayer[ { 4, numberOfAnchors, height, width } ],
+      "transpose"->TransposeLayer[1->2]},{
+      {"cx","cy","width","height"}->"catenate"->"reshape"->"transpose"}];
+
+
+locsToBoxesNet = NetGraph[{
+   multiBoxDecoder[ 4, 38, 38 ],
+   multiBoxDecoder[ 6, 19, 19 ],
+   multiBoxDecoder[ 6, 10, 10 ],
+   multiBoxDecoder[ 6, 5, 5 ],
+   multiBoxDecoder[ 4, 3, 3 ],
+   multiBoxDecoder[ 4, 1, 1 ] },{
+   NetPort["Locs1"]->1->NetPort["Boxes1"],NetPort["Locs2"]->2->NetPort["Boxes2"],
+   NetPort["Locs3"]->3->NetPort["Boxes3"],NetPort["Locs4"]->4->NetPort["Boxes4"],
+   NetPort["Locs5"]->5->NetPort["Boxes5"],NetPort["Locs6"]->6->NetPort["Boxes6"]}];
+
+
+ReshapeMultiBoxLayer = { TransposeLayer[{3->1,4->2}],FlattenLayer[2]}; 
+
+
 ssdConcatenationNet = NetGraph[{
-   "classProb1"->FlattenLayer[2],
-   "classProb2"->FlattenLayer[2],
-   "classProb3"->FlattenLayer[2],
-   "classProb4"->FlattenLayer[2],
-   "classProb5"->FlattenLayer[2],
-   "classProb6"->FlattenLayer[2],   
+   "classProb1"->ReshapeMultiBoxLayer,
+   "classProb2"->ReshapeMultiBoxLayer,
+   "classProb3"->ReshapeMultiBoxLayer,
+   "classProb4"->ReshapeMultiBoxLayer,
+   "classProb5"->ReshapeMultiBoxLayer,
+   "classProb6"->ReshapeMultiBoxLayer,   
    "classProb"->CatenateLayer[],
-   "boxes1"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
-   "boxes2"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
-   "boxes3"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
-   "boxes4"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
-   "boxes5"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
-   "boxes6"->{TransposeLayer[{1->2,2->3,3->4}],FlattenLayer[2]},
+   "boxes1"->ReshapeMultiBoxLayer,
+   "boxes2"->ReshapeMultiBoxLayer,
+   "boxes3"->ReshapeMultiBoxLayer,
+   "boxes4"->ReshapeMultiBoxLayer,
+   "boxes5"->ReshapeMultiBoxLayer,
+   "boxes6"->ReshapeMultiBoxLayer,
    "boxes"->CatenateLayer[]
    },
    {
@@ -184,19 +204,25 @@ ssdConcatenationNet = NetGraph[{
    }];
 
 
-ssdNet = NetGraph[{ssdMultiboxNet,ssdConcatenationNet},
+ssdNet = NetGraph[{ssdConvNet,locsToBoxesNet,ssdConcatenationNet},
    {
-   NetPort[1,"ClassProb1"]->NetPort[2,"ClassProb1"],
-   NetPort[1,"ClassProb2"]->NetPort[2,"ClassProb2"],
-   NetPort[1,"ClassProb3"]->NetPort[2,"ClassProb3"],
-   NetPort[1,"ClassProb4"]->NetPort[2,"ClassProb4"],
-   NetPort[1,"ClassProb5"]->NetPort[2,"ClassProb5"],
-   NetPort[1,"ClassProb6"]->NetPort[2,"ClassProb6"],
-   NetPort[1,"Boxes1"]->NetPort[2,"Boxes1"],
-   NetPort[1,"Boxes2"]->NetPort[2,"Boxes2"],
-   NetPort[1,"Boxes3"]->NetPort[2,"Boxes3"],
-   NetPort[1,"Boxes4"]->NetPort[2,"Boxes4"],
-   NetPort[1,"Boxes5"]->NetPort[2,"Boxes5"],
-   NetPort[1,"Boxes6"]->NetPort[2,"Boxes6"]
+   NetPort[1,"ClassProb1"]->NetPort[3,"ClassProb1"],
+   NetPort[1,"ClassProb2"]->NetPort[3,"ClassProb2"],
+   NetPort[1,"ClassProb3"]->NetPort[3,"ClassProb3"],
+   NetPort[1,"ClassProb4"]->NetPort[3,"ClassProb4"],
+   NetPort[1,"ClassProb5"]->NetPort[3,"ClassProb5"],
+   NetPort[1,"ClassProb6"]->NetPort[3,"ClassProb6"],
+   NetPort[1,"Locs1"]->NetPort[2,"Locs1"],
+   NetPort[1,"Locs2"]->NetPort[2,"Locs2"],
+   NetPort[1,"Locs3"]->NetPort[2,"Locs3"],
+   NetPort[1,"Locs4"]->NetPort[2,"Locs4"],
+   NetPort[1,"Locs5"]->NetPort[2,"Locs5"],
+   NetPort[1,"Locs6"]->NetPort[2,"Locs6"],
+   NetPort[2,"Boxes1"]->NetPort[3,"Boxes1"],
+   NetPort[2,"Boxes2"]->NetPort[3,"Boxes2"],
+   NetPort[2,"Boxes3"]->NetPort[3,"Boxes3"],
+   NetPort[2,"Boxes4"]->NetPort[3,"Boxes4"],
+   NetPort[2,"Boxes5"]->NetPort[3,"Boxes5"],
+   NetPort[2,"Boxes6"]->NetPort[3,"Boxes6"]
    },
    "Input"->NetEncoder[{"Image",{300,300},"ColorSpace"->"RGB","MeanImage"->{123,117,104}/255.}]];

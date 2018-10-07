@@ -17,8 +17,8 @@ anchorsh2 = {60/300,81/300,42/300,84/300,34/300,103/300};
 
 anchorsx3 = Table[8*x/75,{y,1,10},{x,.5,9.5}];
 anchorsy3 = Table[8*y/75,{y,.5,9.5},{x,1,10}];
-anchorsw3 = {111,134,156,78,192,64}/300;
-anchorsh3 = {111,134,78,156,64,192}/300;
+anchorsw3 = {111,134,156,78.4889,192,64}/300;
+anchorsh3 = {111,134,78,156.978,64,192}/300;
 
 
 anchorsx4 = Table[16*x/75,{y,1,5},{x,.5,4.5}];
@@ -37,6 +37,9 @@ anchorsx6 = Table[x/2,{y,1,1},{x,1,1}];
 anchorsy6 = Table[y/2,{y,1,1},{x,1,1}];
 anchorsw6 = {264,288,373,186}/300;
 anchorsh6 = {264,288,186,373}/300;
+
+
+anchorsx4[[1]]
 
 
 (* Caffe has BGR ordering for some obscure reason, because of openCV? *)
@@ -225,47 +228,48 @@ trainedModel = NetReplacePart[ ssdNet,{
    {1,"multiboxLayer6","multiboxLocs","convloc",1,"Biases"}->block11LocB,
       
    {1,"multiboxLayer1","channelNorm1",6,"Scaling"}->ngamma4,
-   {1,"multiboxLayer1","multiboxLocs","cx",2,"Scaling"}->Table[0.1*anchorsw1[[b]],{b,1,4},{38},{38}],
-   {1,"multiboxLayer1","multiboxLocs","cx",3,"Biases"}->ConstantArray[anchorsx1,{4}],   
-   {1,"multiboxLayer1","multiboxLocs","cy",2,"Scaling"}->Table[0.1*anchorsh1[[b]],{b,1,4},{38},{38}],
-   {1,"multiboxLayer1","multiboxLocs","cy",3,"Biases"}->ConstantArray[anchorsy1,{4}],   
-   {1,"multiboxLayer1","multiboxLocs","width",3,"Scaling"}->Table[anchorsw1[[b]],{b,1,4},{38},{38}],
-   {1,"multiboxLayer1","multiboxLocs","height",3,"Scaling"}->Table[anchorsh1[[b]],{b,1,4},{38},{38}],
-
-   {1,"multiboxLayer2","multiboxLocs","cx",2,"Scaling"}->Table[0.1*anchorsw2[[b]],{b,1,6},{19},{19}],
-   {1,"multiboxLayer2","multiboxLocs","cx",3,"Biases"}->ConstantArray[anchorsx2,{6}],   
-   {1,"multiboxLayer2","multiboxLocs","cy",2,"Scaling"}->Table[0.1*anchorsh2[[b]],{b,1,6},{19},{19}],
-   {1,"multiboxLayer2","multiboxLocs","cy",3,"Biases"}->ConstantArray[anchorsy2,{6}],   
-   {1,"multiboxLayer2","multiboxLocs","width",3,"Scaling"}->Table[anchorsw2[[b]],{b,1,6},{19},{19}],
-   {1,"multiboxLayer2","multiboxLocs","height",3,"Scaling"}->Table[anchorsh2[[b]],{b,1,6},{19},{19}],
    
-   {1,"multiboxLayer3","multiboxLocs","cx",2,"Scaling"}->Table[0.1*anchorsw3[[b]],{b,1,6},{10},{10}],
-   {1,"multiboxLayer3","multiboxLocs","cx",3,"Biases"}->ConstantArray[anchorsx3,{6}],   
-   {1,"multiboxLayer3","multiboxLocs","cy",2,"Scaling"}->Table[0.1*anchorsh3[[b]],{b,1,6},{10},{10}],
-   {1,"multiboxLayer3","multiboxLocs","cy",3,"Biases"}->ConstantArray[anchorsy3,{6}],   
-   {1,"multiboxLayer3","multiboxLocs","width",3,"Scaling"}->Table[anchorsw3[[b]],{b,1,6},{10},{10}],
-   {1,"multiboxLayer3","multiboxLocs","height",3,"Scaling"}->Table[anchorsh3[[b]],{b,1,6},{10},{10}],
+   {2,1,"cx",2,"Scaling"}->Table[0.1*anchorsw1[[b]],{b,1,4},{38},{38}],
+   {2,1,"cx",3,"Biases"}->ConstantArray[anchorsx1,{4}],   
+   {2,1,"cy",2,"Scaling"}->Table[0.1*anchorsh1[[b]],{b,1,4},{38},{38}],
+   {2,1,"cy",3,"Biases"}->ConstantArray[anchorsy1,{4}],   
+   {2,1,"width",3,"Scaling"}->Table[anchorsw1[[b]],{b,1,4},{38},{38}],
+   {2,1,"height",3,"Scaling"}->Table[anchorsh1[[b]],{b,1,4},{38},{38}],
+
+   {2,2,"cx",2,"Scaling"}->Table[0.1*anchorsw2[[b]],{b,1,6},{19},{19}],
+   {2,2,"cx",3,"Biases"}->ConstantArray[anchorsx2,{6}],   
+   {2,2,"cy",2,"Scaling"}->Table[0.1*anchorsh2[[b]],{b,1,6},{19},{19}],
+   {2,2,"cy",3,"Biases"}->ConstantArray[anchorsy2,{6}],   
+   {2,2,"width",3,"Scaling"}->Table[anchorsw2[[b]],{b,1,6},{19},{19}],
+   {2,2,"height",3,"Scaling"}->Table[anchorsh2[[b]],{b,1,6},{19},{19}],
    
-   {1,"multiboxLayer4","multiboxLocs","cx",2,"Scaling"}->Table[0.1*anchorsw4[[b]],{b,1,6},{5},{5}],
-   {1,"multiboxLayer4","multiboxLocs","cx",3,"Biases"}->ConstantArray[anchorsx4,{6}],   
-   {1,"multiboxLayer4","multiboxLocs","cy",2,"Scaling"}->Table[0.1*anchorsh4[[b]],{b,1,6},{5},{5}],
-   {1,"multiboxLayer4","multiboxLocs","cy",3,"Biases"}->ConstantArray[anchorsy4,{6}],   
-   {1,"multiboxLayer4","multiboxLocs","width",3,"Scaling"}->Table[anchorsw4[[b]],{b,1,6},{5},{5}],
-   {1,"multiboxLayer4","multiboxLocs","height",3,"Scaling"}->Table[anchorsh4[[b]],{b,1,6},{5},{5}],
+   {2,3,"cx",2,"Scaling"}->Table[0.1*anchorsw3[[b]],{b,1,6},{10},{10}],
+   {2,3,"cx",3,"Biases"}->ConstantArray[anchorsx3,{6}],   
+   {2,3,"cy",2,"Scaling"}->Table[0.1*anchorsh3[[b]],{b,1,6},{10},{10}],
+   {2,3,"cy",3,"Biases"}->ConstantArray[anchorsy3,{6}],   
+   {2,3,"width",3,"Scaling"}->Table[anchorsw3[[b]],{b,1,6},{10},{10}],
+   {2,3,"height",3,"Scaling"}->Table[anchorsh3[[b]],{b,1,6},{10},{10}],
+   
+   {2,4,"cx",2,"Scaling"}->Table[0.1*anchorsw4[[b]],{b,1,6},{5},{5}],
+   {2,4,"cx",3,"Biases"}->ConstantArray[anchorsx4,{6}],   
+   {2,4,"cy",2,"Scaling"}->Table[0.1*anchorsh4[[b]],{b,1,6},{5},{5}],
+   {2,4,"cy",3,"Biases"}->ConstantArray[anchorsy4,{6}],   
+   {2,4,"width",3,"Scaling"}->Table[anchorsw4[[b]],{b,1,6},{5},{5}],
+   {2,4,"height",3,"Scaling"}->Table[anchorsh4[[b]],{b,1,6},{5},{5}],
 
-   {1,"multiboxLayer5","multiboxLocs","cx",2,"Scaling"}->Table[0.1*anchorsw5[[b]],{b,1,4},{3},{3}],
-   {1,"multiboxLayer5","multiboxLocs","cx",3,"Biases"}->ConstantArray[anchorsx5,{4}],   
-   {1,"multiboxLayer5","multiboxLocs","cy",2,"Scaling"}->Table[0.1*anchorsh5[[b]],{b,1,4},{3},{3}],
-   {1,"multiboxLayer5","multiboxLocs","cy",3,"Biases"}->ConstantArray[anchorsy5,{4}],   
-   {1,"multiboxLayer5","multiboxLocs","width",3,"Scaling"}->Table[anchorsw5[[b]],{b,1,4},{3},{3}],
-   {1,"multiboxLayer5","multiboxLocs","height",3,"Scaling"}->Table[anchorsh5[[b]],{b,1,4},{3},{3}],
+   {2,5,"cx",2,"Scaling"}->Table[0.1*anchorsw5[[b]],{b,1,4},{3},{3}],
+   {2,5,"cx",3,"Biases"}->ConstantArray[anchorsx5,{4}],   
+   {2,5,"cy",2,"Scaling"}->Table[0.1*anchorsh5[[b]],{b,1,4},{3},{3}],
+   {2,5,"cy",3,"Biases"}->ConstantArray[anchorsy5,{4}],   
+   {2,5,"width",3,"Scaling"}->Table[anchorsw5[[b]],{b,1,4},{3},{3}],
+   {2,5,"height",3,"Scaling"}->Table[anchorsh5[[b]],{b,1,4},{3},{3}],
 
-   {1,"multiboxLayer6","multiboxLocs","cx",2,"Scaling"}->Table[0.1*anchorsw6[[b]],{b,1,4},{1},{1}],
-   {1,"multiboxLayer6","multiboxLocs","cx",3,"Biases"}->ConstantArray[anchorsx6,{4}],   
-   {1,"multiboxLayer6","multiboxLocs","cy",2,"Scaling"}->Table[0.1*anchorsh6[[b]],{b,1,4},{1},{1}],
-   {1,"multiboxLayer6","multiboxLocs","cy",3,"Biases"}->ConstantArray[anchorsy6,{4}],   
-   {1,"multiboxLayer6","multiboxLocs","width",3,"Scaling"}->Table[anchorsw6[[b]],{b,1,4},{1},{1}],
-   {1,"multiboxLayer6","multiboxLocs","height",3,"Scaling"}->Table[anchorsh6[[b]],{b,1,4},{1},{1}]
+   {2,6,"cx",2,"Scaling"}->Table[0.1*anchorsw6[[b]],{b,1,4},{1},{1}],
+   {2,6,"cx",3,"Biases"}->ConstantArray[anchorsx6,{4}],   
+   {2,6,"cy",2,"Scaling"}->Table[0.1*anchorsh6[[b]],{b,1,4},{1},{1}],
+   {2,6,"cy",3,"Biases"}->ConstantArray[anchorsy6,{4}],   
+   {2,6,"width",3,"Scaling"}->Table[anchorsw6[[b]],{b,1,4},{1},{1}],
+   {2,6,"height",3,"Scaling"}->Table[anchorsh6[[b]],{b,1,4},{1},{1}]
 }];
 
 
