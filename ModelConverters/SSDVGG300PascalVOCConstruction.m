@@ -183,9 +183,9 @@ ssdLocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
    "miny"->ThreadingLayer[#1-#2/2&],
    "maxx"->ThreadingLayer[#1+#2/2&],
    "maxy"->ThreadingLayer[#1+#2/2&],
-   "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 8732} ], "transpose"->TransposeLayer[] }, {
+   "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 8732} ], "transpose"->TransposeLayer[], "reshapePoint"->ReshapeLayer[ {8732, 2, 2 } ] }, {
    {"cx","width"}->"minx",{"cx","width"}->"maxx",{"cy","height"}->"miny",{"cy","height"}->"maxy",
-   {"minx","miny","maxx","maxy"}->"cat"->"reshape"->"transpose"->NetPort["Boxes"]}];
+   {"minx","miny","maxx","maxy"}->"cat"->"reshape"->"transpose"->"reshapePoint"->NetPort["Boxes"]}];
 
 
 ssdNet = NetGraph[ {
@@ -194,6 +194,3 @@ ssdNet = NetGraph[ {
    NetPort[1,"ClassProb"]->NetPort["ClassProb"],
    NetPort[1,"Locs"]->NetPort[2,"Input"]},
    "Input"->NetEncoder[{"Image",{300,300},"ColorSpace"->"RGB","MeanImage"->{123,117,104}/255.}]];
-
-
-NetExtract[ssdNet,2]
