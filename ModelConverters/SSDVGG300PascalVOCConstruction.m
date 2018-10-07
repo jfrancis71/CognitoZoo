@@ -144,85 +144,48 @@ ssdConvNet = NetGraph[{
    }];
 
 
-multiBoxDecoder[ numberOfAnchors_, width_, height_ ]:= NetGraph[{
-      "cx"->{PartLayer[{All,1}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[#*300.&]},
-      "cy"->{PartLayer[{All,2}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[(1-#)*300.&]},
-      "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
-      "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
-      "catenate"->CatenateLayer[],(* (C*A)*Y*X *)
-      "reshape"->ReshapeLayer[ { 4, numberOfAnchors, height, width } ],
-      "transpose"->TransposeLayer[1->2]},{
-      {"cx","cy","width","height"}->"catenate"->"reshape"->"transpose"}];
+(* This can reshape both class and location types *)
+shuffleLayer[ numberOfAnchors_, height_, width_ ] :=
+   NetChain[ {TransposeLayer[{2->4,1->3}],FlattenLayer[2]} ];
 
 
-locsToBoxesNet = NetGraph[{
-   multiBoxDecoder[ 4, 38, 38 ],
-   multiBoxDecoder[ 6, 19, 19 ],
-   multiBoxDecoder[ 6, 10, 10 ],
-   multiBoxDecoder[ 6, 5, 5 ],
-   multiBoxDecoder[ 4, 3, 3 ],
-   multiBoxDecoder[ 4, 1, 1 ] },{
-   NetPort["Locs1"]->1->NetPort["Boxes1"],NetPort["Locs2"]->2->NetPort["Boxes2"],
-   NetPort["Locs3"]->3->NetPort["Boxes3"],NetPort["Locs4"]->4->NetPort["Boxes4"],
-   NetPort["Locs5"]->5->NetPort["Boxes5"],NetPort["Locs6"]->6->NetPort["Boxes6"]}];
-
-
-ReshapeMultiBoxLayer = { TransposeLayer[{3->1,4->2}],FlattenLayer[2]}; 
-
-
-ssdConcatenationNet = NetGraph[{
-   "classProb1"->ReshapeMultiBoxLayer,
-   "classProb2"->ReshapeMultiBoxLayer,
-   "classProb3"->ReshapeMultiBoxLayer,
-   "classProb4"->ReshapeMultiBoxLayer,
-   "classProb5"->ReshapeMultiBoxLayer,
-   "classProb6"->ReshapeMultiBoxLayer,   
-   "classProb"->CatenateLayer[],
-   "boxes1"->ReshapeMultiBoxLayer,
-   "boxes2"->ReshapeMultiBoxLayer,
-   "boxes3"->ReshapeMultiBoxLayer,
-   "boxes4"->ReshapeMultiBoxLayer,
-   "boxes5"->ReshapeMultiBoxLayer,
-   "boxes6"->ReshapeMultiBoxLayer,
-   "boxes"->CatenateLayer[]
-   },
-   {
-   NetPort["ClassProb1"]->"classProb1",
-   NetPort["ClassProb2"]->"classProb2",
-   NetPort["ClassProb3"]->"classProb3",
-   NetPort["ClassProb4"]->"classProb4",
-   NetPort["ClassProb5"]->"classProb5",
-   NetPort["ClassProb6"]->"classProb6",   
-   {"classProb1","classProb2","classProb3","classProb4","classProb5","classProb6"}->"classProb"->NetPort["ClassProb"],
-   NetPort["Boxes1"]->"boxes1",
-   NetPort["Boxes2"]->"boxes2",
-   NetPort["Boxes3"]->"boxes3",
-   NetPort["Boxes4"]->"boxes4",
-   NetPort["Boxes5"]->"boxes5",
-   NetPort["Boxes6"]->"boxes6",
-   {"boxes1","boxes2","boxes3","boxes4","boxes5","boxes6"}->"boxes"->NetPort["Boxes"]
+ssdFlatNet = NetGraph[{
+   ssdConvNet,
+   shuffleLayer[ 4, 38, 38 ],
+   shuffleLayer[ 6, 19, 19 ],
+   shuffleLayer[ 6, 10, 10 ],
+   shuffleLayer[ 6, 5, 5 ],
+   shuffleLayer[ 4, 3, 3 ],
+   shuffleLayer[ 4, 1, 1 ],
+   CatenateLayer[],
+   shuffleLayer[ 4, 38, 38 ],
+   shuffleLayer[ 6, 19, 19 ],
+   shuffleLayer[ 6, 10, 10 ],
+   shuffleLayer[ 6, 5, 5 ],
+   shuffleLayer[ 4, 3, 3 ],
+   shuffleLayer[ 4, 1, 1 ],
+   CatenateLayer[]},{
+   NetPort[1,"ClassProb1"]->2,NetPort[1,"ClassProb2"]->3,NetPort[1,"ClassProb3"]->4,
+   NetPort[1,"ClassProb4"]->5,NetPort[1,"ClassProb5"]->6,NetPort[1,"ClassProb6"]->7,
+   NetPort[1,"Locs1"]->9,NetPort[1,"Locs2"]->10,NetPort[1,"Locs3"]->11,
+   NetPort[1,"Locs4"]->12,NetPort[1,"Locs5"]->13,NetPort[1,"Locs6"]->14,   
+   {2,3,4,5,6,7}->8,{9,10,11,12,13,14}->15,
+   8->NetPort["ClassProb"],15->NetPort["Locs"]
    }];
 
 
-ssdNet = NetGraph[{ssdConvNet,locsToBoxesNet,ssdConcatenationNet},
-   {
-   NetPort[1,"ClassProb1"]->NetPort[3,"ClassProb1"],
-   NetPort[1,"ClassProb2"]->NetPort[3,"ClassProb2"],
-   NetPort[1,"ClassProb3"]->NetPort[3,"ClassProb3"],
-   NetPort[1,"ClassProb4"]->NetPort[3,"ClassProb4"],
-   NetPort[1,"ClassProb5"]->NetPort[3,"ClassProb5"],
-   NetPort[1,"ClassProb6"]->NetPort[3,"ClassProb6"],
-   NetPort[1,"Locs1"]->NetPort[2,"Locs1"],
-   NetPort[1,"Locs2"]->NetPort[2,"Locs2"],
-   NetPort[1,"Locs3"]->NetPort[2,"Locs3"],
-   NetPort[1,"Locs4"]->NetPort[2,"Locs4"],
-   NetPort[1,"Locs5"]->NetPort[2,"Locs5"],
-   NetPort[1,"Locs6"]->NetPort[2,"Locs6"],
-   NetPort[2,"Boxes1"]->NetPort[3,"Boxes1"],
-   NetPort[2,"Boxes2"]->NetPort[3,"Boxes2"],
-   NetPort[2,"Boxes3"]->NetPort[3,"Boxes3"],
-   NetPort[2,"Boxes4"]->NetPort[3,"Boxes4"],
-   NetPort[2,"Boxes5"]->NetPort[3,"Boxes5"],
-   NetPort[2,"Boxes6"]->NetPort[3,"Boxes6"]
-   },
+ssdLocsToBoxesNet = NetGraph[ {
+   "cx"->{PartLayer[{All,1}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[#*300.&]},
+   "cy"->{PartLayer[{All,2}],ConstantTimesLayer[],ConstantPlusLayer[],ElementwiseLayer[(1-#)*300.&]},
+   "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
+   "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp[#*0.2]&],ConstantTimesLayer[],ElementwiseLayer[#*300.&]},
+   "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 8732} ], "transpose"->TransposeLayer[] }, {
+   {"cx","cy","width","height"}->"cat"->"reshape"->"transpose"->NetPort["Boxes"]}];
+
+
+ssdNet = NetGraph[ {
+   ssdFlatNet,
+   ssdLocsToBoxesNet }, {
+   NetPort[1,"ClassProb"]->NetPort["ClassProb"],
+   NetPort[1,"Locs"]->NetPort[2,"Input"]},
    "Input"->NetEncoder[{"Image",{300,300},"ColorSpace"->"RGB","MeanImage"->{123,117,104}/255.}]];
