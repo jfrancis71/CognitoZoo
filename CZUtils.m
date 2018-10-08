@@ -92,10 +92,7 @@ CZDeconformRectangles[ rboxes_List, image_Image, netDims_List, "Stretch" ] :=
    So { {rect1, class1, prob1 }, ... }
 *)
 CZObjectsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ] :=
-   If[
-      objects=={},
-      {},
-      Transpose[ MapAt[ CZDeconformRectangles[ #, image, netDims, fitting ]&, Transpose[ objects ], 1 ] ] ];
+   Transpose[ { CZDeconformRectangles[ objects[[All,1]], image, netDims, fitting ], objects[[All,2]], objects[[All,3]] } ]
 
 
 CZConformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ] :=
