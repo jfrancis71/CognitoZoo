@@ -45,17 +45,16 @@ Timing:
 
 SyntaxInformation[ Detail ]= {"ArgumentsPattern"->{_}};
 SyntaxInformation[ GenderDetection ]= {"ArgumentsPattern"->{_}};
-Options[ CZDetectFaces ] = Join[{
+Options[ CZDetectFaces ] = {
    TargetDevice->"CPU",
    Threshold->.5,
    Detail->"XGA",
-   GenderDetection->False
-}, Options[ CZNonMaxSuppression ] ];
-
-
+   GenderDetection->False,
+   NMSMethod->CZNonMaxSuppression,
+   NMSIntersectionOverUnionThreshold->.25 };
 CZDetectFaces[ image_Image, opts:OptionsPattern[] ] :=
    Function[detections,If[OptionValue[GenderDetection],Map[{#[[1]],CZGenderClassify[#[[3,1]]]}&,detections],detections[[All,1]]]]@
-   CZNonMaxSuppression[ FilterRules[ {opts}, Options[ CZNonMaxSuppression ] ] ]@If[OptionValue[Detail]=="VGA",
+   OptionValue[ NMSMethod ][ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@If[OptionValue[Detail]=="VGA",
       CZObjectsDeconformer[ image, {640, 480}, "Fit" ]@(CZVGADetectFaces[#,FilterRules[{opts},Options[ CZVGADetectFaces ] ] ]&)@CZImageConformer[{640,480},"Fit"]@image,
       CZObjectsDeconformer[ image, {1280, 960}, "Fit" ]@(CZXGADetectFaces[#,FilterRules[{opts},Options[ CZXGADetectFaces ] ] ]&)@CZImageConformer[{1280,960},"Fit"]@image
    ]

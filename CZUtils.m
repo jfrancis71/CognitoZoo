@@ -41,7 +41,7 @@ CZTakeMaxProbRectangle[ objects_ ] := First@SortBy[objects,-#[[2]]&];
 CZTakeWeightedRectangle[ objects_ ] :=
 {
    Rectangle@@Round[Total[objects[[All,2]]*List@@@objects[[All,1]]]/Total[objects[[All,2]]]],
-   Max[objects[[All,3]]],
+   Max[objects[[All,2]]],
    If[ Length[objects[[1]]] > 2,
       Round[Total[objects[[All,2]]*List@@@objects[[All,3]]]/Total[objects[[All,2]]]],
       Nothing ]
