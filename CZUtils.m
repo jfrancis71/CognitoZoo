@@ -24,7 +24,7 @@ CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:=
 
 
 (*
-   Note: requires format list of {Rectangle[{xmin,ymin},{xmax,ymax}],prob,(metrics...)}
+   Note: requires format list of {Rectangle[{xmin,ymin},{xmax,ymax}],(metrics...),prob}
    It is sensitive to that xmin,ymin,xmax,ymax ordering and will not
    work if it is wrong way round (ie corners in wrong order)
    
@@ -37,13 +37,13 @@ CZIntersectionOverUnion[a_Rectangle, b_Rectangle]:=
    but for example for face detection it can compute gender estimate or anything else chosen to be
    placed there.
 *)
-CZTakeMaxProbRectangle[ objects_ ] := First@SortBy[objects,-#[[2]]&];
+CZTakeMaxProbRectangle[ objects_ ] := First@SortBy[objects,-Last[#]&];
 CZTakeWeightedRectangle[ objects_ ] :=
 {
-   Rectangle@@Round[Total[objects[[All,2]]*List@@@objects[[All,1]]]/Total[objects[[All,2]]]],
-   Max[objects[[All,2]]],
+   Rectangle@@Round[Total[objects[[All,-1]]*List@@@objects[[All,1]]]/Total[objects[[All,-1]]]],
+   Max[objects[[All,-1]]],
    If[ Length[objects[[1]]] > 2,
-      Round[Total[objects[[All,2]]*List@@@objects[[All,3]]]/Total[objects[[All,2]]]],
+      Round[Total[objects[[All,-1]]*List@@@objects[[All,3]]]/Total[objects[[All,-1]]]],
       Nothing ]
 }
 CZNonMaxSuppressionMethod[ nonMaxSuppressionMethod_ ][ nmsIntersectionOverUnionThreshold_ ][ objects_ ] := 

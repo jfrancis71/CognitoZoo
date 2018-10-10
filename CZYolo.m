@@ -76,7 +76,7 @@ THE REAL LICENSE:
 Options[ CZDetectObjects ] = Join[{
    TargetDevice->"CPU",
    Threshold->.24
-}, Options[ CZNonMaxSuppression ] ];
+}, Options[ CZNonMaxSuppressionPerClass ] ];
 CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
    CZObjectsDeconformer[ image, {416, 416}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
