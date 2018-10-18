@@ -4,7 +4,7 @@
 
    SSD VGG 512 COCO is a computer vision object detection and localisation model designed to detect
    80 object categories (e.g. people, horses, dogs etc)
-   Performance: mAP 26.8% on COCO test-dev 2015 (using COCO performance metric)
+   Performance: mAP 28.8% on COCO test-dev 2015 (using COCO performance metric)
    
    Usage: HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
    or:    CZHighlightObjects[ img ]
