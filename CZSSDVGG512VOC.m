@@ -10,9 +10,7 @@
    or:    CZHighlightObjects[ img ]
 
    Timings are around: (for the two cars on Clapham Common image)
-   1.3 secs for MacBook Air
-   1.1 secs Desktop CPU
-   .34 secs Desktop GPU
+   3200 secs for MacBook Air
 *)
 
 (*
