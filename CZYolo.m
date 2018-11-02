@@ -13,9 +13,6 @@
    Desktop CPU: .34 secs
    Desktop GPU: .11 secs
 
-   You need to ensure the following files are installed in a CZModels subfolder on your search path:
-      TinyYolov2.wlnet
-   Files found in: https://drive.google.com/open?id=0Bzhe0pgVZtNUVGJJak1GWDQ3S1U 
 *)
 
 (*
