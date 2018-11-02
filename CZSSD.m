@@ -37,7 +37,7 @@
 (* Public Interface Code *)
 
 
-<<CZutils.m
+<<CZUtils.m
 
 
 Options[ CZDetectObjects ] = Join[{
