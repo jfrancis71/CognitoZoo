@@ -10,7 +10,7 @@
    or:    CZHighlightObjects[ img ]
 
    Timings are around: (for the two cars on Clapham Common image)
-   3200 secs for MacBook Air
+   3.200 secs for MacBook Air
 *)
 
 (*
