@@ -72,6 +72,7 @@ CZCOCOClasses = {"person","bicycle","car","motorcycle","airplane","bus","train",
 
 (* The weights in this file have been converted from: https://github.com/weiliu89/caffe/tree/ssd
    See model reference: COCO models trainval35K SSD512*
+   Copyright and license details: https://github.com/weiliu89/caffe/blob/ssd/LICENSE
 *)
 SSDNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG512COCOReference.wlnet"],"WLNet"];
 

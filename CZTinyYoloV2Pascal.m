@@ -102,7 +102,9 @@ CZGetBoundingBox[ cubePos_, conv15_ ]:=
    Rectangle[416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}]
 )
 
-
+(* The weights in the following wlnet file have been converted from: https://pjreddie.com/media/files/tiny-yolo-voc.weights
+   Copyright and license details: https://github.com/pjreddie/darknet/blob/master/LICENSE.mit
+*)
 YoloNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/TinyYolov2.wlnet"],"WLNet"];
 
 
