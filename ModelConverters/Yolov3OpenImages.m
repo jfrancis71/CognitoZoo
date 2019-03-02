@@ -43,18 +43,46 @@ LargeResidualBlock[ firstLayer_, inputFilters_, inputSize_ ] := NetGraph[{
 inp = Import["/Users/julian/yolov3/darknet/multset.h5",{"Datasets","/input"}];inp//Dimensions
 
 
-{3,608,608}
+multiboxObjDecoder[ anchors_, width_, height_ ] := NetChain[{ReshapeLayer[{anchors,606,width,height}],PartLayer[{All,5}],LogisticSigmoid}]
 
 
-"layer0"->"layer4"->"layer8"->"layer11"->"layer15"->"layer18"->"layer21"->"layer24"->"layer27"->
-"layer30"->"layer33"->"layer36"->"layer40"->"layer43"->"layer46"->"layer49"->"layer52"->"layer55"->"layer58"->
-"layer61"->"layer65"->"layer68"->"layer71"->"layer74"->"layer75"->"layer76"->"layer77"->"layer78"->"layer79"->"layer80"->"layer81"->"layer84"
+multiboxClassesDecoder[ anchors_, width_, height_ ] := NetChain[{ReshapeLayer[{anchors,606,width,height}],PartLayer[{All,6;;606}],LogisticSigmoid}]
 
 
-mylayer84Net
+widthScales = {
+   Table[{116,122,124}[[n]],{n,1,3},{19},{19}],
+   Table[{30,66,46}[[n]],{n,1,3},{38},{38}],
+   Table[{10,26,32}[[n]],{n,1,3},{76},{76}]};
 
 
-yoloOpenImagesConvNet = NetGraph[{
+heightScales = {
+   Table[{90,124,90}[[n]],{n,1,3},{19},{19}],
+   Table[{61,46,60}[[n]],{n,1,3},{38},{38}],
+   Table[{13,32,60}[[n]],{n,1,3},{76},{76}]};
+
+
+nw1=Exp[pw1]*w1/606;nw1//Dimensions
+
+
+multiboxLocationsDecoder[ layerNo_, anchors_, width_, height_ ] := NetGraph[{
+   "reshape"->ReshapeLayer[{anchors,606,width,height}],
+   "cx"->{ PartLayer[{All,1}],LogisticSigmoid,ConstantPlusLayer[ "Biases"->Table[j,{anchors},{i,0,width-1},{j,0,height-1}] ], ElementwiseLayer[608*#/width&] },
+   "cy"->{ PartLayer[{All,2}],LogisticSigmoid,ConstantPlusLayer[ "Biases"->Table[i,{anchors},{i,0,width-1},{j,0,height-1}] ], ElementwiseLayer[608*#/height&] },
+   "width"->{ PartLayer[{All,3}], ElementwiseLayer[ Exp ], ConstantTimesLayer[ "Scaling"->widthScales[[layerNo]] ] },
+   "height"->{ PartLayer[{All,4}], ElementwiseLayer[ Exp ], ConstantTimesLayer[ "Scaling"->heightScales[[layerNo]] ] },
+   "minx"->ThreadingLayer[#1-#2/2&],
+   "miny"->ThreadingLayer[#1-#2/2&],
+   "maxx"->ThreadingLayer[#1+#2/2&],
+   "maxy"->ThreadingLayer[#1+#2/2&],
+   "cat"->CatenateLayer[],"reshape1"->ReshapeLayer[{4,anchors,width,height}]
+   },{
+   "reshape"->{"cx","cy","width","height"},
+   {"cx","width"}->"minx",{"cx","width"}->"maxx",{"cy","height"}->"miny",{"cy","height"}->"maxy",
+   {"minx","miny","maxx","maxy"}->"cat"->"reshape1"
+}]
+
+
+yoloConvNet = NetGraph[{
    "layer0"->YoloConvLayer[ "layer0", 32, 3, 1, 608],
    "layer4"->LargeResidualBlock[ 1, 32, 608 ],
    "layer8"->LargeResidualBlock[ 5, 64, 304 ],
@@ -107,255 +135,89 @@ yoloOpenImagesConvNet = NetGraph[{
    "layer104"->YoloConvLayer[ "layer104",256, 3, 1, 76 ],
    "layer105"->ConvolutionLayer[ 1818, {1,1}, "Weights"->Import[hdfFile,{"Datasets","layer105_weights"}], "Biases"->Import[hdfFile,{"Datasets","layer105_biases"}]]
 },{
-"layer0"->"layer4"->"layer8"->"layer11"->"layer15"->"layer18"->"layer21"->"layer24"->"layer27"->
-"layer30"->"layer33"->"layer36"->"layer40"->"layer43"->"layer46"->"layer49"->"layer52"->"layer55"->"layer58"->
-"layer61"->"layer65"->"layer68"->"layer71"->"layer74"->"layer75"->"layer76"->"layer77"->"layer78"->"layer79"->"layer80"->"layer81",
-"layer79"->"layer84"->"layer85",
-{"layer85","layer61"}->"layer86"->"layer87"->"layer88"->"layer89"->"layer90"->"layer91"->"layer92"->"layer93",
-"layer91"->"layer96"->"layer97",
-{"layer97","layer36"}->"layer98"->"layer99"->"layer100"->"layer101"->"layer102"->"layer103"->"layer104"->"layer105"
+   "layer0"->"layer4"->"layer8"->"layer11"->"layer15"->"layer18"->"layer21"->"layer24"->"layer27"->
+   "layer30"->"layer33"->"layer36"->"layer40"->"layer43"->"layer46"->"layer49"->"layer52"->"layer55"->"layer58"->
+   "layer61"->"layer65"->"layer68"->"layer71"->"layer74"->"layer75"->"layer76"->"layer77"->"layer78"->"layer79"->"layer80"->"layer81",
+   "layer79"->"layer84"->"layer85",
+   {"layer85","layer61"}->"layer86"->"layer87"->"layer88"->"layer89"->"layer90"->"layer91"->"layer92"->"layer93",
+   "layer91"->"layer96"->"layer97",
+   {"layer97","layer36"}->"layer98"->"layer99"->"layer100"->"layer101"->"layer102"->"layer103"->"layer104"->"layer105",
+   "layer81"->NetPort["Layer81"],"layer93"->NetPort["Layer93"],"layer105"->NetPort["Layer105"]
 }];
 
 
-mylayer81=NetChain[{
-YoloConvLayer["layer75",512,1, 1, 19 ],
-YoloConvLayer["layer76",1024,3, 1, 19 ],
-YoloConvLayer["layer77",512,1, 1, 19 ],
-YoloConvLayer["layer78",1024,3, 1, 19 ],
-YoloConvLayer["layer79",512,1, 1, 19 ],
-YoloConvLayer["layer80",1024,3, 1, 19 ],
-ConvolutionLayer[1818,{1,1},"Weights"->Import[hdfFile,{"Datasets","layer81_weights"}],"Biases"->Import[hdfFile,{"Datasets","layer81_biases"}]]
-}][mylayer74];mylayer81//Dimensions
-
-
-{1818,19,19}
-
-
-mylayer84=YoloConvLayer["layer84",256,1,1,19][mylayer79];mylayer84//Dimensions
-
-
-{256,19,19}
-
-
-mylayer85=DeconvolutionLayer[256,{2,2},"Weights"->Table[If[j==i,1,0],{j,1,256},{i,1,256},{2},{2}],"Biases"->ConstantArray[0,256],"Stride"->2][mylayer84];mylayer85//Dimensions
-
-
-{256,38,38}
-
-
-mylayer86=CatenateLayer[][{mylayer85,mylayer61}];mylayer86//Dimensions
-
-
-{768,38,38}
-
-
-mylayer91=NetChain[{
-YoloConvLayer["layer87",256,1, 1, 38 ],
-YoloConvLayer["layer88",512,3, 1, 38 ],
-YoloConvLayer["layer89",256,1, 1, 38 ],
-YoloConvLayer["layer90",512,3, 1, 38 ],
-YoloConvLayer["layer91",256,1, 1, 38 ]
-}][mylayer86];mylayer91//Dimensions
-
-
-{256,38,38}
-
-
-mylayer93 = NetChain[{ 
-YoloConvLayer["layer92",512,3, 1, 38 ],
-ConvolutionLayer[1818,{1,1},"Weights"->Import[hdfFile,{"Datasets","layer93_weights"}],"Biases"->Import[hdfFile,{"Datasets","layer93_biases"}]]
-}][mylayer91];mylayer93//Dimensions
-
-
-{1818,38,38}
-
-
-mylayer96=YoloConvLayer["layer96",128,1,1,38][mylayer91];mylayer96//Dimensions
-
-
-{128,38,38}
-
-
-mylayer97=DeconvolutionLayer[128,{2,2},"Weights"->Table[If[j==i,1,0],{j,1,128},{i,1,128},{2},{2}],"Biases"->ConstantArray[0,128],"Stride"->2][mylayer96];mylayer97//Dimensions
-
-
-{128,76,76}
-
-
-mylayer98=CatenateLayer[][{mylayer97,mylayer36}];mylayer98//Dimensions
-
-
-{384,76,76}
-
-
-mylayer105=NetChain[{
-YoloConvLayer["layer99",128,1, 1, 76 ],
-YoloConvLayer["layer100",256,3, 1, 76 ],
-YoloConvLayer["layer101",128,1, 1, 76 ],
-YoloConvLayer["layer102",256,3, 1, 76 ],
-YoloConvLayer["layer103",128,1, 1, 76 ],
-YoloConvLayer["layer104",256,3, 1, 76 ],
-ConvolutionLayer[1818,{1,1},"Weights"->Import[hdfFile,{"Datasets","layer105_weights"}],"Biases"->Import[hdfFile,{"Datasets","layer105_biases"}]]
-}][mylayer98];mylayer105//Dimensions
-
-
-{1818,76,76}
-
-
-(NetTake[yolonet,{"layer0","layer105"}][inp] == mylayer105)//AbsoluteTiming
-
-
-Max[Abs[de]]
-
-
-layer81=Import["/Users/julian/yolov3/darknet/Yolov3OpenImages.h5",{"Datasets","/layer81"}];layer81//Dimensions
-
-
-{1818,19,19}
-
-
-k=Abs[mylayer105-layer105];Max[k]
-
-
-0.02184581756591797`
-
-
-Position[k,Max[k]]
-
-
-{{1525,71,55}}
-
-
-mylayer105[[1525,71,55]]
-
-
--11.484664916992188`
-
-
-layer105[[1525,71,55]]
-
-
--11.506510734558105`
-
-
-objMap1=LogisticSigmoid@Partition[mylayer81,606][[All,5]];objMap1//Dimensions
-
-
-{3,19,19}
-
-
-objMap2=LogisticSigmoid@Partition[mylayer93,606][[All,5]];objMap2//Dimensions
-
-
-{3,38,38}
-
-
-objMap3=LogisticSigmoid@Partition[mylayer105,606][[All,5]];objMap3//Dimensions
-
-
-{3,76,76}
-
-
-classMap1=LogisticSigmoid@Partition[mylayer81,606][[All,6;;]];classMap1//Dimensions
-
-
-{3,601,19,19}
-
-
-classMap2=LogisticSigmoid@Partition[mylayer93,606][[All,6;;]];classMap2//Dimensions
-
-
-{3,601,38,38}
-
-
-classMap3=LogisticSigmoid@Partition[mylayer105,606][[All,6;;]];classMap3//Dimensions
-
-
-{3,601,76,76}
-
-
-px1=Partition[mylayer81,606][[All,1]];px1//Dimensions
-
-
-{3,19,19}
-
-
-py1=Partition[mylayer81,606][[All,2]];py1//Dimensions
-
-
-{3,19,19}
-
-
-x1=Table[j,{3},{i,0,18},{j,0,18}];x1//Dimensions
-
-
-{3,19,19}
-
-
-y1=Table[i,{3},{i,0,18},{j,0,18}];y1//Dimensions
-
-
-{3,19,19}
-
-
-nx1=LogisticSigmoid@px1+x1;nx1//Dimensions
-
-
-{3,19,19}
-
-
-ny1=LogisticSigmoid@py1+y1;ny1//Dimensions
-
-
-{3,19,19}
-
-
-pw1=Partition[mylayer81,606][[All,3]];pw1//Dimensions
-
-
-{3,19,19}
-
-
-ph1=Partition[mylayer81,606][[All,4]];ph1//Dimensions
-
-
-{3,19,19}
-
-
-w1=Table[{116,122,124}[[n]],{n,1,3},{19},{19}];w1//Dimensions
-
-
-{3,19,19}
-
-
-h1=Table[{90,124,90}[[n]],{n,1,3},{19},{19}];h1//Dimensions
-
-
-{3,19,19}
-
-
-nw1=Exp[pw1]*w1/606;nw1//Dimensions
-
-
-{3,19,19}
-
-
-nh1=Exp[ph1]*h1/606;nh1//Dimensions
-
-
-{3,19,19}
-
-
-nh1[[1,9+1,7+1]]
-
-
-(* ::Input:: *)
-(*{Image[inp,Interleaving->False],(LogisticSigmoid@layer93[[1]])//Image}*)
-
-
-(* ::Input:: *)
-(*classes=Import["/Users/julian/yolov3/darknet/data/openimages.names","Table"][[All,1]];Length[classes]*)
-
-
-(* ::Input:: *)
-(*classes*)
+yoloDecoderNet = NetGraph[{
+   "objmap1"->multiboxObjDecoder[ 3, 19, 19 ],
+   "classesmap1"->multiboxClassesDecoder[ 3, 19, 19 ],
+   "locationsmap1"->multiboxLocationsDecoder[ 1, 3, 19, 19 ],
+   "objmap2"->multiboxObjDecoder[ 3, 38, 38 ],
+   "classesmap2"->multiboxClassesDecoder[ 3, 38, 38 ],
+   "locationsmap2"->multiboxLocationsDecoder[ 2, 3, 38, 38 ],
+   "objmap3"->multiboxObjDecoder[ 3, 76, 76 ],
+   "classesmap3"->multiboxClassesDecoder[ 3, 76, 76 ],
+   "locationsmap3"->multiboxLocationsDecoder[ 3, 3, 76, 76 ]
+   },{
+   NetPort["Layer81"]->{"objmap1","classesmap1","locationsmap1"},
+   NetPort["Layer93"]->{"objmap2","classesmap2","locationsmap2"},
+   NetPort["Layer105"]->{"objmap3","classesmap3","locationsmap3"},
+   "objmap1"->NetPort["ObjMap1"], "classesmap1"->NetPort["ClassesMap1"],"locationsmap1"->NetPort["Locations1"],
+   "objmap2"->NetPort["ObjMap2"], "classesmap2"->NetPort["ClassesMap2"],"locationsmap2"->NetPort["Locations2"],
+   "objmap3"->NetPort["ObjMap3"], "classesmap3"->NetPort["ClassesMap3"],"locationsmap3"->NetPort["Locations3"]
+}];
+
+
+yoloConcatNet = NetGraph[{
+   "lt1"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
+   "lt2"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
+   "lt3"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
+   "lcat"->CatenateLayer[],
+   "ot1"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
+   "ot2"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
+   "ot3"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
+   "ocat"->CatenateLayer[],
+   "ct1"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
+   "ct2"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
+   "ct3"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
+   "ccat"->CatenateLayer[]
+   },{
+   NetPort["Locations1"]->"lt1",
+   NetPort["Locations2"]->"lt2",
+   NetPort["Locations3"]->"lt3",   
+   {"lt1","lt2","lt3"}->"lcat"->NetPort["Locations"],
+   NetPort["ObjMap1"]->"ot1",
+   NetPort["ObjMap2"]->"ot2",
+   NetPort["ObjMap3"]->"ot3",   
+   {"ot1","ot2","ot3"}->"ocat"->NetPort["ObjMap"],
+   NetPort["ClassesMap1"]->"ct1",
+   NetPort["ClassesMap2"]->"ct2",
+   NetPort["ClassesMap3"]->"ct3",   
+   {"ct1","ct2","ct3"}->"ccat"->NetPort["Classes"]
+}];
+
+
+classes=Import["/Users/julian/yolov3/darknet/data/openimages.names","Table"][[All,1]];
+
+
+yoloOpenImagesNet = NetGraph[{
+   yoloConvNet,
+   yoloDecoderNet,
+   yoloConcatNet},{
+   NetPort[1,"Layer81"]->NetPort[2,"Layer81"],
+   NetPort[1,"Layer93"]->NetPort[2,"Layer93"],
+   NetPort[1,"Layer105"]->NetPort[2,"Layer105"],
+   NetPort[2,"ObjMap1"]->NetPort[3,"ObjMap1"],
+   NetPort[2,"ObjMap2"]->NetPort[3,"ObjMap2"],
+   NetPort[2,"ObjMap3"]->NetPort[3,"ObjMap3"],
+   NetPort[2,"ClassesMap1"]->NetPort[3,"ClassesMap1"],
+   NetPort[2,"ClassesMap2"]->NetPort[3,"ClassesMap2"],
+   NetPort[2,"ClassesMap3"]->NetPort[3,"ClassesMap3"],
+   NetPort[2,"Locations1"]->NetPort[3,"Locations1"],
+   NetPort[2,"Locations2"]->NetPort[3,"Locations2"],
+   NetPort[2,"Locations3"]->NetPort[3,"Locations3"]
+}];
+
+
+proc = yoloOpenImagesNet[ inp ];
+
+
+joint=proc["ObjMap"]*proc["Classes"];
