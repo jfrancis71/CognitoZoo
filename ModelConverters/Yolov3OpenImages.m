@@ -40,7 +40,7 @@ LargeResidualBlock[ firstLayer_, inputFilters_, inputSize_ ] := NetGraph[{
    { 1->2->3->4, 1->4 }];
 
 
-inp = Import["/Users/julian/yolov3/darknet/multset.h5",{"Datasets","/input"}];inp//Dimensions
+inp = Import["/Users/julian/yolov3/darknet/Yolov3OpenImages.h5",{"Datasets","/input"}];inp//Dimensions;
 
 
 multiboxObjDecoder[ anchors_, width_, height_ ] := NetChain[{ReshapeLayer[{anchors,606,width,height}],PartLayer[{All,5}],LogisticSigmoid}]
@@ -50,24 +50,21 @@ multiboxClassesDecoder[ anchors_, width_, height_ ] := NetChain[{ReshapeLayer[{a
 
 
 widthScales = {
-   Table[{116,122,124}[[n]],{n,1,3},{19},{19}],
-   Table[{30,66,46}[[n]],{n,1,3},{38},{38}],
-   Table[{10,26,32}[[n]],{n,1,3},{76},{76}]};
+   Table[{116,156,373}[[n]],{n,1,3},{19},{19}],
+   Table[{30,62,59}[[n]],{n,1,3},{38},{38}],
+   Table[{10,16,33}[[n]],{n,1,3},{76},{76}]};
 
 
 heightScales = {
-   Table[{90,124,90}[[n]],{n,1,3},{19},{19}],
-   Table[{61,46,60}[[n]],{n,1,3},{38},{38}],
-   Table[{13,32,60}[[n]],{n,1,3},{76},{76}]};
-
-
-nw1=Exp[pw1]*w1/606;nw1//Dimensions
+   Table[{90,198,326}[[n]],{n,1,3},{19},{19}],
+   Table[{61,45,119}[[n]],{n,1,3},{38},{38}],
+   Table[{13,30,23}[[n]],{n,1,3},{76},{76}]};
 
 
 multiboxLocationsDecoder[ layerNo_, anchors_, width_, height_ ] := NetGraph[{
    "reshape"->ReshapeLayer[{anchors,606,width,height}],
    "cx"->{ PartLayer[{All,1}],LogisticSigmoid,ConstantPlusLayer[ "Biases"->Table[j,{anchors},{i,0,width-1},{j,0,height-1}] ], ElementwiseLayer[608*#/width&] },
-   "cy"->{ PartLayer[{All,2}],LogisticSigmoid,ConstantPlusLayer[ "Biases"->Table[i,{anchors},{i,0,width-1},{j,0,height-1}] ], ElementwiseLayer[608*#/height&] },
+   "cy"->{ PartLayer[{All,2}],LogisticSigmoid,ConstantPlusLayer[ "Biases"->Table[i,{anchors},{i,0,width-1},{j,0,height-1}] ], ElementwiseLayer[608*(1-#/height)&] },
    "width"->{ PartLayer[{All,3}], ElementwiseLayer[ Exp ], ConstantTimesLayer[ "Scaling"->widthScales[[layerNo]] ] },
    "height"->{ PartLayer[{All,4}], ElementwiseLayer[ Exp ], ConstantTimesLayer[ "Scaling"->heightScales[[layerNo]] ] },
    "minx"->ThreadingLayer[#1-#2/2&],
@@ -171,6 +168,7 @@ yoloConcatNet = NetGraph[{
    "lt2"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
    "lt3"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
    "lcat"->CatenateLayer[],
+   "boxes"->ReshapeLayer[{22743,2,2}],
    "ot1"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
    "ot2"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
    "ot3"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
@@ -183,7 +181,7 @@ yoloConcatNet = NetGraph[{
    NetPort["Locations1"]->"lt1",
    NetPort["Locations2"]->"lt2",
    NetPort["Locations3"]->"lt3",   
-   {"lt1","lt2","lt3"}->"lcat"->NetPort["Locations"],
+   {"lt1","lt2","lt3"}->"lcat"->"boxes"->NetPort["Locations"],
    NetPort["ObjMap1"]->"ot1",
    NetPort["ObjMap2"]->"ot2",
    NetPort["ObjMap3"]->"ot3",   
@@ -195,7 +193,7 @@ yoloConcatNet = NetGraph[{
 }];
 
 
-classes=Import["/Users/julian/yolov3/darknet/data/openimages.names","Table"][[All,1]];
+classes=Import["/Users/julian/yolov3/darknet/data/openimages.names","List"];
 
 
 yoloOpenImagesNet = NetGraph[{
@@ -213,11 +211,31 @@ yoloOpenImagesNet = NetGraph[{
    NetPort[2,"ClassesMap3"]->NetPort[3,"ClassesMap3"],
    NetPort[2,"Locations1"]->NetPort[3,"Locations1"],
    NetPort[2,"Locations2"]->NetPort[3,"Locations2"],
-   NetPort[2,"Locations3"]->NetPort[3,"Locations3"]
-}];
+   NetPort[2,"Locations3"]->NetPort[3,"Locations3"]},
+   "Input"->NetEncoder[{"Image",{608,608},"ColorSpace"->"RGB"}]];
 
 
-proc = yoloOpenImagesNet[ inp ];
+<<CZUtils.m
 
 
-joint=proc["ObjMap"]*proc["Classes"];
+(* Check up on the 0 should be probability *)
+CZOutputDecoder[ output_ ] := Module[{
+   detections = Flatten@Position[output["ObjMap"],x_/;x>.5]},det1=detections;
+   Map[ {
+      Rectangle@@output["Locations"][[#]],
+      ToString[Extract[classes,Position[output["Classes"][[#]],y_/;y>.5]]], 0 }&, detections ]
+]
+
+
+CZDetectObjects[ image_Image ] := (
+   CZObjectsDeconformer[ image, {608, 608}, "Fit" ]@CZOutputDecoder@yoloOpenImagesNet@CZImageConformer[{608,608},"Fit"]@image
+)
+
+
+cars=Import["/Users/julian/Google Drive/Personal/Pictures/Vision Experiments/IMG_3729.JPG"];
+
+
+res=CZDetectObjects[ cars ];
+
+
+HighlightImage[ cars, CZDisplayObject/@res ];
