@@ -219,23 +219,24 @@ yoloOpenImagesNet = NetGraph[{
 
 
 (* Check up on the 0 should be probability *)
-CZOutputDecoder[ output_ ] := Module[{
-   detections = Flatten@Position[output["ObjMap"],x_/;x>.5]},det1=detections;
+CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
+   detections = Flatten@Position[output["ObjMap"],x_/;x>threshold]},det1=detections;
    Map[ {
       Rectangle@@output["Locations"][[#]],
-      ToString[Extract[classes,Position[output["Classes"][[#]],y_/;y>.5]]], 0 }&, detections ]
+      ToString[Extract[classes,Position[output["Classes"][[#]],y_/;y>threshold]]], 0 }&, detections ]
 ]
 
 
-CZDetectObjects[ image_Image ] := (
-   CZObjectsDeconformer[ image, {608, 608}, "Fit" ]@CZOutputDecoder@yoloOpenImagesNet@CZImageConformer[{608,608},"Fit"]@image
+Options[ CZDetectObjects ] = {
+   TargetDevice->"CPU",
+   Threshold->.5(* This is the Wei Liu default setting for this implementation *)
+};
+CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
+   CZObjectsDeconformer[ image, {608, 608}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   (yoloOpenImagesNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{608,608},"Fit"]@image
 )
 
 
-cars=Import["/Users/julian/Google Drive/Personal/Pictures/Vision Experiments/IMG_3729.JPG"];
-
-
-res=CZDetectObjects[ cars ];
-
-
-HighlightImage[ cars, CZDisplayObject/@res ];
+Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
+CZHighlightObjects[ image_Image, opts:OptionsPattern[]  ] :=
+   HighlightImage[ image, CZDisplayObject/@CZDetectObjects[ image, opts ] ];
