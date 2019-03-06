@@ -218,21 +218,38 @@ yoloOpenImagesNet = NetGraph[{
 <<CZUtils.m
 
 
-(* Check up on the 0 should be probability *)
 CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
-   detections = Flatten@Position[output["ObjMap"],x_/;x>threshold]},det1=detections;
+   detectionBoxes = Union@Flatten@Position[(tmp2=output["ObjMap"])*(tmp1=output["Classes"]),x_/;x>threshold][[All,1]]},det1=detectionBoxes;
    Map[ {
       Rectangle@@output["Locations"][[#]],
-      ToString[Extract[classes,Position[output["Classes"][[#]],y_/;y>threshold]]], 0 }&, detections ]
-]
+      Transpose[{ 
+         classes[[Flatten@Position[output["Classes"][[#]]*output["ObjMap"][[#]],x_/;x>threshold] ]],
+         Extract[output["Classes"][[#]], Position[output["Classes"][[#]]*output["ObjMap"][[#]],x_/;x>threshold] ]
+       }] }&, detectionBoxes ]
+];
+
+
+CZNonMaxSuppression[ nmsThreshold_ ][ dets_ ] := Module[ { deletions },
+   deletions = Table[
+      Max[
+         Table[If[d!=d1&&dets[[d,2,r,1]]==dets[[d1,2,r1,1]]&&CZIntersectionOverUnion[dets[[d,1]],dets[[d1,1]]]>nmsThreshold&&dets[[d,2,r,2]]<dets[[d1,2,r1,2]],1,0],
+            {d1,1,Length[dets]},{r1,1,Length[dets[[d1,2]]]}]]
+      ,{d,1,Length[dets]},{r,1,Length[dets[[d,2]]]}];
+   DeleteCases[Delete[dets, Map[{#[[1]],2,#[[2]]}&,Position[deletions,1]]], {_,{}}]
+];
+
+
+CZDetectionsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ] :=
+   Transpose[ { CZDeconformRectangles[ objects[[All,1]], image, netDims, fitting ], objects[[All,2]] } ];
 
 
 Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
-   Threshold->.5(* This is the Wei Liu default setting for this implementation *)
+   Threshold->.5,
+   NMSIntersectionOverUnionThreshold->.45
 };
 CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
-   CZObjectsDeconformer[ image, {608, 608}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   CZNonMaxSuppression[ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@CZDetectionsDeconformer[ image, {608, 608}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
    (yoloOpenImagesNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{608,608},"Fit"]@image
 )
 
