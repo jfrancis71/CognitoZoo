@@ -7,15 +7,16 @@ yoloOpenImagesNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/
 yoloOpenImagesClasses = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolov3OpenImagesClasses"],"List"];
 
 
-CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
-   detectionBoxes = Union@Flatten@Position[(tmp2=output["ObjMap"])*(tmp1=output["Classes"]),x_/;x>threshold][[All,1]]},det1=detectionBoxes;
+CZOutputDecoder[ threshold_:.5 ][ output_ ] := (
+   joint = output["ObjMap"]*output["Classes"];
+   detectionBoxes = Union@Flatten@Position[UnitStep[joint-threshold],1][[All,1]];
    Map[ {
       Rectangle@@output["Locations"][[#]],
       Transpose[{ 
-         yoloOpenImagesClasses[[Flatten@Position[output["Classes"][[#]]*output["ObjMap"][[#]],x_/;x>threshold] ]],
-         Extract[output["Classes"][[#]], Position[output["Classes"][[#]]*output["ObjMap"][[#]],x_/;x>threshold] ]
+         yoloOpenImagesClasses[[Flatten@Position[joint[[#]],x_/;x>threshold] ]],
+         Extract[joint[[#]], Position[joint[[#]],x_/;x>threshold] ]
        }] }&, detectionBoxes ]
-];
+);
 
 
 CZNonMaxSuppression[ nmsThreshold_ ][ dets_ ] := Module[ { deletions },
