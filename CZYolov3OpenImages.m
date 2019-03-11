@@ -9,7 +9,7 @@ yoloOpenImagesClasses = Import[LocalCache@CloudObject["https://www.wolframcloud.
 
 CZOutputDecoder[ threshold_:.5 ][ output_ ] := (
    joint = output["ObjMap"]*output["Classes"];
-   detectionBoxes = Union@Flatten@Position[UnitStep[joint-threshold],1][[All,1]];
+   detectionBoxes = Union@Flatten@SparseArray[UnitStep[joint-threshold]]["NonzeroPositions"][[All,1]];
    Map[ {
       Rectangle@@output["Locations"][[#]],
       Transpose[{ 
@@ -46,4 +46,4 @@ CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
 CZHighlightObjects[ image_Image, opts:OptionsPattern[]  ] :=
-   HighlightImage[ image, CZDisplayObject/@CZDetectObjects[ image, opts ] ];
+   HighlightImage[ image, CZDisplayObject/@({#[[1]],ToString@#[[2,All,1]]}&/@CZDetectObjects[ image, opts ]) ];
