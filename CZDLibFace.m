@@ -95,5 +95,5 @@ CZDLibFaceRecognition[ image_Image ] := Module[
 
 
 CZHighlightFaces[ image_Image ] := HighlightImage[image,CZDisplayObject /@ Map[
-   {CZDLibFaceRecognition[ImageTrim[image,#]],#}&,
+   {#,CZDLibFaceRecognition[ImageTrim[image,#]]}&,
    CZDLibFaceDetection@image]]
