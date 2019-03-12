@@ -1,5 +1,22 @@
 (* ::Package:: *)
 
+(*
+   Mathematica implementation of Yolo v3 Open Images
+   
+   Usage: CZHighlightObjects[ image ]
+   
+   Neural net file yoloOpenImagesNet is converted from https://pjreddie.com/darknet/yolo/
+   License: https://github.com/pjreddie/darknet/blob/master/LICENSE.mit
+   
+@article{yolov3,
+  title={YOLOv3: An Incremental Improvement},
+  author={Redmon, Joseph and Farhadi, Ali},
+  journal = {arXiv},
+  year={2018}
+}
+*)
+
+
 <<CZUtils.m
 
 
