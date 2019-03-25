@@ -24,24 +24,29 @@ yoloOpenImagesNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/
 yoloOpenImagesClasses = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolov3OpenImagesClasses"],"List"];
 
 
-CZOutputDecoder[ threshold_:.5 ][ output_ ] := (
-   joint = output["ObjMap"]*output["Classes"];
-   detectionBoxes = Union@Flatten@SparseArray[UnitStep[joint-threshold]]["NonzeroPositions"][[All,1]];
-   Map[ {
-      Rectangle@@output["Locations"][[#]],
-      Transpose[{ 
-         yoloOpenImagesClasses[[Flatten@Position[joint[[#]],x_/;x>threshold] ]],
-         Extract[joint[[#]], Position[joint[[#]],x_/;x>threshold] ]
-       }] }&, detectionBoxes ]
-);
+CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
+   probs = output["ObjMap"]*output["Classes"], detectionBoxes },
+   detectionBoxes = Union@Flatten@SparseArray[UnitStep[probs-threshold]]["NonzeroPositions"][[All,1]];
+   Map[ Function[{detectionBox}, {
+         Rectangle@@output["Locations"][[detectionBox]],
+         Map[ { yoloOpenImagesClasses[[#]], probs[[detectionBox,#]] }&, Flatten@Position[probs[[detectionBox]],x_/;x>threshold ] ] } ],
+      detectionBoxes ]
+];
 
 
 CZNonMaxSuppression[ nmsThreshold_ ][ dets_ ] := Module[ { deletions },
-   deletions = Table[
-      Max[
-         Table[If[d!=d1&&dets[[d,2,r,1]]==dets[[d1,2,r1,1]]&&CZIntersectionOverUnion[dets[[d,1]],dets[[d1,1]]]>nmsThreshold&&dets[[d,2,r,2]]<dets[[d1,2,r1,2]],1,0],
-            {d1,1,Length[dets]},{r1,1,Length[dets[[d1,2]]]}]]
-      ,{d,1,Length[dets]},{r,1,Length[dets[[d,2]]]}];
+(* deletions is a jagged array of form boundingBox*classDetections in bounding box where
+   1 represents should be deleted
+*)
+   deletions =
+      Table[
+         Max@Table[
+            If[
+               boxNo!=testBoxNo&&dets[[boxNo,2,classNo,1]]==dets[[testBoxNo,2,testClassNo,1]]&&
+               CZIntersectionOverUnion[dets[[boxNo,1]],dets[[testBoxNo,1]]]>nmsThreshold&&
+               dets[[boxNo,2,classNo,2]]<dets[[testBoxNo,2,testClassNo,2]],1,0],
+            {testBoxNo,1,Length[dets]},{testClassNo,1,Length[dets[[testBoxNo,2]]]}],
+         {boxNo,1,Length[dets]},{classNo,1,Length[dets[[boxNo,2]]]}];
    DeleteCases[Delete[dets, Map[{#[[1]],2,#[[2]]}&,Position[deletions,1]]], {_,{}}]
 ];
 
