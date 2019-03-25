@@ -55,13 +55,23 @@ CZDetectionsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ]
    Transpose[ { CZDeconformRectangles[ objects[[All,1]], image, netDims, fitting ], objects[[All,2]] } ];
 
 
+CZFilterClasses[ All ][ detections_ ] := detections;
+CZFilterClasses[ classes_ ][ detections_ ] := Module[ { deletions =
+   Table[
+      If[ !MemberQ[ classes, detections[[ boxNo, 2, classNo, 1 ]] ], 1, 0],
+      {boxNo,1,Length[detections]}, {classNo,1,Length[detections[[boxNo,2]]]}] },
+   DeleteCases[Delete[detections, Map[{#[[1]],2,#[[2]]}&,Position[deletions,1]]], {_,{}}]];
+
+
+SyntaxInformation[ DetectionClasses ]= {"ArgumentsPattern"->{_}};
 Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
    Threshold->.5,
-   NMSIntersectionOverUnionThreshold->.45
+   NMSIntersectionOverUnionThreshold->.45,
+   DetectionClasses->All
 };
 CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
-   CZNonMaxSuppression[ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@CZDetectionsDeconformer[ image, {608, 608}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   CZNonMaxSuppression[ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@CZDetectionsDeconformer[ image, {608, 608}, "Fit" ]@CZFilterClasses[ OptionValue[ DetectionClasses ] ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
    (yoloOpenImagesNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{608,608},"Fit"]@image
 )
 
