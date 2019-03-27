@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-hdfFile = "/Users/julian/yolov3/darknet/Yolov3OpenImages.h5";
+hdfFile = "/Users/julian/Google Drive/Personal/Computer Science/WolframSubmissions/Yolov3OpenImages/Yolov3OpenImages.h5";
 
 
 YoloConvLayerInitRules[ netName_, hdfName_ ] := {
@@ -23,12 +23,6 @@ LargeResidualBlockInitRules[ name_String, firstLayer_Integer ] := Map[Prepend[#[
    YoloConvLayerInitRules[ 2, "layer"<>ToString[firstLayer+1] ],
    YoloConvLayerInitRules[ 3, "layer"<>ToString[firstLayer+2] ]
 ]];
-
-
-LargeResidualBlockInitRules[ "layer4", 1 ]
-
-
-YoloConvLayerInitRules[ "layer0"]
 
 
 yoloConvNetInitRules = Join[
