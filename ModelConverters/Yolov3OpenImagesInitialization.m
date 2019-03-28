@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-hdfFile = "/Users/julian/Google Drive/Personal/Computer Science/WolframSubmissions/Yolov3OpenImages/Yolov3OpenImages.h5";
+hdfFile = "/Users/julian/Google Drive/Personal/Computer Science/WolframSubmissions/Yolov3OpenImages/Yolov3OpenImages.hdf5";
 
 
 YoloConvLayerInitRules[ netName_, hdfName_ ] := {
