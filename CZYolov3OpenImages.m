@@ -56,11 +56,8 @@ CZDetectionsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ]
 
 
 CZFilterClasses[ All ][ detections_ ] := detections;
-CZFilterClasses[ classes_ ][ detections_ ] := Module[ { deletions =
-   Table[
-      If[ !MemberQ[ classes, detections[[ boxNo, 2, classNo, 1 ]] ], 1, 0],
-      {boxNo,1,Length[detections]}, {classNo,1,Length[detections[[boxNo,2]]]}] },
-   DeleteCases[Delete[detections, Map[{#[[1]],2,#[[2]]}&,Position[deletions,1]]], {_,{}}]];
+CZFilterClasses[ classes_ ][ detections_ ] :=
+   {#[[1]], Select[#[[2]], Function[det, MemberQ[classes, det[[1]] ]] ]}&/@detections;
 
 
 SyntaxInformation[ DetectionClasses ]= {"ArgumentsPattern"->{_}};
