@@ -159,15 +159,15 @@ yoloConcatNet = NetGraph[{
    NetPort["Locations1"]->"lt1",
    NetPort["Locations2"]->"lt2",
    NetPort["Locations3"]->"lt3",   
-   {"lt1","lt2","lt3"}->"lcat"->"boxes"->NetPort["Locations"],
+   {"lt1","lt2","lt3"}->"lcat"->"boxes"->NetPort["Boxes"],
    NetPort["ObjMap1"]->"ot1",
    NetPort["ObjMap2"]->"ot2",
    NetPort["ObjMap3"]->"ot3",   
-   {"ot1","ot2","ot3"}->"ocat"->NetPort["ObjMap"],
+   {"ot1","ot2","ot3"}->"ocat"->NetPort["Objectness"],
    NetPort["ClassesMap1"]->"ct1",
    NetPort["ClassesMap2"]->"ct2",
    NetPort["ClassesMap3"]->"ct3",   
-   {"ct1","ct2","ct3"}->"ccat"->NetPort["Classes"]
+   {"ct1","ct2","ct3"}->"ccat"->NetPort["ClassProb"]
 }];
 
 

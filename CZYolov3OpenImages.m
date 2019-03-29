@@ -25,10 +25,10 @@ yoloOpenImagesClasses = Import[LocalCache@CloudObject["https://www.wolframcloud.
 
 
 CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
-   probs = output["ObjMap"]*output["Classes"], detectionBoxes },
+   probs = output["Objectness"]*output["ClassProb"], detectionBoxes },
    detectionBoxes = Union@Flatten@SparseArray[UnitStep[probs-threshold]]["NonzeroPositions"][[All,1]];
    Map[ Function[{detectionBox}, {
-         Rectangle@@output["Locations"][[detectionBox]],
+         Rectangle@@output["Boxes"][[detectionBox]],
          Map[ { yoloOpenImagesClasses[[#]], probs[[detectionBox,#]] }&, Flatten@Position[probs[[detectionBox]],x_/;x>threshold ] ] } ],
       detectionBoxes ]
 ];
