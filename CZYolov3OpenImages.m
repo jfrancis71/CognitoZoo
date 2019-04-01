@@ -65,7 +65,7 @@ CZDetectionsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ]
 
 CZFilterClasses[ All ][ detections_ ] := detections;
 CZFilterClasses[ classes_ ][ detections_ ] :=
-   {#[[1]], Select[#[[2]], Function[det, MemberQ[classes, det[[1]] ]] ]}&/@detections;
+   DeleteCases[ {#[[1]], Select[#[[2]], Function[det, MemberQ[classes, det[[1]] ]] ]}&/@detections, { _, {} } ];
 
 
 SyntaxInformation[ DetectionClasses ]= {"ArgumentsPattern"->{_}};
