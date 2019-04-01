@@ -51,6 +51,14 @@ CZNonMaxSuppression[ nmsThreshold_ ][ dets_ ] := Module[ { deletions },
 ];
 
 
+CZNonMaxSuppression1[ nmsThreshold_ ][ dets_ ] :=
+   DeleteCases[ Function[detection, {detection[[1]],
+      Function[overlapBoxLabels,
+         Select[detection[[2]],#[[2]]>Max@Extract[overlapBoxLabels[[All,All,2]],Position[overlapBoxLabels[[All,All,1]],#[[1]]]]&]]
+      [ Select[dets,(CZIntersectionOverUnion[detection[[1]],#[[1]]]>nmsThreshold&&!(detection[[1]]===#[[1]]))&][[All,2]] ] }]/@dets,
+      {_,{}}];
+
+
 CZDetectionsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ] :=
    Transpose[ { CZDeconformRectangles[ objects[[All,1]], image, netDims, fitting ], objects[[All,2]] } ];
 
