@@ -68,23 +68,20 @@ CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ][ objects_ ] :=
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};
-CZDeconformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ] :=
-   With[{netAspectRatio = netDims[[2]]/netDims[[1]]},
-      With[ {
-         boxes = Map[{#[[1]],#[[2]]}&,rboxes],
-         padding = If [ ImageAspectRatio[image] < netAspectRatio,
-            {0,(ImageDimensions[image][[1]]*netAspectRatio-ImageDimensions[image][[2]])/2},
-            {(ImageDimensions[image][[2]]*(1/netAspectRatio)-ImageDimensions[image][[1]])/2,0}
-            ],
-         scale = If [ ImageAspectRatio[image] < netAspectRatio, ImageDimensions[image][[1]]/netDims[[1]], ImageDimensions[image][[2]]/netDims[[2]] ]
-         },
-         Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[Transpose[boxes,{2,3,1}]*scale - padding,{3,1,2}]]
-   ]];
+CZDeconformRectangles[ boxes_List, image_Image, netDims_List, "Fit" ] :=
+   Module[{ netAspectRatio = netDims[[2]]/netDims[[1]], padding, scale },
+      padding = If [ ImageAspectRatio[image] < netAspectRatio,
+         {0,(ImageDimensions[image][[1]]*netAspectRatio-ImageDimensions[image][[2]])/2},
+         {(ImageDimensions[image][[2]]*(1/netAspectRatio)-ImageDimensions[image][[1]])/2,0}
+         ];
+      scale = If [ ImageAspectRatio[image] < netAspectRatio, ImageDimensions[image][[1]]/netDims[[1]], ImageDimensions[image][[2]]/netDims[[2]] ];
+      Rectangle@@@Round@Transpose[Transpose[List@@@boxes,{2,3,1}]*scale - padding,{3,1,2}]
+];
 CZDeconformRectangles[ rboxes_List, image_Image, netDims_List, "Stretch" ] := 
    Module[ {
       boxes = Map[{#[[1]],#[[2]]}&,rboxes] },
       Map[Rectangle[Round[#[[1]]],Round[#[[2]]]]&, Transpose[Transpose[boxes,{2,3,1}]*ImageDimensions[image]/netDims,{3,1,2}]]
-   ]
+];
 
 
 (* Implicitly assumes that the rectangles are first entry in the list of objects.
