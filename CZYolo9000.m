@@ -41,7 +41,7 @@ classDecoder[ startingVertex_, startingProbability_, threshold_, class_ ] := Mod
 
 
 CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[
-   { detections = Position[ netOutput["Objectness"], x_/;x>0 ][[All,1]] },
+   { detections = Position[ LogisticSigmoid@netOutput["Objectness"], x_/;x>threshold ][[All,1]] },
    Map[ Function[ {detectionBox},{
       Rectangle@@netOutput["Boxes"][[detectionBox]],
       yolo9000Names[[ First@classDecoder[ 0, LogisticSigmoid@netOutput["Objectness"][[ detectionBox ]], threshold, netOutput["ClassHierarchy"][[detectionBox]] ] ]],
