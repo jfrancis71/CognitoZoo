@@ -7,7 +7,9 @@ CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car
    "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
 
-CZImageConformer[ dims_, fitting_ ][ image_ ] := First@ConformImages[ {image}, dims, fitting ];
+Options[ CZImageConformer ] = {
+   Padding->0.0 };
+CZImageConformer[ dims_, fitting_, opts:OptionsPattern[] ][ image_ ] := First@ConformImages[ {image}, dims, fitting , Padding->OptionValue[ Padding ] ];
 
 
 CZIntersection[a_Rectangle, b_Rectangle] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
