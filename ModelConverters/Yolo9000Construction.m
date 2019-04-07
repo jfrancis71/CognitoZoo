@@ -86,3 +86,12 @@ NetPort["dec","Boxes"]->NetPort["flatNet","Boxes"],
 NetPort["dec","Objectness"]->NetPort["flatNet","Objectness"],
 NetPort["dec","ClassHierarchy"]->NetPort["flatNet","ClassHierarchy"] },
    "Input"->NetEncoder[{"Image",{544,544},"ColorSpace"->"RGB"}] ];
+
+
+yolo9000Hierarchy = Import["/Users/julian/yolov3/darknet/data/9k.tree"];
+
+
+yolo9000Graph = Table[(yolo9000Hierarchy[[k,2]]+1)->k,{k,1,9418}];
+
+
+yolo9000Names = Import["~/yolov3/darknet/data/9k.names","List"];
