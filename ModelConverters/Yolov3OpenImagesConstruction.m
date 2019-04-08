@@ -9,7 +9,7 @@ leakyReLU = ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&];
 YoloConvLayer[ filters_, filterSize_, stride_, side_ ] :=
    NetChain[{
       ConvolutionLayer[filters,{filterSize,filterSize},"Stride"->stride,"Biases"->ConstantArray[0,filters],"PaddingSize"->If[filterSize==1,0,1]],
-      BatchNormalizationLayer["Epsilon"->10^-8,"Input"->{filters,side,side}],
+      BatchNormalizationLayer["Epsilon"->10^-6,"Input"->{filters,side,side}],
       leakyReLU
 }];
 
@@ -135,56 +135,56 @@ yoloDecoderNet = NetGraph[{
    NetPort["Layer81"]->{"objmap1","classesmap1","locationsmap1"},
    NetPort["Layer93"]->{"objmap2","classesmap2","locationsmap2"},
    NetPort["Layer105"]->{"objmap3","classesmap3","locationsmap3"},
-   "objmap1"->NetPort["ObjMap1"], "classesmap1"->NetPort["ClassesMap1"],"locationsmap1"->NetPort["Locations1"],
-   "objmap2"->NetPort["ObjMap2"], "classesmap2"->NetPort["ClassesMap2"],"locationsmap2"->NetPort["Locations2"],
-   "objmap3"->NetPort["ObjMap3"], "classesmap3"->NetPort["ClassesMap3"],"locationsmap3"->NetPort["Locations3"]
+   "objmap1"->NetPort["Objectness1"], "classesmap1"->NetPort["ClassProb1"],"locationsmap1"->NetPort["Boxes1"],
+   "objmap2"->NetPort["Objectness2"], "classesmap2"->NetPort["ClassProb2"],"locationsmap2"->NetPort["Boxes2"],
+   "objmap3"->NetPort["Objectness3"], "classesmap3"->NetPort["ClassProb3"],"locationsmap3"->NetPort["Boxes3"]
 }];
 
 
 yoloConcatNet = NetGraph[{
-   "lt1"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
-   "lt2"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
-   "lt3"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
-   "lcat"->CatenateLayer[],
-   "boxes"->ReshapeLayer[{22743,2,2}],
-   "ot1"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
-   "ot2"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
-   "ot3"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
-   "ocat"->CatenateLayer[],
-   "ct1"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
-   "ct2"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
-   "ct3"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
-   "ccat"->CatenateLayer[]
+   "Boxes1"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
+   "Boxes2"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
+   "Boxes3"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
+   "ConcatBoxes"->CatenateLayer[],
+   "ReshapeBoxes"->ReshapeLayer[{22743,2,2}],
+   "Objectness1"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
+   "Objectness2"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
+   "Objectness3"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
+   "Objectness"->CatenateLayer[],
+   "ClassProb1"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
+   "ClassProb2"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
+   "ClassProb3"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]},
+   "ClassProb"->CatenateLayer[]
    },{
-   NetPort["Locations1"]->"lt1",
-   NetPort["Locations2"]->"lt2",
-   NetPort["Locations3"]->"lt3",   
-   {"lt1","lt2","lt3"}->"lcat"->"boxes"->NetPort["Boxes"],
-   NetPort["ObjMap1"]->"ot1",
-   NetPort["ObjMap2"]->"ot2",
-   NetPort["ObjMap3"]->"ot3",   
-   {"ot1","ot2","ot3"}->"ocat"->NetPort["Objectness"],
-   NetPort["ClassesMap1"]->"ct1",
-   NetPort["ClassesMap2"]->"ct2",
-   NetPort["ClassesMap3"]->"ct3",   
-   {"ct1","ct2","ct3"}->"ccat"->NetPort["ClassProb"]
+   NetPort["Boxes1"]->"Boxes1",
+   NetPort["Boxes2"]->"Boxes2",
+   NetPort["Boxes3"]->"Boxes3",   
+   {"Boxes1","Boxes2","Boxes3"}->"ConcatBoxes"->"ReshapeBoxes"->NetPort["Boxes"],
+   NetPort["Objectness1"]->"Objectness1",
+   NetPort["Objectness2"]->"Objectness2",
+   NetPort["Objectness3"]->"Objectness3",   
+   {"Objectness1","Objectness2","Objectness3"}->"Objectness"->NetPort["Objectness"],
+   NetPort["ClassProb1"]->"ClassProb1",
+   NetPort["ClassProb2"]->"ClassProb2",
+   NetPort["ClassProb3"]->"ClassProb3",   
+   {"ClassProb1","ClassProb2","ClassProb3"}->"ClassProb"->NetPort["ClassProb"]
 }];
 
 
 yoloOpenImagesNet = NetGraph[{
-   yoloConvNet,
-   yoloDecoderNet,
-   yoloConcatNet},{
-   NetPort[1,"Layer81"]->NetPort[2,"Layer81"],
-   NetPort[1,"Layer93"]->NetPort[2,"Layer93"],
-   NetPort[1,"Layer105"]->NetPort[2,"Layer105"],
-   NetPort[2,"ObjMap1"]->NetPort[3,"ObjMap1"],
-   NetPort[2,"ObjMap2"]->NetPort[3,"ObjMap2"],
-   NetPort[2,"ObjMap3"]->NetPort[3,"ObjMap3"],
-   NetPort[2,"ClassesMap1"]->NetPort[3,"ClassesMap1"],
-   NetPort[2,"ClassesMap2"]->NetPort[3,"ClassesMap2"],
-   NetPort[2,"ClassesMap3"]->NetPort[3,"ClassesMap3"],
-   NetPort[2,"Locations1"]->NetPort[3,"Locations1"],
-   NetPort[2,"Locations2"]->NetPort[3,"Locations2"],
-   NetPort[2,"Locations3"]->NetPort[3,"Locations3"]},
+   "Conv"->yoloConvNet,
+   "Decode"->yoloDecoderNet,
+   "Concat"->yoloConcatNet},{
+   NetPort["Conv","Layer81"]->NetPort["Decode","Layer81"],
+   NetPort["Conv","Layer93"]->NetPort["Decode","Layer93"],
+   NetPort["Conv","Layer105"]->NetPort["Decode","Layer105"],
+   NetPort["Decode","Objectness1"]->NetPort["Concat","Objectness1"],
+   NetPort["Decode","Objectness2"]->NetPort["Concat","Objectness2"],
+   NetPort["Decode","Objectness3"]->NetPort["Concat","Objectness3"],
+   NetPort["Decode","ClassProb1"]->NetPort["Concat","ClassProb1"],
+   NetPort["Decode","ClassProb2"]->NetPort["Concat","ClassProb2"],
+   NetPort["Decode","ClassProb3"]->NetPort["Concat","ClassProb3"],
+   NetPort["Decode","Boxes1"]->NetPort["Concat","Boxes1"],
+   NetPort["Decode","Boxes2"]->NetPort["Concat","Boxes2"],
+   NetPort["Decode","Boxes3"]->NetPort["Concat","Boxes3"]},
    "Input"->NetEncoder[{"Image",{608,608},"ColorSpace"->"RGB"}]];

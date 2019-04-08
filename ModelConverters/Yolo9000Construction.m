@@ -12,7 +12,7 @@ leakyReLU = ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&];
 YoloConvLayer[ filters_, filterSize_, stride_, side_ ] :=
    NetChain[{
       ConvolutionLayer[filters,{filterSize,filterSize},"Stride"->stride,"Biases"->ConstantArray[0,filters],"PaddingSize"->If[filterSize==1,0,1]],
-      BatchNormalizationLayer["Epsilon"->.00000001,"Input"->{filters,side,side}],
+      BatchNormalizationLayer["Epsilon"->10^-6,"Input"->{filters,side,side}],
       leakyReLU
 }];
 
@@ -74,24 +74,20 @@ decoderNet = NetGraph[{
 
 
 flatNet = NetGraph[ {
-   "locs"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2]},
-   "boxes"->ReshapeLayer[{867,2,2}],
-   "ot"->{TransposeLayer[{3->1,1->2}],FlattenLayer[]},
-   "ct"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]}
-},{NetPort["Boxes"]->"locs"->"boxes"->NetPort["Boxes"],NetPort["Objectness"]->"ot"->NetPort["Objectness"],NetPort["ClassHierarchy"]->"ct"->NetPort["ClassHierarchy"]}];
+   "Boxes"->{TransposeLayer[{3->1,4->2,3->4}],FlattenLayer[2],ReshapeLayer[{867,2,2}]},
+   "Objectness"->{TransposeLayer[{3->1,1->2}],FlattenLayer[],LogisticSigmoid},
+   "ClassHierarchy"->{TransposeLayer[{1->3,2->4}],FlattenLayer[2]} },{
+   NetPort["Boxes"]->"Boxes"->NetPort["Boxes"],
+   NetPort["Objectness"]->"Objectness"->NetPort["Objectness"],
+   NetPort["ClassHierarchy"]->"ClassHierarchy"->NetPort["ClassHierarchy"]}];
 
 
-yolo9000Net = NetGraph[ { "yoloConvNet"->yoloConvNet, "dec"->decoderNet, "flatNet"->flatNet }, { "yoloConvNet"->"dec",
-NetPort["dec","Boxes"]->NetPort["flatNet","Boxes"],
-NetPort["dec","Objectness"]->NetPort["flatNet","Objectness"],
-NetPort["dec","ClassHierarchy"]->NetPort["flatNet","ClassHierarchy"] },
+yolo9000Net = NetGraph[ {
+   "Conv"->yoloConvNet,
+   "Decode"->decoderNet,
+   "Concat"->flatNet }, {
+   "Conv"->"Decode",
+   NetPort["Decode","Boxes"]->NetPort["Concat","Boxes"],
+   NetPort["Decode","Objectness"]->NetPort["Concat","Objectness"],
+   NetPort["Decode","ClassHierarchy"]->NetPort["Concat","ClassHierarchy"] },
    "Input"->NetEncoder[{"Image",{544,544},"ColorSpace"->"RGB"}] ];
-
-
-yolo9000Hierarchy = Import["/Users/julian/yolov3/darknet/data/9k.tree"];
-
-
-yolo9000Graph = Table[(yolo9000Hierarchy[[k,2]]+1)->k,{k,1,9418}];
-
-
-yolo9000Names = Import["~/yolov3/darknet/data/9k.names","List"];

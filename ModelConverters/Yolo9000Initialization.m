@@ -55,9 +55,18 @@ LocationInitRules = {
 
 
 yolo9000NetRules = Join[
-   Map[ Prepend[#[[1]],"yoloConvNet"]->#[[2]]&, yoloConvNetInitRules ],
-   Map[ Join[{"dec",2},#[[1]]]->#[[2]]&, LocationInitRules ]
+   Map[ Prepend[#[[1]],"Conv"]->#[[2]]&, yoloConvNetInitRules ],
+   Map[ Join[{"Decode",2},#[[1]]]->#[[2]]&, LocationInitRules ]
 ];
 
 
 yolo9000Init = NetReplacePart[ yolo9000Net, yolo9000NetRules ];
+
+
+yolo9000Hierarchy = Import["/Users/julian/yolov3/darknet/data/9k.tree"];
+
+
+yolo9000Graph = Table[(yolo9000Hierarchy[[k,2]]+1)->k,{k,1,9418}];
+
+
+yolo9000Names = Import["~/yolov3/darknet/data/9k.names","List"];

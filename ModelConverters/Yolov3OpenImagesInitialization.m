@@ -106,8 +106,8 @@ yoloDecoderNetInitRules = Join[
 
 
 yoloOpenImageNetRules = Join[
-   Map[ Prepend[#[[1]],1]->#[[2]]&, yoloConvNetInitRules ],
-   Map[ Prepend[#[[1]],2]->#[[2]]&, yoloDecoderNetInitRules ]
+   Map[ Prepend[#[[1]],"Conv"]->#[[2]]&, yoloConvNetInitRules ],
+   Map[ Prepend[#[[1]],"Decode"]->#[[2]]&, yoloDecoderNetInitRules ]
 ];
 
 
