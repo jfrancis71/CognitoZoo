@@ -1,5 +1,14 @@
 (* ::Package:: *)
 
+(*
+@article{yolov3,
+  title={YOLOv3: An Incremental Improvement},
+  author={Redmon, Joseph and Farhadi, Ali},
+  journal = {arXiv},
+  year={2018}
+}
+*)
+
 Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
    Threshold->.5,
@@ -20,6 +29,11 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
 
 <<CZUtils.m
 
+(*
+   Below 3 Import files were converted from Yolo
+   Available form: https://github.com/pjreddie/darknet
+   See licence: https://github.com/pjreddie/darknet/blob/master/LICENSE.mit
+*)
 
 yolo9000Names = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolo9000Names"],"List"];
 yolo9000Graph = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolo9000Graph"],"WXF"];

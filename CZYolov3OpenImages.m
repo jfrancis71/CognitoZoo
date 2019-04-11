@@ -19,6 +19,11 @@
 
 <<CZUtils.m
 
+(*
+   Below 2 Import files were converted from Yolo
+   Available form: https://github.com/pjreddie/darknet
+   See licence: https://github.com/pjreddie/darknet/blob/master/LICENSE.mit
+*)
 
 yoloOpenImagesNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolov3OpenImages.wlnet"],"WLNet"];
 yoloOpenImagesClasses = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolov3OpenImagesClasses"],"List"];
