@@ -50,13 +50,54 @@ RetinaNet = NetGraph[{
    "res3_0_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_0", 512, 2, {112,144}, BNConvolutionLayer[ 512, {1,1}, 2, 0, {112, 144}, "res3_0_branch1" ] ],
    "res3_1_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_1", 512, 1, {112,144} ],
    "res3_2_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_2", 512, 1, {112,144} ],
-   "res3_3_sum_relu"->RetinaNetBlock[ "res3_3", 512, 1, {112,144} ]
+   "res3_3_sum_relu"->RetinaNetBlock[ "res3_3", 512, 1, {112,144} ],
 
+   "res4_0_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_0", 1024, 2, {56,72}, BNConvolutionLayer[ 1024, {1,1}, 2, 0, {56,72}, "res4_0_branch1" ] ],
+   "res4_1_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_1", 1024, 1, {56,72} ],
+   "res4_2_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_2", 1024, 1, {56,72} ],
+   "res4_3_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_3", 1024, 1, {56,72} ],
+   "res4_4_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_4", 1024, 1, {56,72} ],
+   "res4_5_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_5", 1024, 1, {56,72} ],
+   "res4_6_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_6", 1024, 1, {56,72} ],
+   "res4_7_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_7", 1024, 1, {56,72} ],
+   "res4_8_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_8", 1024, 1, {56,72} ],
+   "res4_9_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_9", 1024, 1, {56,72} ],
+   "res4_10_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_10", 1024, 1, {56,72} ],
+   "res4_11_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_11", 1024, 1, {56,72} ],
+   "res4_12_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_12", 1024, 1, {56,72} ],
+   "res4_13_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_13", 1024, 1, {56,72} ],
+   "res4_14_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_14", 1024, 1, {56,72} ],
+   "res4_15_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_15", 1024, 1, {56,72} ],
+   "res4_16_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_16", 1024, 1, {56,72} ],
+   "res4_17_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_17", 1024, 1, {56,72} ],
+   "res4_18_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_18", 1024, 1, {56,72} ],
+   "res4_19_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_19", 1024, 1, {56,72} ],
+   "res4_20_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_20", 1024, 1, {56,72} ],
+   "res4_21_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_21", 1024, 1, {56,72} ],
+   "res4_22_sum"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ]
 },{
    "conv1"->"pool1"->
    "res2_0_branch2c_bn_sum_relu"->"res2_1_branch2c_bn_sum_relu"->"res2_2_sum_relu"->
-   "res3_0_branch2c_bn_sum_relu"->"res3_1_branch2c_bn_sum_relu"->"res3_2_branch2c_bn_sum_relu"->"res3_3_sum_relu"
-}];
+   "res3_0_branch2c_bn_sum_relu"->"res3_1_branch2c_bn_sum_relu"->"res3_2_branch2c_bn_sum_relu"->"res3_3_sum_relu"->
+   "res4_0_branch2c_bn_sum_relu"->"res4_1_branch2c_bn_sum_relu"->"res4_2_branch2c_bn_sum_relu"->"res4_3_branch2c_bn_sum_relu"->
+   "res4_4_branch2c_bn_sum_relu"->"res4_5_branch2c_bn_sum_relu"->"res4_6_branch2c_bn_sum_relu"->"res4_7_branch2c_bn_sum_relu"->
+   "res4_8_branch2c_bn_sum_relu"->"res4_9_branch2c_bn_sum_relu"->"res4_10_branch2c_bn_sum_relu"->"res4_11_branch2c_bn_sum_relu"->
+   "res4_12_branch2c_bn_sum_relu"->"res4_13_branch2c_bn_sum_relu"->"res4_14_branch2c_bn_sum_relu"->"res4_15_branch2c_bn_sum_relu"->
+   "res4_16_branch2c_bn_sum_relu"->"res4_17_branch2c_bn_sum_relu"->"res4_18_branch2c_bn_sum_relu"->"res4_19_branch2c_bn_sum_relu"->
+   "res4_20_branch2c_bn_sum_relu"->"res4_21_branch2c_bn_sum_relu"->"res4_22_sum"
+   }];
+
+
+112/2
+
+
+144/2
+
+
+impW["res3_0_branch2a_w"]//Dimensions
+
+
+impW["res4_0_branch2a_w"]//Dimensions
 
 
 (* Verification *)
@@ -65,10 +106,10 @@ RetinaNet = NetGraph[{
 dat=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","data"}];
 
 
-ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res3_3_sum"}];ref//Dimensions
+ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res4_22_sum"}];ref//Dimensions
 
 
-my = Normal@NetTake[RetinaNet,{"conv1","res3_3_sum_relu"}][ dat ];my//Dimensions
+my = Normal@NetTake[RetinaNet,{"conv1","res4_22_sum"}][ dat ];my//Dimensions
 
 
 diff = Abs[ref - my]; diff//Dimensions
