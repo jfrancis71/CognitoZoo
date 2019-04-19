@@ -43,48 +43,48 @@ RetinaNet = NetGraph[{
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],
    
-   "res2_0_branch2c_bn_sum_relu"->RetinaNetBlock[ "res2_0", 256, 1, {224,288}, BNConvolutionLayer[ 256, {1,1}, 1, 0, {224, 288}, "res2_0_branch1" ] ],
-   "res2_1_branch2c_bn_sum_relu"->RetinaNetBlock[ "res2_1", 256, 1, {224,288} ],
-   "res2_2_sum_relu"->RetinaNetBlock[ "res2_2", 256, 1, {224,288} ],
+   "res2_0"->RetinaNetBlock[ "res2_0", 256, 1, {224,288}, BNConvolutionLayer[ 256, {1,1}, 1, 0, {224, 288}, "res2_0_branch1" ] ],
+   "res2_1"->RetinaNetBlock[ "res2_1", 256, 1, {224,288} ],
+   "res2_2"->RetinaNetBlock[ "res2_2", 256, 1, {224,288} ],
 
-   "res3_0_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_0", 512, 2, {112,144}, BNConvolutionLayer[ 512, {1,1}, 2, 0, {112, 144}, "res3_0_branch1" ] ],
-   "res3_1_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_1", 512, 1, {112,144} ],
-   "res3_2_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_2", 512, 1, {112,144} ],
-   "res3_3_sum_relu"->RetinaNetBlock[ "res3_3", 512, 1, {112,144} ],
+   "res3_0"->RetinaNetBlock[ "res3_0", 512, 2, {112,144}, BNConvolutionLayer[ 512, {1,1}, 2, 0, {112, 144}, "res3_0_branch1" ] ],
+   "res3_1"->RetinaNetBlock[ "res3_1", 512, 1, {112,144} ],
+   "res3_2"->RetinaNetBlock[ "res3_2", 512, 1, {112,144} ],
+   "res3_3"->RetinaNetBlock[ "res3_3", 512, 1, {112,144} ],
 
-   "res4_0_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_0", 1024, 2, {56,72}, BNConvolutionLayer[ 1024, {1,1}, 2, 0, {56,72}, "res4_0_branch1" ] ],
-   "res4_1_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_1", 1024, 1, {56,72} ],
-   "res4_2_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_2", 1024, 1, {56,72} ],
-   "res4_3_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_3", 1024, 1, {56,72} ],
-   "res4_4_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_4", 1024, 1, {56,72} ],
-   "res4_5_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_5", 1024, 1, {56,72} ],
-   "res4_6_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_6", 1024, 1, {56,72} ],
-   "res4_7_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_7", 1024, 1, {56,72} ],
-   "res4_8_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_8", 1024, 1, {56,72} ],
-   "res4_9_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_9", 1024, 1, {56,72} ],
-   "res4_10_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_10", 1024, 1, {56,72} ],
-   "res4_11_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_11", 1024, 1, {56,72} ],
-   "res4_12_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_12", 1024, 1, {56,72} ],
-   "res4_13_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_13", 1024, 1, {56,72} ],
-   "res4_14_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_14", 1024, 1, {56,72} ],
-   "res4_15_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_15", 1024, 1, {56,72} ],
-   "res4_16_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_16", 1024, 1, {56,72} ],
-   "res4_17_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_17", 1024, 1, {56,72} ],
-   "res4_18_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_18", 1024, 1, {56,72} ],
-   "res4_19_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_19", 1024, 1, {56,72} ],
-   "res4_20_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_20", 1024, 1, {56,72} ],
-   "res4_21_branch2c_bn_sum_relu"->RetinaNetBlock[ "res4_21", 1024, 1, {56,72} ],
-   "res4_22_sum"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ]
+   "res4_0"->RetinaNetBlock[ "res4_0", 1024, 2, {56,72}, BNConvolutionLayer[ 1024, {1,1}, 2, 0, {56,72}, "res4_0_branch1" ] ],
+   "res4_1"->RetinaNetBlock[ "res4_1", 1024, 1, {56,72} ],
+   "res4_2"->RetinaNetBlock[ "res4_2", 1024, 1, {56,72} ],
+   "res4_3"->RetinaNetBlock[ "res4_3", 1024, 1, {56,72} ],
+   "res4_4"->RetinaNetBlock[ "res4_4", 1024, 1, {56,72} ],
+   "res4_5"->RetinaNetBlock[ "res4_5", 1024, 1, {56,72} ],
+   "res4_6"->RetinaNetBlock[ "res4_6", 1024, 1, {56,72} ],
+   "res4_7"->RetinaNetBlock[ "res4_7", 1024, 1, {56,72} ],
+   "res4_8"->RetinaNetBlock[ "res4_8", 1024, 1, {56,72} ],
+   "res4_9"->RetinaNetBlock[ "res4_9", 1024, 1, {56,72} ],
+   "res4_10"->RetinaNetBlock[ "res4_10", 1024, 1, {56,72} ],
+   "res4_11"->RetinaNetBlock[ "res4_11", 1024, 1, {56,72} ],
+   "res4_12"->RetinaNetBlock[ "res4_12", 1024, 1, {56,72} ],
+   "res4_13"->RetinaNetBlock[ "res4_13", 1024, 1, {56,72} ],
+   "res4_14"->RetinaNetBlock[ "res4_14", 1024, 1, {56,72} ],
+   "res4_15"->RetinaNetBlock[ "res4_15", 1024, 1, {56,72} ],
+   "res4_16"->RetinaNetBlock[ "res4_16", 1024, 1, {56,72} ],
+   "res4_17"->RetinaNetBlock[ "res4_17", 1024, 1, {56,72} ],
+   "res4_18"->RetinaNetBlock[ "res4_18", 1024, 1, {56,72} ],
+   "res4_19"->RetinaNetBlock[ "res4_19", 1024, 1, {56,72} ],
+   "res4_20"->RetinaNetBlock[ "res4_20", 1024, 1, {56,72} ],
+   "res4_21"->RetinaNetBlock[ "res4_21", 1024, 1, {56,72} ],
+   "res4_22"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ]
 },{
    "conv1"->"pool1"->
-   "res2_0_branch2c_bn_sum_relu"->"res2_1_branch2c_bn_sum_relu"->"res2_2_sum_relu"->
-   "res3_0_branch2c_bn_sum_relu"->"res3_1_branch2c_bn_sum_relu"->"res3_2_branch2c_bn_sum_relu"->"res3_3_sum_relu"->
-   "res4_0_branch2c_bn_sum_relu"->"res4_1_branch2c_bn_sum_relu"->"res4_2_branch2c_bn_sum_relu"->"res4_3_branch2c_bn_sum_relu"->
-   "res4_4_branch2c_bn_sum_relu"->"res4_5_branch2c_bn_sum_relu"->"res4_6_branch2c_bn_sum_relu"->"res4_7_branch2c_bn_sum_relu"->
-   "res4_8_branch2c_bn_sum_relu"->"res4_9_branch2c_bn_sum_relu"->"res4_10_branch2c_bn_sum_relu"->"res4_11_branch2c_bn_sum_relu"->
-   "res4_12_branch2c_bn_sum_relu"->"res4_13_branch2c_bn_sum_relu"->"res4_14_branch2c_bn_sum_relu"->"res4_15_branch2c_bn_sum_relu"->
-   "res4_16_branch2c_bn_sum_relu"->"res4_17_branch2c_bn_sum_relu"->"res4_18_branch2c_bn_sum_relu"->"res4_19_branch2c_bn_sum_relu"->
-   "res4_20_branch2c_bn_sum_relu"->"res4_21_branch2c_bn_sum_relu"->"res4_22_sum"
+   "res2_0"->"res2_1"->"res2_2"->
+   "res3_0"->"res3_1"->"res3_2"->"res3_3"->
+   "res4_0"->"res4_1"->"res4_2"->"res4_3"->
+   "res4_4"->"res4_5"->"res4_6"->"res4_7"->
+   "res4_8"->"res4_9"->"res4_10"->"res4_11"->
+   "res4_12"->"res4_13"->"res4_14"->"res4_15"->
+   "res4_16"->"res4_17"->"res4_18"->"res4_19"->
+   "res4_20"->"res4_21"->"res4_22"
    }];
 
 
@@ -109,7 +109,7 @@ dat=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","data"}]
 ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res4_22_sum"}];ref//Dimensions
 
 
-my = Normal@NetTake[RetinaNet,{"conv1","res4_22_sum"}][ dat ];my//Dimensions
+my = Normal@NetTake[RetinaNet,{"conv1","res4_22"}][ dat ];my//Dimensions
 
 
 diff = Abs[ref - my]; diff//Dimensions
