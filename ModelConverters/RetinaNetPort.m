@@ -39,7 +39,7 @@ RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, branch1_ ] := NetGra
    {{"branch1","branch2"}->"sum"->"relu"}]
 
 
-RetinaNet = NetGraph[{
+net1 = NetGraph[{
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],
    
@@ -75,7 +75,8 @@ RetinaNet = NetGraph[{
    "res4_20"->RetinaNetBlock[ "res4_20", 1024, 1, {56,72} ],
    "res4_21"->RetinaNetBlock[ "res4_21", 1024, 1, {56,72} ],
    "res4_22"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ]
-},{
+},
+{
    "conv1"->"pool1"->
    "res2_0"->"res2_1"->"res2_2"->
    "res3_0"->"res3_1"->"res3_2"->"res3_3"->
@@ -85,34 +86,32 @@ RetinaNet = NetGraph[{
    "res4_12"->"res4_13"->"res4_14"->"res4_15"->
    "res4_16"->"res4_17"->"res4_18"->"res4_19"->
    "res4_20"->"res4_21"->"res4_22"
-   }];
+}];
 
 
-112/2
-
-
-144/2
-
-
-impW["res3_0_branch2a_w"]//Dimensions
-
-
-impW["res4_0_branch2a_w"]//Dimensions
-
-
-(* Verification *)
+net2 = NetGraph[{
+   "res5_0"->RetinaNetBlock[ "res5_0", 2048, 2, {28,36}, BNConvolutionLayer[ 2048, {1,1}, 2, 0, {28,36}, "res5_0_branch1" ] ],
+   "res5_1"->RetinaNetBlock[ "res5_1", 2048, 1, {28,36} ],
+   "res5_2"->RetinaNetBlock[ "res5_2", 2048, 1, {28,36} ]
+},
+{
+   "res5_0"->"res5_1"->"res5_2"
+}];
 
 
 dat=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","data"}];
 
 
-ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res4_22_sum"}];ref//Dimensions
+ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res5_2_sum"}];ref//Dimensions
 
 
-my = Normal@NetTake[RetinaNet,{"conv1","res4_22"}][ dat ];my//Dimensions
+t1=Normal@net1@dat;t1//Dimensions
 
 
-diff = Abs[ref - my]; diff//Dimensions
+t2=Normal@net2@t1;t2//Dimensions
+
+
+diff = Abs[ref - t2]; diff//Dimensions
 
 
 Max@diff
@@ -121,7 +120,7 @@ Max@diff
 Position[diff,Max[diff]]
 
 
-my[[1,19,33,265]]
+t2[[1,1902,28,9]]
 
 
-ref[[1,19,33,265]]
+ref[[1,1902,28,9]]
