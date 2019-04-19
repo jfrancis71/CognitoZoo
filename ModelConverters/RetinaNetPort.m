@@ -24,60 +24,38 @@ RetinaNetMiniBlock[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[ {
    rootName<>"a"->rootName<>"b"->rootName<>"c_bn"}]
 
 
+RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[{
+   "branch2"->RetinaNetMiniBlock[ rootName<>"_branch2", outputChannels, stride, dims ],
+   "sum"->TotalLayer[],
+   "relu"->Ramp},
+   {{NetPort["Input"],"branch2"}->"sum"->"relu"}]
+
+
+RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, branch1_ ] := NetGraph[{
+   "branch1"->branch1,
+   "branch2"->RetinaNetMiniBlock[ rootName<>"_branch2", outputChannels, stride, dims ],
+   "sum"->TotalLayer[],
+   "relu"->Ramp},
+   {{"branch1","branch2"}->"sum"->"relu"}]
+
+
 RetinaNet = NetGraph[{
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],
    
-   "block1"->RetinaNetMiniBlock[ "res2_0_branch2", 256, 1, {224, 288} ],
-   "res2_0_branch1"->BNConvolutionLayer[ 256, {1,1}, 1, 0, {224, 288}, "res2_0_branch1" ],
-   "res2_0_branch2c_bn_sum"->TotalLayer[],
-   "res2_0_branch2c_bn_sum_relu"->Ramp,
-   
-   "block2"->RetinaNetMiniBlock[ "res2_1_branch2", 256, 1, {224, 288} ],
-   "res2_1_branch2c_bn_sum"->TotalLayer[],
-   "res2_1_branch2c_bn_sum_relu"->Ramp,
+   "res2_0_branch2c_bn_sum_relu"->RetinaNetBlock[ "res2_0", 256, 1, {224,288}, BNConvolutionLayer[ 256, {1,1}, 1, 0, {224, 288}, "res2_0_branch1" ] ],
+   "res2_1_branch2c_bn_sum_relu"->RetinaNetBlock[ "res2_1", 256, 1, {224,288} ],
+   "res2_2_sum_relu"->RetinaNetBlock[ "res2_2", 256, 1, {224,288} ],
 
-   "block3"->RetinaNetMiniBlock[ "res2_2_branch2", 256, 1, {224, 288} ],
-   "res2_2_sum"->TotalLayer[],
-   "res2_2_sum_relu"->Ramp,
-   
-   "block4"->RetinaNetMiniBlock[ "res3_0_branch2", 512, 2, {112, 144} ],
-   "res3_0_branch1"->BNConvolutionLayer[ 512, {1,1}, 2, 0, {112, 144}, "res3_0_branch1" ],
-   "res3_0_branch2c_bn_sum"->TotalLayer[],
-   "res3_0_branch2c_bn_sum_relu"->Ramp,
-   
-   "block5"->RetinaNetMiniBlock[ "res3_1_branch2", 512, 1, {112, 144} ],
-   "res3_1_branch2c_bn_sum"->TotalLayer[],
-   "res3_1_branch2c_bn_sum_relu"->Ramp,
-   
-   "block6"->RetinaNetMiniBlock[ "res3_2_branch2", 512, 1, {112, 144} ],
-   "res3_2_branch2c_bn_sum"->TotalLayer[],
-   "res3_2_branch2c_bn_sum_relu"->Ramp,
+   "res3_0_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_0", 512, 2, {112,144}, BNConvolutionLayer[ 512, {1,1}, 2, 0, {112, 144}, "res3_0_branch1" ] ],
+   "res3_1_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_1", 512, 1, {112,144} ],
+   "res3_2_branch2c_bn_sum_relu"->RetinaNetBlock[ "res3_2", 512, 1, {112,144} ],
+   "res3_3_sum_relu"->RetinaNetBlock[ "res3_3", 512, 1, {112,144} ]
 
-   "block7"->RetinaNetMiniBlock[ "res3_3_branch2", 512, 1, {112, 144} ],
-   "res3_3_sum"->TotalLayer[],
-   "res3_3_sum_relu"->Ramp
 },{
-   "conv1"->"pool1"->{"block1","res2_0_branch1"},
-   {"block1","res2_0_branch1"}->"res2_0_branch2c_bn_sum"->"res2_0_branch2c_bn_sum_relu",
-   
-   "res2_0_branch2c_bn_sum_relu"->{"block2"},   
-   {"block2","res2_0_branch2c_bn_sum_relu"}->"res2_1_branch2c_bn_sum"->"res2_1_branch2c_bn_sum_relu",
-   
-   "res2_1_branch2c_bn_sum_relu"->{"block3"},   
-   {"block3","res2_1_branch2c_bn_sum_relu"}->"res2_2_sum"->"res2_2_sum_relu",
-   
-   "res2_2_sum_relu"->{"block4","res3_0_branch1"},
-   {"block4","res3_0_branch1"}->"res3_0_branch2c_bn_sum"->"res3_0_branch2c_bn_sum_relu",
-   
-   "res3_0_branch2c_bn_sum_relu"->{"block5"},   
-   {"block5","res3_0_branch2c_bn_sum_relu"}->"res3_1_branch2c_bn_sum"->"res3_1_branch2c_bn_sum_relu",
-
-   "res3_1_branch2c_bn_sum_relu"->{"block6"},   
-   {"block6","res3_1_branch2c_bn_sum_relu"}->"res3_2_branch2c_bn_sum"->"res3_2_branch2c_bn_sum_relu",
-   
-   "res3_2_branch2c_bn_sum_relu"->{"block7"},   
-   {"block7","res3_2_branch2c_bn_sum_relu"}->"res3_3_sum"->"res3_3_sum_relu"
+   "conv1"->"pool1"->
+   "res2_0_branch2c_bn_sum_relu"->"res2_1_branch2c_bn_sum_relu"->"res2_2_sum_relu"->
+   "res3_0_branch2c_bn_sum_relu"->"res3_1_branch2c_bn_sum_relu"->"res3_2_branch2c_bn_sum_relu"->"res3_3_sum_relu"
 }];
 
 
@@ -90,13 +68,7 @@ dat=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","data"}]
 ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res3_3_sum"}];ref//Dimensions
 
 
-my = Normal@ConvolutionLayer[ 512, {1,1}, "Weights"->impW["res3_1_branch2c_w"], "Biases"->ConstantArray[0,512] ]@Normal@NetTake[RetinaNet,{"conv1","res3_1_branch2b"}][ dat ];my//Dimensions
-
-
 my = Normal@NetTake[RetinaNet,{"conv1","res3_3_sum_relu"}][ dat ];my//Dimensions
-
-
-my = Normal@NetTake[NetFlatten@RetinaNet,{"conv1","res3_2_branch2c_bn_sum_relu"}][ dat ];my//Dimensions
 
 
 diff = Abs[ref - my]; diff//Dimensions
