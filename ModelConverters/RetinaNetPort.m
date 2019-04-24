@@ -100,9 +100,6 @@ net2 = NetGraph[{
 }];
 
 
-impW["retnet_bbox_pred_fpn3_w"]//Dimensions
-
-
 net3 = (* input fpn_inner_res3_3_sum *)
    NetGraph[{
       "fpn_inner_res3_3_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res3_3_sum_lateral_w"], "Biases"->impW["fpn_inner_res3_3_sum_lateral_b"] ],
@@ -212,7 +209,91 @@ net3 = (* input fpn_inner_res3_3_sum *)
 }];
 
 
+ConcatNet = NetGraph[{
+   "class1"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{112,144,9,80}],FlattenLayer[2]},
+   "class2"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{56,72,9,80}],FlattenLayer[2]},
+   "class3"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
+   "class4"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
+   "class5"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
+   "catenate1"->CatenateLayer[],
+   "locs1"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{112,144,9,4}],FlattenLayer[2]},
+   "locs2"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{56,72,9,4}],FlattenLayer[2]},
+   "locs3"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
+   "locs4"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
+   "locs5"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
+   "catenate2"->CatenateLayer[]
+   },{
+   NetPort["ClassProb3"]->"class1",
+   NetPort["ClassProb4"]->"class2",
+   NetPort["ClassProb5"]->"class3",
+   NetPort["ClassProb6"]->"class4",
+   NetPort["ClassProb7"]->"class5",
+   NetPort["Boxes3"]->"locs1",
+   NetPort["Boxes4"]->"locs2",
+   NetPort["Boxes5"]->"locs3",
+   NetPort["Boxes6"]->"locs4",
+   NetPort["Boxes7"]->"locs5",
+   {"class1","class2","class3","class4","class5"}->"catenate1"->NetPort["ClassProb"],
+   {"locs1","locs2","locs3","locs4","locs5"}->"catenate2"->NetPort["Locs"]
+}];
+
+
+anch = Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", "anchors"} ];
+
+
+levels={{112,144},{56,72},{28,36},{28,36},{28,36}};
+strides = {8,16,32,32,32};
+biasesx = Flatten[Table[(x-1)*strides[[l]]+Mean[anch[[l,a,{1,3}]]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
+biasesy = Flatten[Table[(y-1)*strides[[l]]+Mean[anch[[l,a,{2,4}]]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
+scalesw = Flatten[Table[1+anch[[l,a,3]]-anch[[l,a,1]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
+scalesh = Flatten[Table[1+anch[[l,a,4]]-anch[[l,a,2]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
+
+
+LocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
+   "cx"->{PartLayer[{All,1}],ConstantTimesLayer["Scaling"->scalesw],ConstantPlusLayer["Biases"->biasesx]},
+   "cy"->{PartLayer[{All,2}],ConstantTimesLayer["Scaling"->scalesh],ConstantPlusLayer["Biases"->biasesy]},
+   "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp],ConstantTimesLayer["Scaling"->scalesw]},
+   "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp],ConstantTimesLayer["Scaling"->scalesh]},
+   "minx"->ThreadingLayer[#1-#2/2&],
+   "miny"->ThreadingLayer[896+1-(#1-#2/2)&],
+   "maxx"->ThreadingLayer[#1+#2/2&],
+   "maxy"->ThreadingLayer[896+1-(#1+#2/2)&],
+   "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 208656} ], "transpose"->TransposeLayer[], "reshapePoint"->ReshapeLayer[ {208656, 2, 2 } ] }, {
+   {"cx","width"}->"minx",{"cx","width"}->"maxx",{"cy","height"}->"miny",{"cy","height"}->"maxy",
+   {"minx","miny","maxx","maxy"}->"cat"->"reshape"->"transpose"->"reshapePoint"->NetPort["Boxes"]}];
+
+
 dat=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","data"}];
 
 
-ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res5_2_sum"}];ref//Dimensions
+ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res5_2_sum"}];
+
+
+n1 = net1[ 255.*{Reverse@crop} ];
+
+
+n2 = net2[ n1["res4_22_sum"] ];
+
+
+n3 = net3[ <| "res5_2_sum"->n2, "res4_22_sum"->n1["res4_22_sum"], "res3_3_sum"->n1["res3_3_sum"] |> ];
+
+
+a = <|"ClassProb3"->Normal@n3["ClassProb3"],
+"ClassProb4"->Normal@n3["ClassProb4"],
+"ClassProb5"->Normal@n3["ClassProb5"],
+"ClassProb6"->Normal@n3["ClassProb6"],
+"ClassProb7"->Normal@n3["ClassProb7"],
+"Boxes3"->Normal@n3["Boxes3"],
+"Boxes4"->Normal@n3["Boxes4"],
+"Boxes5"->Normal@n3["Boxes5"],
+"Boxes6"->Normal@n3["Boxes6"],
+"Boxes7"->Normal@n3["Boxes7"]|> ;
+
+
+n4 = ConcatNet[ a ];
+
+
+a4=Normal@n4["ClassProb"];
+
+
+{Max[a4],Position[a4,Max[a4]]};
