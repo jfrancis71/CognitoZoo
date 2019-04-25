@@ -1,6 +1,12 @@
 (* ::Package:: *)
 
-impW[ hdfName_String ] := Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ];
+(* Warning not complete, in progress, being checked in to track changes *)
+
+
+impW[ hdfName_String ] := If[hdfName=="conv1_w",
+   Reverse/@Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ],
+   Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ]
+   ];
 
 
 impM[ hdfName_String, channels_, height_, width_ ] := Module[ {dat = Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ] }, Table[ dat[[c]], {c,1,channels}, {height}, {width} ] ];
@@ -40,6 +46,7 @@ RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, branch1_ ] := NetGra
 
 
 net1 = NetGraph[{
+   "mult"->ElementwiseLayer[#*255.&],
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],
    
@@ -77,7 +84,7 @@ net1 = NetGraph[{
    "res4_22"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ]
 },
 {
-   "conv1"->"pool1"->
+   "mult"->"conv1"->"pool1"->
    "res2_0"->"res2_1"->"res2_2"->
    "res3_0"->"res3_1"->"res3_2"->"res3_3"->
    "res4_0"->"res4_1"->"res4_2"->"res4_3"->
@@ -210,17 +217,17 @@ net3 = (* input fpn_inner_res3_3_sum *)
 
 
 ConcatNet = NetGraph[{
-   "class1"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{112,144,9,80}],FlattenLayer[2]},
-   "class2"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{56,72,9,80}],FlattenLayer[2]},
-   "class3"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
-   "class4"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
-   "class5"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
+   "class1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{112,144,9,80}],FlattenLayer[2]},
+   "class2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{56,72,9,80}],FlattenLayer[2]},
+   "class3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
+   "class4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
+   "class5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
    "catenate1"->CatenateLayer[],
-   "locs1"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{112,144,9,4}],FlattenLayer[2]},
-   "locs2"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{56,72,9,4}],FlattenLayer[2]},
-   "locs3"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
-   "locs4"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
-   "locs5"->{TransposeLayer[{2->3,3->4}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
+   "locs1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{112,144,9,4}],FlattenLayer[2]},
+   "locs2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{56,72,9,4}],FlattenLayer[2]},
+   "locs3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
+   "locs4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
+   "locs5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
    "catenate2"->CatenateLayer[]
    },{
    NetPort["ClassProb3"]->"class1",
@@ -255,9 +262,9 @@ LocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
    "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp],ConstantTimesLayer["Scaling"->scalesw]},
    "height"->{PartLayer[{All,4}],ElementwiseLayer[Exp],ConstantTimesLayer["Scaling"->scalesh]},
    "minx"->ThreadingLayer[#1-#2/2&],
-   "miny"->ThreadingLayer[896+1-(#1-#2/2)&],
+   "miny"->ThreadingLayer[896+1-(#1+#2/2)&],
    "maxx"->ThreadingLayer[#1+#2/2&],
-   "maxy"->ThreadingLayer[896+1-(#1+#2/2)&],
+   "maxy"->ThreadingLayer[896+1-(#1-#2/2)&],
    "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 208656} ], "transpose"->TransposeLayer[], "reshapePoint"->ReshapeLayer[ {208656, 2, 2 } ] }, {
    {"cx","width"}->"minx",{"cx","width"}->"maxx",{"cy","height"}->"miny",{"cy","height"}->"maxy",
    {"minx","miny","maxx","maxy"}->"cat"->"reshape"->"transpose"->"reshapePoint"->NetPort["Boxes"]}];
@@ -269,31 +276,67 @@ dat=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","data"}]
 ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res5_2_sum"}];
 
 
-n1 = net1[ 255.*{Reverse@crop} ];
+(* Warning need to check BGR vs RGB reversing and any pixel remapping *)
+RetinaNet = NetGraph[ {
+   "n1"->net1,
+   "n2"->net2,
+   "n3"->net3,
+   "concat"->ConcatNet,"boxes"->LocsToBoxesNet},
+{NetPort["n1","res3_3_sum"]->NetPort["n3","res3_3_sum"],
+ NetPort["n1","res4_22_sum"]->{"n2",NetPort["n3","res4_22_sum"]},
+ "n2"->NetPort["n3","res5_2_sum"],
+ NetPort["n3","ClassProb3"]->NetPort["concat","ClassProb3"],
+ NetPort["n3","ClassProb4"]->NetPort["concat","ClassProb4"],
+ NetPort["n3","ClassProb5"]->NetPort["concat","ClassProb5"],
+ NetPort["n3","ClassProb6"]->NetPort["concat","ClassProb6"],
+ NetPort["n3","ClassProb7"]->NetPort["concat","ClassProb7"],
+  NetPort["n3","Boxes3"]->NetPort["concat","Boxes3"],
+  NetPort["n3","Boxes4"]->NetPort["concat","Boxes4"],
+  NetPort["n3","Boxes5"]->NetPort["concat","Boxes5"],
+  NetPort["n3","Boxes6"]->NetPort["concat","Boxes6"],
+  NetPort["n3","Boxes7"]->NetPort["concat","Boxes7"],
+  NetPort["concat","Locs"]->"boxes"
+ },
+ "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB"}]];
 
 
-n2 = net2[ n1["res4_22_sum"] ];
+Options[ CZDetectObjects ] = Join[{
+   TargetDevice->"CPU",
+   Threshold->.6,
+   NMSIntersectionOverUnionThreshold->.45 (* This is the Wei Liu default setting for this implementation *)
+}, Options[ CZNonMaxSuppressionPerClass ] ];
+CZDetectObjects[ img_Image, opts:OptionsPattern[] ] :=
+   CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
+   CZObjectsDeconformer[ img, {1152, 896}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   (k=(RetinaNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
+   CZImageConformer[{1152,896},"Fit"]@img);
 
 
-n3 = net3[ <| "res5_2_sum"->n2, "res4_22_sum"->n1["res4_22_sum"], "res3_3_sum"->n1["res3_3_sum"] |> ];
+Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
+CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
+   HighlightImage[img,
+      CZDisplayObject /@ CZDetectObjects[ img, opts ]]
+)
 
 
-a = <|"ClassProb3"->Normal@n3["ClassProb3"],
-"ClassProb4"->Normal@n3["ClassProb4"],
-"ClassProb5"->Normal@n3["ClassProb5"],
-"ClassProb6"->Normal@n3["ClassProb6"],
-"ClassProb7"->Normal@n3["ClassProb7"],
-"Boxes3"->Normal@n3["Boxes3"],
-"Boxes4"->Normal@n3["Boxes4"],
-"Boxes5"->Normal@n3["Boxes5"],
-"Boxes6"->Normal@n3["Boxes6"],
-"Boxes7"->Normal@n3["Boxes7"]|> ;
+CZCOCOClasses = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light",
+"fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear",
+"zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball",
+"kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup",
+"fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut",
+"cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard",
+"cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear",
+"hair drier","toothbrush"};
 
 
-n4 = ConcatNet[ a ];
+(* Private Implementation Code *)
 
 
-a4=Normal@n4["ClassProb"];
-
-
-{Max[a4],Position[a4,Max[a4]]};
+CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[{
+   detections = Position[Normal@netOutput["ClassProb"],x_/;x>threshold]},
+   Transpose[{
+      Rectangle@@@Extract[Normal@netOutput["Boxes"],detections[[All,1;;1]]],
+      Extract[CZCOCOClasses,detections[[All,2;;2]]],
+      Extract[Normal@netOutput["ClassProb"], detections ]
+   }]
+];
