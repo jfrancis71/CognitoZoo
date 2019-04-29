@@ -39,24 +39,7 @@ CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
 ];
 
 
-CZNonMaxSuppression[ nmsThreshold_ ][ dets_ ] := Module[ { deletions },
-(* deletions is a jagged array of form boundingBox*classDetections in bounding box where
-   1 represents should be deleted
-*)
-   deletions =
-      Table[
-         Max@Table[
-            If[
-               boxNo!=testBoxNo&&dets[[boxNo,2,classNo,1]]==dets[[testBoxNo,2,testClassNo,1]]&&
-               CZIntersectionOverUnion[dets[[boxNo,1]],dets[[testBoxNo,1]]]>nmsThreshold&&
-               dets[[boxNo,2,classNo,2]]<dets[[testBoxNo,2,testClassNo,2]],1,0],
-            {testBoxNo,1,Length[dets]},{testClassNo,1,Length[dets[[testBoxNo,2]]]}],
-         {boxNo,1,Length[dets]},{classNo,1,Length[dets[[boxNo,2]]]}];
-   DeleteCases[Delete[dets, Map[{#[[1]],2,#[[2]]}&,Position[deletions,1]]], {_,{}}]
-];
-
-
-CZNonMaxSuppression1[ nmsThreshold_ ][ dets_ ] :=
+CZNonMaxSuppression[ nmsThreshold_ ][ dets_ ] :=
    DeleteCases[ Function[detection, {detection[[1]],
       Function[overlapBoxLabels,
          Select[detection[[2]],#[[2]]>Max@Extract[overlapBoxLabels[[All,All,2]],Position[overlapBoxLabels[[All,All,1]],#[[1]]]]&]]
@@ -82,7 +65,7 @@ Options[ CZDetectObjects ] = {
 };
 CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
    CZNonMaxSuppression[ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@CZDetectionsDeconformer[ image, {608, 608}, "Fit" ]@CZFilterClasses[ OptionValue[ DetectionClasses ] ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
-   (yoloOpenImagesNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{608,608},"Fit"]@image
+   (yoloOpenImagesNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[ {608,608}, "Fit", Padding->0.5 ]@image
 )
 
 
