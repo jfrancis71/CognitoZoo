@@ -119,8 +119,8 @@ net3 = (* input fpn_inner_res3_3_sum *)
       "fpn_res3_3_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_res3_3_sum_w"], "Biases"->impW["fpn_res3_3_sum_b"]  ],
       "fpn_res4_22_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_res4_22_sum_w"], "Biases"->impW["fpn_res4_22_sum_b"]  ],
       "fpn_res5_2_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_res5_2_sum_w"], "Biases"->impW["fpn_res5_2_sum_b"]  ],
-      "fpn_6"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_6_w"], "Biases"->impW["fpn_6_b"]  ],
-      "fpn_7"->{Ramp,ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_7_w"], "Biases"->impW["fpn_7_b"]  ]},
+      "fpn_6"->ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->impW["fpn_6_w"], "Biases"->impW["fpn_6_b"]  ],
+      "fpn_7"->{Ramp,ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->impW["fpn_7_w"], "Biases"->impW["fpn_7_b"]  ]},
       
       "retnet_cls_conv_n0_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
       "retnet_cls_conv_n1_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
@@ -220,14 +220,14 @@ ConcatNet = NetGraph[{
    "class1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{112,144,9,80}],FlattenLayer[2]},
    "class2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{56,72,9,80}],FlattenLayer[2]},
    "class3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
-   "class4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
-   "class5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
+   "class4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{14,18,9,80}],FlattenLayer[2]},
+   "class5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{7,9,9,80}],FlattenLayer[2]},
    "catenate1"->CatenateLayer[],
    "locs1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{112,144,9,4}],FlattenLayer[2]},
    "locs2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{56,72,9,4}],FlattenLayer[2]},
    "locs3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
-   "locs4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
-   "locs5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
+   "locs4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{14,18,9,4}],FlattenLayer[2]},
+   "locs5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{7,9,9,4}],FlattenLayer[2]},
    "catenate2"->CatenateLayer[]
    },{
    NetPort["ClassProb3"]->"class1",
@@ -248,8 +248,8 @@ ConcatNet = NetGraph[{
 anch = Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", "anchors"} ];
 
 
-levels={{112,144},{56,72},{28,36},{28,36},{28,36}};
-strides = {8,16,32,32,32};
+levels={{112,144},{56,72},{28,36},{14,18},{7,9}};
+strides = {8,16,32,64,128};
 biasesx = Flatten[Table[(x-1)*strides[[l]]+Mean[anch[[l,a,{1,3}]]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
 biasesy = Flatten[Table[(y-1)*strides[[l]]+Mean[anch[[l,a,{2,4}]]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
 scalesw = Flatten[Table[1+anch[[l,a,3]]-anch[[l,a,1]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
@@ -265,15 +265,9 @@ LocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
    "miny"->ThreadingLayer[896+1-(#1+#2/2)&],
    "maxx"->ThreadingLayer[#1+#2/2&],
    "maxy"->ThreadingLayer[896+1-(#1-#2/2)&],
-   "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 208656} ], "transpose"->TransposeLayer[], "reshapePoint"->ReshapeLayer[ {208656, 2, 2 } ] }, {
+   "cat"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 193347} ], "transpose"->TransposeLayer[], "reshapePoint"->ReshapeLayer[ {193347, 2, 2 } ] }, {
    {"cx","width"}->"minx",{"cx","width"}->"maxx",{"cy","height"}->"miny",{"cy","height"}->"maxy",
    {"minx","miny","maxx","maxy"}->"cat"->"reshape"->"transpose"->"reshapePoint"->NetPort["Boxes"]}];
-
-
-dat=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","data"}];
-
-
-ref=Import["/home/julian/detectron_mount/RetinaNetNew.hdf5",{"Datasets","res5_2_sum"}];
 
 
 (* Warning need to check BGR vs RGB reversing and any pixel remapping *)
@@ -282,7 +276,8 @@ RetinaNet = NetGraph[ {
    "n2"->net2,
    "n3"->net3,
    "concat"->ConcatNet,"boxes"->LocsToBoxesNet},
-{NetPort["n1","res3_3_sum"]->NetPort["n3","res3_3_sum"],
+{
+   NetPort["n1","res3_3_sum"]->NetPort["n3","res3_3_sum"],
  NetPort["n1","res4_22_sum"]->{"n2",NetPort["n3","res4_22_sum"]},
  "n2"->NetPort["n3","res5_2_sum"],
  NetPort["n3","ClassProb3"]->NetPort["concat","ClassProb3"],
@@ -297,7 +292,7 @@ RetinaNet = NetGraph[ {
   NetPort["n3","Boxes7"]->NetPort["concat","Boxes7"],
   NetPort["concat","Locs"]->"boxes"
  },
- "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB"}]];
+ "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB","MeanImage"->{102.9801, 115.9465, 122.7717}/256.}]];
 
 
 Options[ CZDetectObjects ] = Join[{
