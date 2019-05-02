@@ -9,7 +9,7 @@ leakyReLU = ElementwiseLayer[Ramp[#]+Ramp[-#]*-.1&];
 YoloConvLayer[ filters_, filterSize_, stride_, side_ ] :=
    NetChain[{
       ConvolutionLayer[filters,{filterSize,filterSize},"Stride"->stride,"Biases"->ConstantArray[0,filters],"PaddingSize"->If[filterSize==1,0,1]],
-      BatchNormalizationLayer["Epsilon"->10^-5,"Input"->{filters,side,side}],
+      BatchNormalizationLayer["Epsilon"->10^-5,"Input"->{filters,side,side}],(* Smallest epsilon accepted by cuDNN *)
       leakyReLU
 }];
 
@@ -188,3 +188,6 @@ yoloOpenImagesNet = NetGraph[{
    NetPort["Decode","Boxes2"]->NetPort["Concat","Boxes2"],
    NetPort["Decode","Boxes3"]->NetPort["Concat","Boxes3"]},
    "Input"->NetEncoder[{"Image",{608,608},"ColorSpace"->"RGB"}]];
+
+
+yoloOpenImagesNetInit

@@ -7,7 +7,9 @@ YoloConvLayerInitRules[ netName_, hdfName_ ] := {
    {netName,1,"Weights"}->Import[hdfFile,{"Datasets",hdfName<>"_weights"}],
    {netName,2,"Beta"}->Import[hdfFile,{"Datasets",hdfName<>"_biases"}],
    {netName,2,"MovingMean"}-> Import[hdfFile,{"Datasets",hdfName<>"_rolling_mean"}],
-   {netName,2,"MovingVariance"}->Import[hdfFile,{"Datasets",hdfName<>"_rolling_variance"}],
+   (* note yolo computes (x[index] - mean[f])/(sqrt(variance[f]) + .000001f) with the epsilon outside the sqrt function *)
+   (* so below is equivelent, but limiting epsilon to 10^-5 for cuDNN compatability *)
+   {netName,2,"MovingVariance"}->Ramp[(10^-6+Sqrt[Import[hdfFile,{"Datasets",hdfName<>"_rolling_variance"}]])^2-10^-5],
    {netName,2,"Gamma"}-> Import[hdfFile,{"Datasets",hdfName<>"_scales"}]
 };
 
