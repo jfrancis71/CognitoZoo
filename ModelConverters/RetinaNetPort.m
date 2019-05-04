@@ -9,13 +9,13 @@ impW[ hdfName_String ] := If[hdfName=="conv1_w",
    ];
 
 
-impM[ hdfName_String, channels_, height_, width_ ] := Module[ {dat = Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ] }, Table[ dat[[c]], {c,1,channels}, {height}, {width} ] ];
+impM[ hdfName_String ] := Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ];
 
 
 BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer, res_List, weightName_String, scalingName_String, biasesName_String ] :=
    NetChain[{ConvolutionLayer[ outputChannels, kernelSize, "Weights"->impW[weightName], "Biases"->ConstantArray[0,outputChannels], "Stride"->stride, "PaddingSize"->paddingSize ],
-   ConstantTimesLayer[ "Scaling"->impM[scalingName,outputChannels,res[[1]],res[[2]]] ], ConstantPlusLayer[ "Biases"->impM[biasesName,outputChannels,res[[1]],res[[2]]] ]}
-];
+   BatchNormalizationLayer[ "Epsilon"->.001, "MovingMean"->ConstantArray[0, outputChannels ], "MovingVariance"->ConstantArray[ 1.-10^-3, outputChannels ], "Scaling"->impM[ scalingName ], "Biases"->impM[biasesName ] ]
+}];
 
 
 BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer, res_List, rootName_String ] :=
@@ -293,45 +293,3 @@ RetinaNet = NetGraph[ {
   NetPort["concat","Locs"]->"boxes"
  },
  "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB","MeanImage"->{102.9801, 115.9465, 122.7717}/256.}]];
-
-
-Options[ CZDetectObjects ] = Join[{
-   TargetDevice->"CPU",
-   Threshold->.6,
-   NMSIntersectionOverUnionThreshold->.45 (* This is the Wei Liu default setting for this implementation *)
-}, Options[ CZNonMaxSuppressionPerClass ] ];
-CZDetectObjects[ img_Image, opts:OptionsPattern[] ] :=
-   CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
-   CZObjectsDeconformer[ img, {1152, 896}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
-   (k=(RetinaNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
-   CZImageConformer[{1152,896},"Fit"]@img);
-
-
-Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
-CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
-   HighlightImage[img,
-      CZDisplayObject /@ CZDetectObjects[ img, opts ]]
-)
-
-
-CZCOCOClasses = {"person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light",
-"fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear",
-"zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball",
-"kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup",
-"fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut",
-"cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard",
-"cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear",
-"hair drier","toothbrush"};
-
-
-(* Private Implementation Code *)
-
-
-CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[{
-   detections = Position[Normal@netOutput["ClassProb"],x_/;x>threshold]},
-   Transpose[{
-      Rectangle@@@Extract[Normal@netOutput["Boxes"],detections[[All,1;;1]]],
-      Extract[CZCOCOClasses,detections[[All,2;;2]]],
-      Extract[Normal@netOutput["ClassProb"], detections ]
-   }]
-];
