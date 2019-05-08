@@ -3,13 +3,16 @@
 (* Warning not complete, in progress, being checked in to track changes *)
 
 
+hdfFile = "~/Google Drive/RetinaNetNew.hdf5";
+
+
 impW[ hdfName_String ] := If[hdfName=="conv1_w",
-   Reverse/@Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ],
-   Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ]
+   Reverse/@Import[ hdfFile, {"Datasets", hdfName} ],
+   Import[ hdfFile, {"Datasets", hdfName} ]
    ];
 
 
-impM[ hdfName_String ] := Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", hdfName} ];
+impM[ hdfName_String ] := Import[ hdfFile, {"Datasets", hdfName} ];
 
 
 BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer, res_List, weightName_String, scalingName_String, biasesName_String ] :=
@@ -245,7 +248,7 @@ ConcatNet = NetGraph[{
 }];
 
 
-anch = Import[ "/home/julian/detectron_mount/RetinaNetNew.hdf5", {"Datasets", "anchors"} ];
+anch = Import[ hdfFile, {"Datasets", "anchors"} ];
 
 
 levels={{112,144},{56,72},{28,36},{14,18},{7,9}};
