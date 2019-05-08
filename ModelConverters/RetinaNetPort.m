@@ -7,7 +7,7 @@ hdfFile = "~/Google Drive/RetinaNetNew.hdf5";
 
 
 impW[ hdfName_String ] := If[hdfName=="conv1_w",
-   Reverse/@Import[ hdfFile, {"Datasets", hdfName} ],
+   256.*Reverse/@Import[ hdfFile, {"Datasets", hdfName} ],
    Import[ hdfFile, {"Datasets", hdfName} ]
    ];
 
@@ -49,7 +49,6 @@ RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, branch1_ ] := NetGra
 
 
 ConvNet = NetGraph[{
-   "mult"->ElementwiseLayer[#*255.&],
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],
    
@@ -90,7 +89,7 @@ ConvNet = NetGraph[{
    "res5_2"->RetinaNetBlock[ "res5_2", 2048, 1, {28,36} ]   
 },
 {
-   "mult"->"conv1"->"pool1"->
+   "conv1"->"pool1"->
    "res2_0"->"res2_1"->"res2_2"->
    "res3_0"->"res3_1"->"res3_2"->"res3_3"->
    "res4_0"->"res4_1"->"res4_2"->"res4_3"->
