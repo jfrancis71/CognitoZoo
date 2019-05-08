@@ -48,7 +48,7 @@ RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, branch1_ ] := NetGra
    {{"branch1","branch2"}->"sum"->"relu"}]
 
 
-net1 = NetGraph[{
+ConvNet = NetGraph[{
    "mult"->ElementwiseLayer[#*255.&],
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],
@@ -84,7 +84,10 @@ net1 = NetGraph[{
    "res4_19"->RetinaNetBlock[ "res4_19", 1024, 1, {56,72} ],
    "res4_20"->RetinaNetBlock[ "res4_20", 1024, 1, {56,72} ],
    "res4_21"->RetinaNetBlock[ "res4_21", 1024, 1, {56,72} ],
-   "res4_22"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ]
+   "res4_22"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ],
+   "res5_0"->RetinaNetBlock[ "res5_0", 2048, 2, {28,36}, BNConvolutionLayer[ 2048, {1,1}, 2, 0, {28,36}, "res5_0_branch1" ] ],
+   "res5_1"->RetinaNetBlock[ "res5_1", 2048, 1, {28,36} ],
+   "res5_2"->RetinaNetBlock[ "res5_2", 2048, 1, {28,36} ]   
 },
 {
    "mult"->"conv1"->"pool1"->
@@ -95,18 +98,11 @@ net1 = NetGraph[{
    "res4_8"->"res4_9"->"res4_10"->"res4_11"->
    "res4_12"->"res4_13"->"res4_14"->"res4_15"->
    "res4_16"->"res4_17"->"res4_18"->"res4_19"->
-   "res4_20"->"res4_21"->"res4_22"->NetPort["res4_22_sum"],
-   "res3_3"->NetPort["res3_3_sum"]
-}];
-
-
-net2 = NetGraph[{
-   "res5_0"->RetinaNetBlock[ "res5_0", 2048, 2, {28,36}, BNConvolutionLayer[ 2048, {1,1}, 2, 0, {28,36}, "res5_0_branch1" ] ],
-   "res5_1"->RetinaNetBlock[ "res5_1", 2048, 1, {28,36} ],
-   "res5_2"->RetinaNetBlock[ "res5_2", 2048, 1, {28,36} ]
-},
-{
-   "res5_0"->"res5_1"->"res5_2"
+   "res4_20"->"res4_21"->"res4_22"->
+   "res5_0"->"res5_1"->"res5_2",
+   "res3_3"->NetPort["res3_3_sum"],
+   "res4_22"->NetPort["res4_22_sum"],
+   "res5_2"->NetPort["res5_2_sum"]
 }];
 
 
@@ -275,14 +271,13 @@ LocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
 
 (* Warning need to check BGR vs RGB reversing and any pixel remapping *)
 RetinaNet = NetGraph[ {
-   "n1"->net1,
-   "n2"->net2,
+   "ConvNet"->ConvNet,
    "n3"->net3,
    "concat"->ConcatNet,"boxes"->LocsToBoxesNet},
 {
-   NetPort["n1","res3_3_sum"]->NetPort["n3","res3_3_sum"],
- NetPort["n1","res4_22_sum"]->{"n2",NetPort["n3","res4_22_sum"]},
- "n2"->NetPort["n3","res5_2_sum"],
+   NetPort["ConvNet","res3_3_sum"]->NetPort["n3","res3_3_sum"],
+   NetPort["ConvNet","res4_22_sum"]->NetPort["n3","res4_22_sum"],
+ NetPort["ConvNet","res5_2_sum"]->NetPort["n3","res5_2_sum"],
  NetPort["n3","ClassProb3"]->NetPort["concat","ClassProb3"],
  NetPort["n3","ClassProb4"]->NetPort["concat","ClassProb4"],
  NetPort["n3","ClassProb5"]->NetPort["concat","ClassProb5"],
