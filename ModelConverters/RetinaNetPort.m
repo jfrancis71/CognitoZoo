@@ -105,7 +105,43 @@ ConvNet = NetGraph[{
 }];
 
 
-net3 = (* input fpn_inner_res3_3_sum *)
+MultiBoxDecoder[ layerName_String ] := NetGraph[{
+   "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n0_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n1_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n2_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n3_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_pred_fpn"<>layerName<>"_b"]  ],
+   "retnet_cls_pred_prob"->LogisticSigmoid,
+   "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn"<>layerName<>"_b"]  ],Ramp},
+   "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_pred_fpn"<>layerName<>"_b"]]},{
+   "retnet_cls_conv_n0_fpn"->"retnet_cls_conv_n1_fpn"->"retnet_cls_conv_n2_fpn"->"retnet_cls_conv_n3_fpn"->
+   "retnet_cls_pred_fpn"->"retnet_cls_pred_prob"->NetPort["ClassProb"],
+   "retnet_bbox_conv_n0_fpn"->"retnet_bbox_conv_n1_fpn"->"retnet_bbox_conv_n2_fpn"->"retnet_bbox_conv_n3_fpn"->
+   "retnet_bbox_pred_fpn"->NetPort["Boxes"]}];
+
+
+MultiBoxDecoderNet = NetGraph[{
+   "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
+   "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
+   "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
+   "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
+   "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
+   "retnet_cls_pred_prob"->LogisticSigmoid,
+   "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
+   "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
+   "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
+   "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
+   "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]]},{
+   "retnet_cls_conv_n0_fpn"->"retnet_cls_conv_n1_fpn"->"retnet_cls_conv_n2_fpn"->"retnet_cls_conv_n3_fpn"->
+   "retnet_cls_pred_fpn"->"retnet_cls_pred_prob"->NetPort["ClassProb"],
+   "retnet_bbox_conv_n0_fpn"->"retnet_bbox_conv_n1_fpn"->"retnet_bbox_conv_n2_fpn"->"retnet_bbox_conv_n3_fpn"->
+   "retnet_bbox_pred_fpn"->NetPort["Boxes"]}];
+
+
+DecoderNet = (* input fpn_inner_res3_3_sum *)
    NetGraph[{
       "fpn_inner_res3_3_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res3_3_sum_lateral_w"], "Biases"->impW["fpn_inner_res3_3_sum_lateral_b"] ],
       "fpn_inner_res4_22_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res4_22_sum_lateral_w"], "Biases"->impW["fpn_inner_res4_22_sum_lateral_b"] ],
@@ -120,69 +156,11 @@ net3 = (* input fpn_inner_res3_3_sum *)
       "fpn_6"->ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->impW["fpn_6_w"], "Biases"->impW["fpn_6_b"]  ],
       "fpn_7"->{Ramp,ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->impW["fpn_7_w"], "Biases"->impW["fpn_7_b"]  ]},
       
-      "retnet_cls_conv_n0_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n1_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n2_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n3_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_cls_pred_fpn3"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
-      "retnet_cls_pred_prob3"->LogisticSigmoid,
-      "retnet_bbox_conv_n0_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n1_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n2_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n3_fpn3"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_bbox_pred_fpn3"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]  ],
-            
-      "retnet_cls_conv_n0_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n1_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n2_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n3_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_cls_pred_fpn4"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
-      "retnet_cls_pred_prob4"->LogisticSigmoid,
-      "retnet_bbox_conv_n0_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n1_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n2_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n3_fpn4"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_bbox_pred_fpn4"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]  ],
-      
-      
-      "retnet_cls_conv_n0_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n1_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n2_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n3_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_cls_pred_fpn5"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
-      "retnet_cls_pred_prob5"->LogisticSigmoid,
-      "retnet_bbox_conv_n0_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n1_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n2_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n3_fpn5"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_bbox_pred_fpn5"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]  ],
-
-            
-      "retnet_cls_conv_n0_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n1_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n2_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n3_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_cls_pred_fpn6"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
-      "retnet_cls_pred_prob6"->LogisticSigmoid,
-      "retnet_bbox_conv_n0_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n1_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n2_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n3_fpn6"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_bbox_pred_fpn6"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]  ],
-      
-      
-      "retnet_cls_conv_n0_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n1_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n2_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n3_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_cls_pred_fpn7"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
-      "retnet_cls_pred_prob7"->LogisticSigmoid,
-      "retnet_bbox_conv_n0_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n1_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n2_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n3_fpn7"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_bbox_pred_fpn7"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]  ]
-      
+      "multibox3"->MultiBoxDecoderNet,
+      "multibox4"->MultiBoxDecoderNet,
+      "multibox5"->MultiBoxDecoderNet,
+      "multibox6"->MultiBoxDecoderNet,
+      "multibox7"->MultiBoxDecoderNet
       },{
       
       NetPort["res5_2_sum"]->"fpn_inner_res5_2_sum"->"fpn_inner_res4_22_sum_topdown",
@@ -190,27 +168,21 @@ net3 = (* input fpn_inner_res3_3_sum *)
       NetPort["res4_22_sum"]->"fpn_inner_res4_22_sum_lateral",
       {"fpn_inner_res4_22_sum_topdown","fpn_inner_res4_22_sum_lateral"}->"fpn_inner_res4_22_sum"->"fpn_inner_res3_3_sum_topdown",
 
-      {"fpn_inner_res3_3_sum_topdown","fpn_inner_res3_3_sum_lateral"}->"fpn_inner_res3_3_sum"->"fpn_res3_3_sum"->
-      "retnet_cls_conv_n0_fpn3"->"retnet_cls_conv_n1_fpn3"->"retnet_cls_conv_n2_fpn3"->"retnet_cls_conv_n3_fpn3"->
-      "retnet_cls_pred_fpn3"->"retnet_cls_pred_prob3"->NetPort["ClassProb3"],
-      "fpn_res3_3_sum"->"retnet_bbox_conv_n0_fpn3"->"retnet_bbox_conv_n1_fpn3"->"retnet_bbox_conv_n2_fpn3"->"retnet_bbox_conv_n3_fpn3"->
-      "retnet_bbox_pred_fpn3"->NetPort["Boxes3"],
-      "fpn_inner_res4_22_sum"->"fpn_res4_22_sum"->"retnet_cls_conv_n0_fpn4"->"retnet_cls_conv_n1_fpn4"->"retnet_cls_conv_n2_fpn4"->"retnet_cls_conv_n3_fpn4"->
-      "retnet_cls_pred_fpn4"->"retnet_cls_pred_prob4"->NetPort["ClassProb4"],
-      "fpn_res4_22_sum"->"retnet_bbox_conv_n0_fpn4"->"retnet_bbox_conv_n1_fpn4"->"retnet_bbox_conv_n2_fpn4"->"retnet_bbox_conv_n3_fpn4"->
-      "retnet_bbox_pred_fpn4"->NetPort["Boxes4"],
-      "fpn_inner_res5_2_sum"->"fpn_res5_2_sum"->"retnet_cls_conv_n0_fpn5"->"retnet_cls_conv_n1_fpn5"->"retnet_cls_conv_n2_fpn5"->"retnet_cls_conv_n3_fpn5"->
-      "retnet_cls_pred_fpn5"->"retnet_cls_pred_prob5"->NetPort["ClassProb5"],
-      "fpn_res5_2_sum"->"retnet_bbox_conv_n0_fpn5"->"retnet_bbox_conv_n1_fpn5"->"retnet_bbox_conv_n2_fpn5"->"retnet_bbox_conv_n3_fpn5"->
-      "retnet_bbox_pred_fpn5"->NetPort["Boxes5"],
-      NetPort["res5_2_sum"]->"fpn_6"->"retnet_cls_conv_n0_fpn6"->"retnet_cls_conv_n1_fpn6"->"retnet_cls_conv_n2_fpn6"->"retnet_cls_conv_n3_fpn6"->
-      "retnet_cls_pred_fpn6"->"retnet_cls_pred_prob6"->NetPort["ClassProb6"],
-      "fpn_6"->"retnet_bbox_conv_n0_fpn6"->"retnet_bbox_conv_n1_fpn6"->"retnet_bbox_conv_n2_fpn6"->"retnet_bbox_conv_n3_fpn6"->
-      "retnet_bbox_pred_fpn6"->NetPort["Boxes6"],
-      "fpn_6"->"fpn_7"->"retnet_cls_conv_n0_fpn7"->"retnet_cls_conv_n1_fpn7"->"retnet_cls_conv_n2_fpn7"->"retnet_cls_conv_n3_fpn7"->
-      "retnet_cls_pred_fpn7"->"retnet_cls_pred_prob7"->NetPort["ClassProb7"],
-      "fpn_7"->"retnet_bbox_conv_n0_fpn7"->"retnet_bbox_conv_n1_fpn7"->"retnet_bbox_conv_n2_fpn7"->"retnet_bbox_conv_n3_fpn7"->
-      "retnet_bbox_pred_fpn7"->NetPort["Boxes7"]
+      {"fpn_inner_res3_3_sum_topdown","fpn_inner_res3_3_sum_lateral"}->"fpn_inner_res3_3_sum"->"fpn_res3_3_sum"->"multibox3",
+      "fpn_inner_res4_22_sum"->"fpn_res4_22_sum"->"multibox4",
+      "fpn_inner_res5_2_sum"->"fpn_res5_2_sum"->"multibox5",
+      NetPort["res5_2_sum"]->"fpn_6"->"multibox6",
+      "fpn_6"->"fpn_7"->"multibox7",
+      NetPort["multibox3","ClassProb"]->NetPort["ClassProb3"],
+      NetPort["multibox3","Boxes"]->NetPort["Boxes3"],
+      NetPort["multibox4","ClassProb"]->NetPort["ClassProb4"],
+      NetPort["multibox4","Boxes"]->NetPort["Boxes4"],
+      NetPort["multibox5","ClassProb"]->NetPort["ClassProb5"],
+      NetPort["multibox5","Boxes"]->NetPort["Boxes5"],
+      NetPort["multibox6","ClassProb"]->NetPort["ClassProb6"],
+      NetPort["multibox6","Boxes"]->NetPort["Boxes6"],
+      NetPort["multibox7","ClassProb"]->NetPort["ClassProb7"],
+      NetPort["multibox7","Boxes"]->NetPort["Boxes7"]
 }];
 
 
@@ -271,22 +243,22 @@ LocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
 (* Warning need to check BGR vs RGB reversing and any pixel remapping *)
 RetinaNet = NetGraph[ {
    "ConvNet"->ConvNet,
-   "n3"->net3,
+   "DecoderNet"->DecoderNet,
    "concat"->ConcatNet,"boxes"->LocsToBoxesNet},
 {
-   NetPort["ConvNet","res3_3_sum"]->NetPort["n3","res3_3_sum"],
-   NetPort["ConvNet","res4_22_sum"]->NetPort["n3","res4_22_sum"],
- NetPort["ConvNet","res5_2_sum"]->NetPort["n3","res5_2_sum"],
- NetPort["n3","ClassProb3"]->NetPort["concat","ClassProb3"],
- NetPort["n3","ClassProb4"]->NetPort["concat","ClassProb4"],
- NetPort["n3","ClassProb5"]->NetPort["concat","ClassProb5"],
- NetPort["n3","ClassProb6"]->NetPort["concat","ClassProb6"],
- NetPort["n3","ClassProb7"]->NetPort["concat","ClassProb7"],
-  NetPort["n3","Boxes3"]->NetPort["concat","Boxes3"],
-  NetPort["n3","Boxes4"]->NetPort["concat","Boxes4"],
-  NetPort["n3","Boxes5"]->NetPort["concat","Boxes5"],
-  NetPort["n3","Boxes6"]->NetPort["concat","Boxes6"],
-  NetPort["n3","Boxes7"]->NetPort["concat","Boxes7"],
+   NetPort["ConvNet","res3_3_sum"]->NetPort["DecoderNet","res3_3_sum"],
+   NetPort["ConvNet","res4_22_sum"]->NetPort["DecoderNet","res4_22_sum"],
+ NetPort["ConvNet","res5_2_sum"]->NetPort["DecoderNet","res5_2_sum"],
+ NetPort["DecoderNet","ClassProb3"]->NetPort["concat","ClassProb3"],
+ NetPort["DecoderNet","ClassProb4"]->NetPort["concat","ClassProb4"],
+ NetPort["DecoderNet","ClassProb5"]->NetPort["concat","ClassProb5"],
+ NetPort["DecoderNet","ClassProb6"]->NetPort["concat","ClassProb6"],
+ NetPort["DecoderNet","ClassProb7"]->NetPort["concat","ClassProb7"],
+  NetPort["DecoderNet","Boxes3"]->NetPort["concat","Boxes3"],
+  NetPort["DecoderNet","Boxes4"]->NetPort["concat","Boxes4"],
+  NetPort["DecoderNet","Boxes5"]->NetPort["concat","Boxes5"],
+  NetPort["DecoderNet","Boxes6"]->NetPort["concat","Boxes6"],
+  NetPort["DecoderNet","Boxes7"]->NetPort["concat","Boxes7"],
   NetPort["concat","Locs"]->"boxes"
  },
  "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB","MeanImage"->{102.9801, 115.9465, 122.7717}/256.}]];
