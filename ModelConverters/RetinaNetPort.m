@@ -25,7 +25,7 @@ BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, pad
    BNConvolutionLayer[ outputChannels, kernelSize, stride, paddingSize, res, rootName<>"_w", rootName<>"_bn_s", rootName<>"_bn_b" ];
 
 
-RetinaNetMiniBlock[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[ {
+RetinaNetBranch2[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[ {
    rootName<>"a"->{BNConvolutionLayer[ outputChannels/4, {1,1}, stride, 0, dims, rootName<>"a" ], Ramp},
    rootName<>"b"->{BNConvolutionLayer[ outputChannels/4, {3,3}, 1, 1, dims, rootName<>"b" ], Ramp},
    rootName<>"c_bn"->BNConvolutionLayer[ outputChannels, {1,1}, 1, 0, dims, rootName<>"c" ]
@@ -33,16 +33,9 @@ RetinaNetMiniBlock[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[ {
    rootName<>"a"->rootName<>"b"->rootName<>"c_bn"}]
 
 
-RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[{
-   "branch2"->RetinaNetMiniBlock[ rootName<>"_branch2", outputChannels, stride, dims ],
-   "sum"->TotalLayer[],
-   "relu"->Ramp},
-   {{NetPort["Input"],"branch2"}->"sum"->"relu"}]
-
-
-RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, branch1_ ] := NetGraph[{
-   "branch1"->branch1,
-   "branch2"->RetinaNetMiniBlock[ rootName<>"_branch2", outputChannels, stride, dims ],
+RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, batchNormBranch1_Symbol: False ] := NetGraph[{
+   "branch1"->If [batchNormBranch1, BNConvolutionLayer[ outputChannels, {1,1}, stride, 0, dims, rootName<>"_branch1" ], ElementwiseLayer[#*1.0&] ],
+   "branch2"->RetinaNetBranch2[ rootName<>"_branch2", outputChannels, stride, dims ],
    "sum"->TotalLayer[],
    "relu"->Ramp},
    {{"branch1","branch2"}->"sum"->"relu"}]
@@ -52,16 +45,16 @@ ConvNet = NetGraph[{
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],
    
-   "res2_0"->RetinaNetBlock[ "res2_0", 256, 1, {224,288}, BNConvolutionLayer[ 256, {1,1}, 1, 0, {224, 288}, "res2_0_branch1" ] ],
+   "res2_0"->RetinaNetBlock[ "res2_0", 256, 1, {224,288}, True ],
    "res2_1"->RetinaNetBlock[ "res2_1", 256, 1, {224,288} ],
    "res2_2"->RetinaNetBlock[ "res2_2", 256, 1, {224,288} ],
 
-   "res3_0"->RetinaNetBlock[ "res3_0", 512, 2, {112,144}, BNConvolutionLayer[ 512, {1,1}, 2, 0, {112, 144}, "res3_0_branch1" ] ],
+   "res3_0"->RetinaNetBlock[ "res3_0", 512, 2, {112,144}, True ],
    "res3_1"->RetinaNetBlock[ "res3_1", 512, 1, {112,144} ],
    "res3_2"->RetinaNetBlock[ "res3_2", 512, 1, {112,144} ],
    "res3_3"->RetinaNetBlock[ "res3_3", 512, 1, {112,144} ],
 
-   "res4_0"->RetinaNetBlock[ "res4_0", 1024, 2, {56,72}, BNConvolutionLayer[ 1024, {1,1}, 2, 0, {56,72}, "res4_0_branch1" ] ],
+   "res4_0"->RetinaNetBlock[ "res4_0", 1024, 2, {56,72}, True ],
    "res4_1"->RetinaNetBlock[ "res4_1", 1024, 1, {56,72} ],
    "res4_2"->RetinaNetBlock[ "res4_2", 1024, 1, {56,72} ],
    "res4_3"->RetinaNetBlock[ "res4_3", 1024, 1, {56,72} ],
@@ -84,9 +77,10 @@ ConvNet = NetGraph[{
    "res4_20"->RetinaNetBlock[ "res4_20", 1024, 1, {56,72} ],
    "res4_21"->RetinaNetBlock[ "res4_21", 1024, 1, {56,72} ],
    "res4_22"->RetinaNetBlock[ "res4_22", 1024, 1, {56,72} ],
-   "res5_0"->RetinaNetBlock[ "res5_0", 2048, 2, {28,36}, BNConvolutionLayer[ 2048, {1,1}, 2, 0, {28,36}, "res5_0_branch1" ] ],
+   
+   "res5_0"->RetinaNetBlock[ "res5_0", 2048, 2, {28,36}, True ],
    "res5_1"->RetinaNetBlock[ "res5_1", 2048, 1, {28,36} ],
-   "res5_2"->RetinaNetBlock[ "res5_2", 2048, 1, {28,36} ]   
+   "res5_2"->RetinaNetBlock[ "res5_2", 2048, 1, {28,36} ]
 },
 {
    "conv1"->"pool1"->
