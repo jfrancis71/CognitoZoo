@@ -34,11 +34,11 @@ RetinaNetBranch2[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[ {
 
 
 RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, batchNormBranch1_Symbol: False ] := NetGraph[{
-   "branch1"->If [batchNormBranch1, BNConvolutionLayer[ outputChannels, {1,1}, stride, 0, dims, rootName<>"_branch1" ], ElementwiseLayer[#*1.0&] ],
+   If [batchNormBranch1, "branch1"->BNConvolutionLayer[ outputChannels, {1,1}, stride, 0, dims, rootName<>"_branch1" ], Nothing ],
    "branch2"->RetinaNetBranch2[ rootName<>"_branch2", outputChannels, stride, dims ],
    "sum"->TotalLayer[],
    "relu"->Ramp},
-   {{"branch1","branch2"}->"sum"->"relu"}]
+   {{If[batchNormBranch1,"branch1",NetPort["Input"]],"branch2"}->"sum"->"relu"}]
 
 
 ConvNet = NetGraph[{
