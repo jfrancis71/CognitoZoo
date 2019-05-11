@@ -62,24 +62,6 @@ ConvNet = NetGraph[{
 }];
 
 
-MultiBoxDecoder[ layerName_String ] := NetGraph[{
-   "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n0_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n1_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n2_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_conv_n3_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_cls_pred_fpn"<>layerName<>"_b"]  ],
-   "retnet_cls_pred_prob"->LogisticSigmoid,
-   "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn"<>layerName<>"_b"]  ],Ramp},
-   "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn"<>layerName<>"_w"], "Biases"->impW["retnet_bbox_pred_fpn"<>layerName<>"_b"]]},{
-   "retnet_cls_conv_n0_fpn"->"retnet_cls_conv_n1_fpn"->"retnet_cls_conv_n2_fpn"->"retnet_cls_conv_n3_fpn"->
-   "retnet_cls_pred_fpn"->"retnet_cls_pred_prob"->NetPort["ClassProb"],
-   "retnet_bbox_conv_n0_fpn"->"retnet_bbox_conv_n1_fpn"->"retnet_bbox_conv_n2_fpn"->"retnet_bbox_conv_n3_fpn"->
-   "retnet_bbox_pred_fpn"->NetPort["Boxes"]}];
-
-
 MultiBoxDecoderNet = NetGraph[{
    "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
    "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
