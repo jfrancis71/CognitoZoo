@@ -63,21 +63,21 @@ ConvNet = NetGraph[{
 
 
 MultiBoxDecoderNet = NetGraph[{
-   "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-   "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-   "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-   "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-   "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
-   "retnet_cls_pred_prob"->LogisticSigmoid,
-   "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-   "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-   "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-   "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-   "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]]},{
-   "retnet_cls_conv_n0_fpn"->"retnet_cls_conv_n1_fpn"->"retnet_cls_conv_n2_fpn"->"retnet_cls_conv_n3_fpn"->
-   "retnet_cls_pred_fpn"->"retnet_cls_pred_prob"->NetPort["ClassProb"],
-   "retnet_bbox_conv_n0_fpn"->"retnet_bbox_conv_n1_fpn"->"retnet_bbox_conv_n2_fpn"->"retnet_bbox_conv_n3_fpn"->
-   "retnet_bbox_pred_fpn"->NetPort["Boxes"]}];
+   "ClassDecoder"->{
+      "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
+      "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
+      "retnet_cls_pred_prob"->LogisticSigmoid},
+   "BoxesDecoder"->{
+      "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
+      "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]]}},{
+   "ClassDecoder"->NetPort["ClassProb"],
+   "BoxesDecoder"->NetPort["Boxes"]}];
 
 
 DecoderNet = (* input fpn_inner_res3_3_sum *)
