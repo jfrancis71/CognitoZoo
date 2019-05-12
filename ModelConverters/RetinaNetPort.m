@@ -25,12 +25,11 @@ BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, pad
    BNConvolutionLayer[ outputChannels, kernelSize, stride, paddingSize, res, rootName<>"_w", rootName<>"_bn_s", rootName<>"_bn_b" ];
 
 
-RetinaNetBranch2[ rootName_, outputChannels_, stride_, dims_ ] := NetGraph[ {
+RetinaNetBranch2[ rootName_, outputChannels_, stride_, dims_ ] := NetChain[ {
    rootName<>"a"->{BNConvolutionLayer[ outputChannels/4, {1,1}, stride, 0, dims, rootName<>"a" ], Ramp},
    rootName<>"b"->{BNConvolutionLayer[ outputChannels/4, {3,3}, 1, 1, dims, rootName<>"b" ], Ramp},
    rootName<>"c_bn"->BNConvolutionLayer[ outputChannels, {1,1}, 1, 0, dims, rootName<>"c" ]
-},{
-   rootName<>"a"->rootName<>"b"->rootName<>"c_bn"}]
+}];
 
 
 RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, batchNormBranch1_Symbol: False ] := NetGraph[{
@@ -80,7 +79,7 @@ MultiBoxDecoderNet = NetGraph[{
    "BoxesDecoder"->NetPort["Boxes"]}];
 
 
-DecoderNet = (* input fpn_inner_res3_3_sum *)
+DecoderNet =
    NetGraph[{
       "fpn_inner_res3_3_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res3_3_sum_lateral_w"], "Biases"->impW["fpn_inner_res3_3_sum_lateral_b"] ],
       "fpn_inner_res4_22_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res4_22_sum_lateral_w"], "Biases"->impW["fpn_inner_res4_22_sum_lateral_b"] ],
@@ -101,17 +100,19 @@ DecoderNet = (* input fpn_inner_res3_3_sum *)
       "multibox6"->MultiBoxDecoderNet,
       "multibox7"->MultiBoxDecoderNet
       },{
-      
-      NetPort["res5_2_sum"]->"fpn_inner_res5_2_sum"->"fpn_inner_res4_22_sum_topdown",
-      NetPort["res3_3_sum"]->"fpn_inner_res3_3_sum_lateral",
+      NetPort["res5_2_sum"]->{"fpn_inner_res5_2_sum","fpn_6"},
       NetPort["res4_22_sum"]->"fpn_inner_res4_22_sum_lateral",
-      {"fpn_inner_res4_22_sum_topdown","fpn_inner_res4_22_sum_lateral"}->"fpn_inner_res4_22_sum"->"fpn_inner_res3_3_sum_topdown",
-
+      NetPort["res3_3_sum"]->"fpn_inner_res3_3_sum_lateral",
+      
+      {"fpn_inner_res4_22_sum_topdown","fpn_inner_res4_22_sum_lateral"}->"fpn_inner_res4_22_sum",
       {"fpn_inner_res3_3_sum_topdown","fpn_inner_res3_3_sum_lateral"}->"fpn_inner_res3_3_sum"->"fpn_res3_3_sum"->"multibox3",
-      "fpn_inner_res4_22_sum"->"fpn_res4_22_sum"->"multibox4",
-      "fpn_inner_res5_2_sum"->"fpn_res5_2_sum"->"multibox5",
-      NetPort["res5_2_sum"]->"fpn_6"->"multibox6",
+      "fpn_inner_res5_2_sum"->"fpn_inner_res4_22_sum_topdown",
       "fpn_6"->"fpn_7"->"multibox7",
+      "fpn_6"->"multibox6",
+      "fpn_inner_res5_2_sum"->"fpn_res5_2_sum"->"multibox5",
+      "fpn_inner_res4_22_sum"->"fpn_inner_res3_3_sum_topdown",
+      "fpn_inner_res4_22_sum"->"fpn_res4_22_sum"->"multibox4",
+
       NetPort["multibox3","ClassProb"]->NetPort["ClassProb3"],
       NetPort["multibox3","Boxes"]->NetPort["Boxes3"],
       NetPort["multibox4","ClassProb"]->NetPort["ClassProb4"],
