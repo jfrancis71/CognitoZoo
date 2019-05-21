@@ -3,26 +3,16 @@
 (* Warning not complete, in progress, being checked in to track changes *)
 
 
-hdfFile = "~/Google Drive/RetinaNetNew.hdf5";
+hdfFile = "~/Google Drive/RetinaNetNew1.hdf5";
 
 
-impW[ hdfName_String ] := If[hdfName=="conv1_w",
-   256.*Reverse/@Import[ hdfFile, {"Datasets", hdfName} ],
-   Import[ hdfFile, {"Datasets", hdfName} ]
-   ];
-
-
-impM[ hdfName_String ] := Import[ hdfFile, {"Datasets", hdfName} ];
-
-
-BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer, res_List, weightName_String, scalingName_String, biasesName_String ] :=
-   NetChain[{ConvolutionLayer[ outputChannels, kernelSize, "Weights"->impW[weightName], "Biases"->ConstantArray[0,outputChannels], "Stride"->stride, "PaddingSize"->paddingSize ],
-   BatchNormalizationLayer[ "Epsilon"->.001, "MovingMean"->ConstantArray[0, outputChannels ], "MovingVariance"->ConstantArray[ 1.-10^-3, outputChannels ], "Scaling"->impM[ scalingName ], "Biases"->impM[biasesName ] ]
-}];
+imp[ hdfName_String ] := Import[ hdfFile, {"Datasets", hdfName} ];
 
 
 BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer, res_List, rootName_String ] :=
-   BNConvolutionLayer[ outputChannels, kernelSize, stride, paddingSize, res, rootName<>"_w", rootName<>"_bn_s", rootName<>"_bn_b" ];
+   NetChain[{ConvolutionLayer[ outputChannels, kernelSize, "Weights"->imp[rootName<>"_w"], "Biases"->ConstantArray[0,outputChannels], "Stride"->stride, "PaddingSize"->paddingSize ],
+   BatchNormalizationLayer[ "Epsilon"->.001, "MovingMean"->ConstantArray[0, outputChannels ], "MovingVariance"->ConstantArray[ 1.-10^-3, outputChannels ], "Scaling"->imp[ rootName<>"_bn_s" ], "Biases"->imp[ rootName<>"_bn_b" ] ]
+}];
 
 
 RetinaNetBranch2[ rootName_, outputChannels_, stride_, dims_ ] := NetChain[ {
@@ -47,7 +37,7 @@ ResidualNetBlock[ rootName_, repeats_, channels_, initStride_, dims_ ] := NetCha
 
 
 ConvNet = NetGraph[{
-   "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1_w", "res_conv1_bn_s","res_conv1_bn_b" ],Ramp},
+   "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1" ], Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],   
    "res2"->ResidualNetBlock[ "res2", 2, 256, 1, {224,288} ],
    "res3"->ResidualNetBlock[ "res3", 3, 512, 2, {112,144} ],
@@ -63,36 +53,36 @@ ConvNet = NetGraph[{
 
 MultiBoxDecoderNet = NetGraph[{
    "ClassDecoder"->{
-      "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n0_fpn3_w"], "Biases"->impW["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n1_fpn3_w"], "Biases"->impW["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n2_fpn3_w"], "Biases"->impW["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_conv_n3_fpn3_w"], "Biases"->impW["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_cls_pred_fpn3_w"], "Biases"->impW["retnet_cls_pred_fpn3_b"]  ],
+      "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n0_fpn3_w"], "Biases"->imp["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n1_fpn3_w"], "Biases"->imp["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n2_fpn3_w"], "Biases"->imp["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n3_fpn3_w"], "Biases"->imp["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
+      "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_pred_fpn3_w"], "Biases"->imp["retnet_cls_pred_fpn3_b"]  ],
       "retnet_cls_pred_prob"->LogisticSigmoid},
    "BoxesDecoder"->{
-      "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n0_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n1_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n2_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_conv_n3_fpn3_w"], "Biases"->impW["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->impW["retnet_bbox_pred_fpn3_w"], "Biases"->impW["retnet_bbox_pred_fpn3_b"]]}},{
+      "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n0_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n1_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n2_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n3_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
+      "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_pred_fpn3_w"], "Biases"->imp["retnet_bbox_pred_fpn3_b"]]}},{
    "ClassDecoder"->NetPort["ClassProb"],
    "BoxesDecoder"->NetPort["Boxes"]}];
 
 
 DecoderNet =
    NetGraph[{
-      "fpn_inner_res3_3_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res3_3_sum_lateral_w"], "Biases"->impW["fpn_inner_res3_3_sum_lateral_b"] ],
-      "fpn_inner_res4_22_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res4_22_sum_lateral_w"], "Biases"->impW["fpn_inner_res4_22_sum_lateral_b"] ],
-      "fpn_inner_res5_2_sum"->ConvolutionLayer[ 256, {1,1}, "Weights"->impW["fpn_inner_res5_2_sum_w"], "Biases"->impW["fpn_inner_res5_2_sum_b"] ],
+      "fpn_inner_res3_3_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->imp["fpn_inner_res3_3_sum_lateral_w"], "Biases"->imp["fpn_inner_res3_3_sum_lateral_b"] ],
+      "fpn_inner_res4_22_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->imp["fpn_inner_res4_22_sum_lateral_w"], "Biases"->imp["fpn_inner_res4_22_sum_lateral_b"] ],
+      "fpn_inner_res5_2_sum"->ConvolutionLayer[ 256, {1,1}, "Weights"->imp["fpn_inner_res5_2_sum_w"], "Biases"->imp["fpn_inner_res5_2_sum_b"] ],
       "fpn_inner_res4_22_sum"->TotalLayer[],
       "fpn_inner_res4_22_sum_topdown"->ResizeLayer[{Scaled[2],Scaled[2]},"Resampling"->"Nearest"],
       "fpn_inner_res3_3_sum_topdown"->ResizeLayer[{Scaled[2],Scaled[2]},"Resampling"->"Nearest"],
       "fpn_inner_res3_3_sum"->TotalLayer[],
-      "fpn_res3_3_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_res3_3_sum_w"], "Biases"->impW["fpn_res3_3_sum_b"]  ],
-      "fpn_res4_22_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_res4_22_sum_w"], "Biases"->impW["fpn_res4_22_sum_b"]  ],
-      "fpn_res5_2_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->impW["fpn_res5_2_sum_w"], "Biases"->impW["fpn_res5_2_sum_b"]  ],
-      "fpn_6"->ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->impW["fpn_6_w"], "Biases"->impW["fpn_6_b"]  ],
-      "fpn_7"->{Ramp,ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->impW["fpn_7_w"], "Biases"->impW["fpn_7_b"]  ]},
+      "fpn_res3_3_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["fpn_res3_3_sum_w"], "Biases"->imp["fpn_res3_3_sum_b"]  ],
+      "fpn_res4_22_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["fpn_res4_22_sum_w"], "Biases"->imp["fpn_res4_22_sum_b"]  ],
+      "fpn_res5_2_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["fpn_res5_2_sum_w"], "Biases"->imp["fpn_res5_2_sum_b"]  ],
+      "fpn_6"->ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->imp["fpn_6_w"], "Biases"->imp["fpn_6_b"]  ],
+      "fpn_7"->{Ramp,ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->imp["fpn_7_w"], "Biases"->imp["fpn_7_b"]  ]},
       
       "multibox3"->MultiBoxDecoderNet,
       "multibox4"->MultiBoxDecoderNet,
@@ -127,17 +117,17 @@ DecoderNet =
 
 
 ConcatNet = NetGraph[{
-   "class1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{112,144,9,80}],FlattenLayer[2]},
-   "class2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{56,72,9,80}],FlattenLayer[2]},
-   "class3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,80}],FlattenLayer[2]},
-   "class4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{14,18,9,80}],FlattenLayer[2]},
-   "class5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{7,9,9,80}],FlattenLayer[2]},
+   "class1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
+   "class2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
+   "class3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
+   "class4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
+   "class5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
    "catenate1"->CatenateLayer[],
-   "locs1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{112,144,9,4}],FlattenLayer[2]},
-   "locs2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{56,72,9,4}],FlattenLayer[2]},
-   "locs3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{28,36,9,4}],FlattenLayer[2]},
-   "locs4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{14,18,9,4}],FlattenLayer[2]},
-   "locs5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{7,9,9,4}],FlattenLayer[2]},
+   "locs1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
+   "locs2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
+   "locs3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
+   "locs4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
+   "locs5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
    "catenate2"->CatenateLayer[]
    },{
    NetPort["ClassProb3"]->"class1",
@@ -166,7 +156,7 @@ scalesw = Flatten[Table[1+anch[[l,a,3]]-anch[[l,a,1]],{l,1,5},{y,1,levels[[l,1]]
 scalesh = Flatten[Table[1+anch[[l,a,4]]-anch[[l,a,2]],{l,1,5},{y,1,levels[[l,1]]},{x,1,levels[[l,2]]},{a,1,9}]];
 
 
-LocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
+BoxTransformationNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
    "cx"->{PartLayer[{All,1}],ConstantTimesLayer["Scaling"->scalesw],ConstantPlusLayer["Biases"->biasesx]},
    "cy"->{PartLayer[{All,2}],ConstantTimesLayer["Scaling"->scalesh],ConstantPlusLayer["Biases"->biasesy]},
    "width"->{PartLayer[{All,3}],ElementwiseLayer[Exp],ConstantTimesLayer["Scaling"->scalesw]},
@@ -184,7 +174,7 @@ LocsToBoxesNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
 RetinaNet = NetGraph[ {
    "ConvNet"->ConvNet,
    "DecoderNet"->DecoderNet,
-   "concat"->ConcatNet,"boxes"->LocsToBoxesNet},
+   "concat"->ConcatNet,"BoxTransformation"->BoxTransformationNet},
 {
    NetPort["ConvNet","res3_3_sum"]->NetPort["DecoderNet","res3_3_sum"],
    NetPort["ConvNet","res4_22_sum"]->NetPort["DecoderNet","res4_22_sum"],
@@ -199,6 +189,6 @@ RetinaNet = NetGraph[ {
   NetPort["DecoderNet","Boxes5"]->NetPort["concat","Boxes5"],
   NetPort["DecoderNet","Boxes6"]->NetPort["concat","Boxes6"],
   NetPort["DecoderNet","Boxes7"]->NetPort["concat","Boxes7"],
-  NetPort["concat","Locs"]->"boxes"
+  NetPort["concat","Locs"]->"BoxTransformation"
  },
  "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB","MeanImage"->{102.9801, 115.9465, 122.7717}/256.}]];
