@@ -36,7 +36,7 @@ ResidualNetBlock[ rootName_, repeats_, channels_, initStride_, dims_ ] := NetCha
 ]]
 
 
-ConvNet = NetGraph[{
+ResBackboneNet = NetGraph[{
    "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1" ], Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],   
    "res2"->ResidualNetBlock[ "res2", 2, 256, 1, {224,288} ],
@@ -51,26 +51,7 @@ ConvNet = NetGraph[{
 }];
 
 
-MultiBoxDecoderNet = NetGraph[{
-   "ClassDecoder"->{
-      "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n0_fpn3_w"], "Biases"->imp["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n1_fpn3_w"], "Biases"->imp["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n2_fpn3_w"], "Biases"->imp["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n3_fpn3_w"], "Biases"->imp["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_pred_fpn3_w"], "Biases"->imp["retnet_cls_pred_fpn3_b"]  ],
-      "retnet_cls_pred_prob"->LogisticSigmoid},
-   "BoxesDecoder"->{
-      "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n0_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n1_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n2_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
-      "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n3_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
-      "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_pred_fpn3_w"], "Biases"->imp["retnet_bbox_pred_fpn3_b"]]}},{
-   "ClassDecoder"->NetPort["ClassProb"],
-   "BoxesDecoder"->NetPort["Boxes"]}];
-
-
-DecoderNet =
-   NetGraph[{
+FPNNet = NetGraph[{
       "fpn_inner_res3_3_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->imp["fpn_inner_res3_3_sum_lateral_w"], "Biases"->imp["fpn_inner_res3_3_sum_lateral_b"] ],
       "fpn_inner_res4_22_sum_lateral"->ConvolutionLayer[ 256, {1,1}, "Weights"->imp["fpn_inner_res4_22_sum_lateral_w"], "Biases"->imp["fpn_inner_res4_22_sum_lateral_b"] ],
       "fpn_inner_res5_2_sum"->ConvolutionLayer[ 256, {1,1}, "Weights"->imp["fpn_inner_res5_2_sum_w"], "Biases"->imp["fpn_inner_res5_2_sum_b"] ],
@@ -82,66 +63,60 @@ DecoderNet =
       "fpn_res4_22_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["fpn_res4_22_sum_w"], "Biases"->imp["fpn_res4_22_sum_b"]  ],
       "fpn_res5_2_sum"->ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["fpn_res5_2_sum_w"], "Biases"->imp["fpn_res5_2_sum_b"]  ],
       "fpn_6"->ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->imp["fpn_6_w"], "Biases"->imp["fpn_6_b"]  ],
-      "fpn_7"->{Ramp,ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->imp["fpn_7_w"], "Biases"->imp["fpn_7_b"]  ]},
+      "fpn_7"->{Ramp,ConvolutionLayer[ 256, {3,3}, "Stride"->2, "PaddingSize"->1, "Weights"->imp["fpn_7_w"], "Biases"->imp["fpn_7_b"]  ]}},{
       
-      "multibox3"->MultiBoxDecoderNet,
-      "multibox4"->MultiBoxDecoderNet,
-      "multibox5"->MultiBoxDecoderNet,
-      "multibox6"->MultiBoxDecoderNet,
-      "multibox7"->MultiBoxDecoderNet
-      },{
       NetPort["res5_2_sum"]->{"fpn_inner_res5_2_sum","fpn_6"},
       NetPort["res4_22_sum"]->"fpn_inner_res4_22_sum_lateral",
       NetPort["res3_3_sum"]->"fpn_inner_res3_3_sum_lateral",
       
       {"fpn_inner_res4_22_sum_topdown","fpn_inner_res4_22_sum_lateral"}->"fpn_inner_res4_22_sum",
-      {"fpn_inner_res3_3_sum_topdown","fpn_inner_res3_3_sum_lateral"}->"fpn_inner_res3_3_sum"->"fpn_res3_3_sum"->"multibox3",
+      {"fpn_inner_res3_3_sum_topdown","fpn_inner_res3_3_sum_lateral"}->"fpn_inner_res3_3_sum"->"fpn_res3_3_sum"->NetPort["multibox3"],
       "fpn_inner_res5_2_sum"->"fpn_inner_res4_22_sum_topdown",
-      "fpn_6"->"fpn_7"->"multibox7",
-      "fpn_6"->"multibox6",
-      "fpn_inner_res5_2_sum"->"fpn_res5_2_sum"->"multibox5",
+      "fpn_6"->"fpn_7"->NetPort["multibox7"],
+      "fpn_6"->NetPort["multibox6"],
+      "fpn_inner_res5_2_sum"->"fpn_res5_2_sum"->NetPort["multibox5"],
       "fpn_inner_res4_22_sum"->"fpn_inner_res3_3_sum_topdown",
-      "fpn_inner_res4_22_sum"->"fpn_res4_22_sum"->"multibox4",
-
-      NetPort["multibox3","ClassProb"]->NetPort["ClassProb3"],
-      NetPort["multibox3","Boxes"]->NetPort["Boxes3"],
-      NetPort["multibox4","ClassProb"]->NetPort["ClassProb4"],
-      NetPort["multibox4","Boxes"]->NetPort["Boxes4"],
-      NetPort["multibox5","ClassProb"]->NetPort["ClassProb5"],
-      NetPort["multibox5","Boxes"]->NetPort["Boxes5"],
-      NetPort["multibox6","ClassProb"]->NetPort["ClassProb6"],
-      NetPort["multibox6","Boxes"]->NetPort["Boxes6"],
-      NetPort["multibox7","ClassProb"]->NetPort["ClassProb7"],
-      NetPort["multibox7","Boxes"]->NetPort["Boxes7"]
-}];
+      "fpn_inner_res4_22_sum"->"fpn_res4_22_sum"->NetPort["multibox4"]}];
 
 
-ConcatNet = NetGraph[{
-   "class1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
-   "class2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
-   "class3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
-   "class4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
-   "class5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]},
-   "catenate1"->CatenateLayer[],
-   "locs1"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
-   "locs2"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
-   "locs3"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
-   "locs4"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
-   "locs5"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]},
-   "catenate2"->CatenateLayer[]
-   },{
-   NetPort["ClassProb3"]->"class1",
-   NetPort["ClassProb4"]->"class2",
-   NetPort["ClassProb5"]->"class3",
-   NetPort["ClassProb6"]->"class4",
-   NetPort["ClassProb7"]->"class5",
-   NetPort["Boxes3"]->"locs1",
-   NetPort["Boxes4"]->"locs2",
-   NetPort["Boxes5"]->"locs3",
-   NetPort["Boxes6"]->"locs4",
-   NetPort["Boxes7"]->"locs5",
-   {"class1","class2","class3","class4","class5"}->"catenate1"->NetPort["ClassProb"],
-   {"locs1","locs2","locs3","locs4","locs5"}->"catenate2"->NetPort["Locs"]
+MultiBoxDecoderNet = NetGraph[{
+   "ClassDecoder"->{
+      "retnet_cls_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n0_fpn3_w"], "Biases"->imp["retnet_cls_conv_n0_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n1_fpn3_w"], "Biases"->imp["retnet_cls_conv_n1_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n2_fpn3_w"], "Biases"->imp["retnet_cls_conv_n2_fpn3_b"]  ],Ramp},
+      "retnet_cls_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_conv_n3_fpn3_w"], "Biases"->imp["retnet_cls_conv_n3_fpn3_b"]  ],Ramp},
+      "retnet_cls_pred_fpn"->ConvolutionLayer[ 720, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_cls_pred_fpn3_w"], "Biases"->imp["retnet_cls_pred_fpn3_b"]  ],
+      "retnet_cls_pred_prob"->LogisticSigmoid,
+      "flatten"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,80}],FlattenLayer[2]}},
+   "BoxesDecoder"->{
+      "retnet_bbox_conv_n0_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n0_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n0_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n1_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n1_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n1_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n2_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n2_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n2_fpn3_b"]  ],Ramp},
+      "retnet_bbox_conv_n3_fpn"->{ConvolutionLayer[ 256, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_conv_n3_fpn3_w"], "Biases"->imp["retnet_bbox_conv_n3_fpn3_b"]  ],Ramp},
+      "retnet_bbox_pred_fpn"->ConvolutionLayer[ 36, {3,3}, "PaddingSize"->1, "Weights"->imp["retnet_bbox_pred_fpn3_w"], "Biases"->imp["retnet_bbox_pred_fpn3_b"]],
+      "flatten"->{TransposeLayer[{1->2,2->3}],ReshapeLayer[{Inherited,Inherited,9,4}],FlattenLayer[2]}}
+      },{
+   "ClassDecoder"->NetPort["ClassProb"],
+   "BoxesDecoder"->NetPort["Boxes"]}];
+
+
+DecoderNet =
+   NetGraph[{
+      "multibox3"->MultiBoxDecoderNet,
+      "multibox4"->MultiBoxDecoderNet,
+      "multibox5"->MultiBoxDecoderNet,
+      "multibox6"->MultiBoxDecoderNet,
+      "multibox7"->MultiBoxDecoderNet,
+      "catenate1"->CatenateLayer[],
+      "catenate2"->CatenateLayer[]
+},{
+      NetPort["multibox3"]->"multibox3",
+      NetPort["multibox4"]->"multibox4",
+      NetPort["multibox5"]->"multibox5",
+      NetPort["multibox6"]->"multibox6",
+      NetPort["multibox7"]->"multibox7",
+      {NetPort["multibox3","ClassProb"],NetPort["multibox4","ClassProb"],NetPort["multibox5","ClassProb"],NetPort["multibox6","ClassProb"],NetPort["multibox7","ClassProb"]}->"catenate1"->NetPort["ClassProb"],
+   {NetPort["multibox3","Boxes"],NetPort["multibox4","Boxes"],NetPort["multibox5","Boxes"],NetPort["multibox6","Boxes"],NetPort["multibox7","Boxes"]}->"catenate2"->NetPort["Locs"]
 }];
 
 
@@ -170,25 +145,21 @@ BoxTransformationNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
    {"minx","miny","maxx","maxy"}->"cat"->"reshape"->"transpose"->"reshapePoint"->NetPort["Boxes"]}];
 
 
-(* Warning need to check BGR vs RGB reversing and any pixel remapping *)
 RetinaNet = NetGraph[ {
-   "ConvNet"->ConvNet,
+   "ResBackboneNet"->ResBackboneNet,
+   "FPNNet"->FPNNet,
    "DecoderNet"->DecoderNet,
-   "concat"->ConcatNet,"BoxTransformation"->BoxTransformationNet},
+   "BoxTransformation"->BoxTransformationNet},
 {
-   NetPort["ConvNet","res3_3_sum"]->NetPort["DecoderNet","res3_3_sum"],
-   NetPort["ConvNet","res4_22_sum"]->NetPort["DecoderNet","res4_22_sum"],
- NetPort["ConvNet","res5_2_sum"]->NetPort["DecoderNet","res5_2_sum"],
- NetPort["DecoderNet","ClassProb3"]->NetPort["concat","ClassProb3"],
- NetPort["DecoderNet","ClassProb4"]->NetPort["concat","ClassProb4"],
- NetPort["DecoderNet","ClassProb5"]->NetPort["concat","ClassProb5"],
- NetPort["DecoderNet","ClassProb6"]->NetPort["concat","ClassProb6"],
- NetPort["DecoderNet","ClassProb7"]->NetPort["concat","ClassProb7"],
-  NetPort["DecoderNet","Boxes3"]->NetPort["concat","Boxes3"],
-  NetPort["DecoderNet","Boxes4"]->NetPort["concat","Boxes4"],
-  NetPort["DecoderNet","Boxes5"]->NetPort["concat","Boxes5"],
-  NetPort["DecoderNet","Boxes6"]->NetPort["concat","Boxes6"],
-  NetPort["DecoderNet","Boxes7"]->NetPort["concat","Boxes7"],
-  NetPort["concat","Locs"]->"BoxTransformation"
- },
+   NetPort["ResBackboneNet","res3_3_sum"]->NetPort["FPNNet","res3_3_sum"],
+   NetPort["ResBackboneNet","res4_22_sum"]->NetPort["FPNNet","res4_22_sum"],
+   NetPort["ResBackboneNet","res5_2_sum"]->NetPort["FPNNet","res5_2_sum"],
+   NetPort["FPNNet","multibox3"]->NetPort["DecoderNet","multibox3"],
+   NetPort["FPNNet","multibox4"]->NetPort["DecoderNet","multibox4"],
+   NetPort["FPNNet","multibox5"]->NetPort["DecoderNet","multibox5"],
+   NetPort["FPNNet","multibox6"]->NetPort["DecoderNet","multibox6"],
+   NetPort["FPNNet","multibox7"]->NetPort["DecoderNet","multibox7"],
+   NetPort["DecoderNet","Locs"]->"BoxTransformation"
+
+   },
  "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB","MeanImage"->{102.9801, 115.9465, 122.7717}/256.}]];
