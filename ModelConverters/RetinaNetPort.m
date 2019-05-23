@@ -162,4 +162,4 @@ RetinaNet = NetGraph[ {
    NetPort["DecoderNet","Locs"]->"BoxTransformation"
 
    },
- "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB","MeanImage"->{102.9801, 115.9465, 122.7717}/256.}]];
+ "Input"->NetEncoder[{"Image",{1152,896},"ColorSpace"->"RGB","MeanImage"->Reverse@{102.9801, 115.9465, 122.7717}/256.}]];
