@@ -9,40 +9,40 @@ hdfFile = "~/Google Drive/RetinaNetNew1.hdf5";
 imp[ hdfName_String ] := Import[ hdfFile, {"Datasets", hdfName} ];
 
 
-BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer, res_List, rootName_String ] :=
+BNConvolutionLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer, rootName_String ] :=
    NetChain[{ConvolutionLayer[ outputChannels, kernelSize, "Weights"->imp[rootName<>"_w"], "Biases"->ConstantArray[0,outputChannels], "Stride"->stride, "PaddingSize"->paddingSize ],
    BatchNormalizationLayer[ "Epsilon"->.001, "MovingMean"->ConstantArray[0, outputChannels ], "MovingVariance"->ConstantArray[ 1.-10^-3, outputChannels ], "Scaling"->imp[ rootName<>"_bn_s" ], "Biases"->imp[ rootName<>"_bn_b" ] ]
 }];
 
 
-RetinaNetBranch2[ rootName_, outputChannels_, stride_, dims_ ] := NetChain[ {
-   rootName<>"a"->{BNConvolutionLayer[ outputChannels/4, {1,1}, stride, 0, dims, rootName<>"a" ], Ramp},
-   rootName<>"b"->{BNConvolutionLayer[ outputChannels/4, {3,3}, 1, 1, dims, rootName<>"b" ], Ramp},
-   rootName<>"c_bn"->BNConvolutionLayer[ outputChannels, {1,1}, 1, 0, dims, rootName<>"c" ]
+RetinaNetBranch2[ rootName_, outputChannels_, stride_ ] := NetChain[ {
+   rootName<>"a"->{BNConvolutionLayer[ outputChannels/4, {1,1}, stride, 0, rootName<>"a" ], Ramp},
+   rootName<>"b"->{BNConvolutionLayer[ outputChannels/4, {3,3}, 1, 1, rootName<>"b" ], Ramp},
+   rootName<>"c_bn"->BNConvolutionLayer[ outputChannels, {1,1}, 1, 0, rootName<>"c" ]
 }];
 
 
-RetinaNetBlock[ rootName_, outputChannels_, stride_, dims_, batchNormBranch1_Symbol: False ] := NetGraph[{
-   If [batchNormBranch1, "branch1"->BNConvolutionLayer[ outputChannels, {1,1}, stride, 0, dims, rootName<>"_branch1" ], Nothing ],
-   "branch2"->RetinaNetBranch2[ rootName<>"_branch2", outputChannels, stride, dims ],
+RetinaNetBlock[ rootName_, outputChannels_, stride_, batchNormBranch1_Symbol: False ] := NetGraph[{
+   If [batchNormBranch1, "branch1"->BNConvolutionLayer[ outputChannels, {1,1}, stride, 0, rootName<>"_branch1" ], Nothing ],
+   "branch2"->RetinaNetBranch2[ rootName<>"_branch2", outputChannels, stride ],
    "sum"->TotalLayer[],
    "relu"->Ramp},
    {{If[batchNormBranch1,"branch1",NetPort["Input"]],"branch2"}->"sum"->"relu"}]
 
 
-ResidualNetBlock[ rootName_, repeats_, channels_, initStride_, dims_ ] := NetChain[Prepend[
-   rootName<>"_0"->RetinaNetBlock[ rootName<>"_0", channels, initStride, dims, True ]][
-   Table[ rootName<>"_"<>ToString[k]->RetinaNetBlock[ rootName<>"_"<>ToString[k], channels, 1, dims ], {k, repeats} ]
+ResidualNetBlock[ rootName_, repeats_, channels_, initStride_ ] := NetChain[Prepend[
+   rootName<>"_0"->RetinaNetBlock[ rootName<>"_0", channels, initStride, True ]][
+   Table[ rootName<>"_"<>ToString[k]->RetinaNetBlock[ rootName<>"_"<>ToString[k], channels, 1 ], {k, repeats} ]
 ]]
 
 
 ResBackboneNet = NetGraph[{
-   "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, {448, 576}, "conv1" ], Ramp},
+   "conv1"->{BNConvolutionLayer[ 64, {7,7}, 2, 3, "conv1" ], Ramp},
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],   
-   "res2"->ResidualNetBlock[ "res2", 2, 256, 1, {224,288} ],
-   "res3"->ResidualNetBlock[ "res3", 3, 512, 2, {112,144} ],
-   "res4"->ResidualNetBlock[ "res4", 22, 1024, 2, {56,72} ],
-   "res5"->ResidualNetBlock[ "res5", 2, 2048, 2, {28,36} ]
+   "res2"->ResidualNetBlock[ "res2", 2, 256, 1 ],
+   "res3"->ResidualNetBlock[ "res3", 3, 512, 2 ],
+   "res4"->ResidualNetBlock[ "res4", 22, 1024, 2 ],
+   "res5"->ResidualNetBlock[ "res5", 2, 2048, 2 ]
 },{
    "conv1"->"pool1"->"res2"->"res3"->"res4"->"res5",
    "res3"->NetPort["res3_3_sum"],
