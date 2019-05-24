@@ -1,5 +1,20 @@
 (* ::Package:: *)
 
+(*
+
+Facebook Detectron model: R-101-FPN LRN 2
+https: https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md
+
+@misc{Detectron2018,
+  author =       {Ross Girshick and Ilija Radosavovic and Georgia Gkioxari and
+                  Piotr Doll\'{a}r and Kaiming He},
+  title =        {Detectron},
+  howpublished = {\url{https://github.com/facebookresearch/detectron}},
+  year =         {2018}
+}
+*)
+
+
 BNConvLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer ] :=
    NetChain[{ConvolutionLayer[ outputChannels, kernelSize, "Stride"->stride, "PaddingSize"->paddingSize ],
    BatchNormalizationLayer[]

@@ -1,5 +1,20 @@
 (* ::Package:: *)
 
+(*
+
+Facebook Detectron model: R-101-FPN LRN 2
+https: https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md
+
+@misc{Detectron2018,
+  author =       {Ross Girshick and Ilija Radosavovic and Georgia Gkioxari and
+                  Piotr Doll\'{a}r and Kaiming He},
+  title =        {Detectron},
+  howpublished = {\url{https://github.com/facebookresearch/detectron}},
+  year =         {2018}
+}
+*)
+
+
 Options[ CZDetectObjects ] = Join[{
    TargetDevice->"CPU",
    Threshold->.6,
@@ -22,6 +37,12 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := (
 <<CZUtils.m
 
 
+(*
+   Net weights have been converted from:
+   Facebook Detectron model: R-101-FPN LRN 2
+   https: https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md
+   License: Apache License 2.0
+*)
 RetinaNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/RetinaNetR101FPNLR2.wlnet"],"WLNet"];
 
 
