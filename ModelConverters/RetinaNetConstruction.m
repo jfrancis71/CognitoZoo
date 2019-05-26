@@ -135,9 +135,9 @@ BoxTransformationNet = NetGraph[ { (*input is in format {Y*X*A}*4*)
    "miny"->ThreadingLayer[896+1-(#1+#2/2)&],
    "maxx"->ThreadingLayer[#1+#2/2&],
    "maxy"->ThreadingLayer[896+1-(#1-#2/2)&],
-   "Boxes"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 193347} ], "transpose"->TransposeLayer[], "reshapePoint"->ReshapeLayer[ {193347, 2, 2 } ] }, {
+   "boxes"->CatenateLayer[],"reshape"->ReshapeLayer[ {4, 193347} ], "transpose"->TransposeLayer[], "reshapePoint"->ReshapeLayer[ {193347, 2, 2 } ] }, {
    {"cx","width"}->"minx",{"cx","width"}->"maxx",{"cy","height"}->"miny",{"cy","height"}->"maxy",
-   {"minx","miny","maxx","maxy"}->"Boxes"->"reshape"->"transpose"->"reshapePoint"->NetPort["Boxes"]}];
+   {"minx","miny","maxx","maxy"}->"boxes"->"reshape"->"transpose"->"reshapePoint"->NetPort["Boxes"]}];
 
 
 RetinaNet = NetGraph[ {
