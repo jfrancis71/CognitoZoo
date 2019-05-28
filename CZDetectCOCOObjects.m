@@ -89,7 +89,36 @@ CZCOCOClasses = {"person","bicycle","car","motorcycle","airplane","bus","train",
 SSDVGG512COCONet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG512COCOReference.wlnet"],"WLNet"];
 
 
+(*
+
+Weights in below file are converted from:
+Facebook Detectron model: R-101-FPN LRN 2
+https: https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md
+
+@misc{Detectron2018,
+  author =       {Ross Girshick and Ilija Radosavovic and Georgia Gkioxari and
+                  Piotr Doll\'{a}r and Kaiming He},
+  title =        {Detectron},
+  howpublished = {\url{https://github.com/facebookresearch/detectron}},
+  year =         {2018}
+*)
 RetinaNetR101FPNLR2Net = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/RetinaNetR101FPNLR2.wlnet"],"WLNet"];
 
 
+(*
+Weights in below file converted from:
+   Credit:
+   
+   Tensorflow Detection Model Zoo was the reference model for this Mathematica implementation:
+      https://https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md (Downloaded 06/11/2018)
+   and uses weights from ssd_mobilenet_v2_coco_2018_03_29 (Downloaded 06/11/2018)
+
+   SSD MobileNet 300 is based on the following paper:
+   https://https://arxiv.org/pdf/1801.04381.pdf
+   Title: MobileNetV2: Inverted Residuals and Linear Bottlenecks
+   Authors: Mark Sandler Andrew Howard Menglong Zhu Andrey Zhmoginov Liang-Chieh Chen
+   Year: 2018
+*)
+
+*)
 SSDMobileNetv2 = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDMobileNetv2.wlnet"],"WLNet"];
