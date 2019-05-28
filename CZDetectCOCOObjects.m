@@ -12,7 +12,9 @@ Options[ CZDetectObjects ] = Join[
 }];
 CZDetectObjects[ image_,  opts:OptionsPattern[] ] := Switch[ OptionValue[ Method ],
    "SSDVGG512COCO", CZDetectObjectsSSDVGG512COCO[ image, FilterRules[ {opts}, Options[  CZDetectObjectsSSDVGG512COCO ] ] ],
-   "RetinaNet", CZDetectObjectsRetinaNet[ image, FilterRules[ {opts}, Options[ CZDetectObjectsRetinaNet ] ] ] ];
+   "RetinaNet", CZDetectObjectsRetinaNet[ image, FilterRules[ {opts}, Options[ CZDetectObjectsRetinaNet ] ] ],
+   "MobileNet", CZDetectObjectsMobileNet[ image, FilterRules[ {opts}, Options[ CZDetectObjectsMobileNet ] ] ]
+];
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
@@ -35,6 +37,14 @@ Options[ CZDetectObjectsRetinaNet ] = Join[
    NMSIntersectionOverUnionThreshold->.45
 }];
 CZDetectObjectsRetinaNet[ image_, opts:OptionsPattern[]  ] := CZDetectObjectsGeneric[ image, RetinaNetR101FPNLR2Net, {1152,896}, "Fit", opts ];
+
+
+Options[ CZDetectObjectsMobileNet ] = Join[
+   Options[ CZDetectObjectsDefaults ],{
+   Threshold->0.6,
+   NMSIntersectionOverUnionThreshold->.45
+}];
+CZDetectObjectsMobileNet[ image_, opts:OptionsPattern[]  ] := CZDetectObjectsGeneric[ image, SSDMobileNetv2, {300,300}, "Stretch", opts ];
 
 
 <<CognitoZoo/CZUtils.m
@@ -80,3 +90,6 @@ SSDVGG512COCONet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/o
 
 
 RetinaNetR101FPNLR2Net = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/RetinaNetR101FPNLR2.wlnet"],"WLNet"];
+
+
+SSDMobileNetv2 = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDMobileNetv2.wlnet"],"WLNet"];
