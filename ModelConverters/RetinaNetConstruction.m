@@ -28,17 +28,17 @@ ResBranch2[ outputChannels_, stride_ ] := NetChain[ {
 }];
 
 
-ResBlock[ outputChannels_, stride_, batchNormBranch1_Symbol: False ] := NetGraph[{
-   If [batchNormBranch1, "branch1"->BNConvLayer[ outputChannels, {1,1}, stride, 0 ], Nothing ],
+ResBottleneck[ outputChannels_, stride_, identityShortCut_Symbol: True ] := NetGraph[{
+   If [identityShortCut, Nothing, "branch1"->BNConvLayer[ outputChannels, {1,1}, stride, 0 ] ],
    "branch2"->ResBranch2[ outputChannels, stride ],
    "sum"->TotalLayer[],
    "relu"->Ramp},
-   {{If[batchNormBranch1,"branch1",NetPort["Input"]],"branch2"}->"sum"->"relu"}]
+   {{If[identityShortCut,NetPort["Input"],"branch1"],"branch2"}->"sum"->"relu"}]
 
 
 ResChain[ repeats_, channels_, initStride_] := NetChain[Prepend[
-   ToString[0]->ResBlock[ channels, initStride, True ]][
-   Table[ ToString[k]->ResBlock[ channels, 1 ], {k, repeats} ]
+   ToString[0]->ResBottleneck[ channels, initStride, False ]][
+   Table[ ToString[k]->ResBottleneck[ channels, 1 ], {k, repeats} ]
 ]]
 
 
