@@ -1,61 +1,36 @@
 (* ::Package:: *)
 
-Options[ CZDetectObjectsDefaults ] = {
+Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
+   Threshold->.6, (* Note some default thresholds can vary in reference tests, but a good default choice *)
+   NMSIntersectionOverUnionThreshold->.45,
    NMSMethod->CZNonMaxSuppression
 };
-Options[ CZDetectObjects ] = Join[
-   Options[ CZDetectObjectsDefaults ],{
-   Threshold->Automatic,
-   NMSIntersectionOverUnionThreshold->Automatic,
-   Method->"SSDVGG512COCO"
-}];
-CZDetectObjects[ image_,  opts:OptionsPattern[] ] := Switch[ OptionValue[ Method ],
-   "SSDVGG512COCO", CZDetectObjectsSSDVGG512COCO[ image, FilterRules[ {opts}, Options[  CZDetectObjectsSSDVGG512COCO ] ] ],
-   "RetinaNet", CZDetectObjectsRetinaNet[ image, FilterRules[ {opts}, Options[ CZDetectObjectsRetinaNet ] ] ],
-   "MobileNet", CZDetectObjectsMobileNet[ image, FilterRules[ {opts}, Options[ CZDetectObjectsMobileNet ] ] ]
+CZDetectObjects[ image_,  opts:OptionsPattern[ { CZDetectObjects, Method->"SSDVGG512COCO" } ] ] := Switch[ OptionValue[ Method ],
+   "SSDVGG512COCO", CZDetectObjectsSSDVGG512COCO[ image, FilterRules[ {opts}, Options[  CZDetectObjects ] ] ],
+   "RetinaNet", CZDetectObjectsRetinaNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
+   "MobileNet", CZDetectObjectsMobileNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ]
 ];
 
 
-Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
-CZHighlightObjects[ img_Image, opts:OptionsPattern[] ] := HighlightImage[
+CZHighlightObjects[ img_Image, opts:OptionsPattern[ CZDetectObjects ] ] := HighlightImage[
    img,
    CZDisplayObject /@ CZDetectObjects[ img, opts ]];
 
 
-Options[ CZDetectObjectsSSDVGG512COCO ] = Join[
-   Options[ CZDetectObjectsDefaults ],{
-   Threshold->0.6,
-   NMSIntersectionOverUnionThreshold->.45
-}];
-CZDetectObjectsSSDVGG512COCO[ image_, opts:OptionsPattern[]  ] := CZDetectObjectsGeneric[ image, SSDVGG512COCONet, {512,512}, "Stretch", opts ];
+CZDetectObjectsSSDVGG512COCO[ image_, opts:OptionsPattern[ CZDetectObjects]  ] := CZDetectObjectsGeneric[ image, SSDVGG512COCONet, {512,512}, "Stretch", opts ];
 
 
-Options[ CZDetectObjectsRetinaNet ] = Join[
-   Options[ CZDetectObjectsDefaults ],{
-   Threshold->0.6,
-   NMSIntersectionOverUnionThreshold->.45
-}];
-CZDetectObjectsRetinaNet[ image_, opts:OptionsPattern[]  ] := CZDetectObjectsGeneric[ image, RetinaNetR101FPNLR2Net, {1152,896}, "Fit", opts ];
+CZDetectObjectsRetinaNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, RetinaNetR101FPNLR2Net, {1152,896}, "Fit", opts ];
 
 
-Options[ CZDetectObjectsMobileNet ] = Join[
-   Options[ CZDetectObjectsDefaults ],{
-   Threshold->0.6,
-   NMSIntersectionOverUnionThreshold->.45
-}];
-CZDetectObjectsMobileNet[ image_, opts:OptionsPattern[]  ] := CZDetectObjectsGeneric[ image, SSDMobileNetv2, {300,300}, "Stretch", opts ];
+CZDetectObjectsMobileNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, SSDMobileNetv2, {300,300}, "Stretch", opts ];
 
 
 <<CognitoZoo/CZUtils.m
 
 
-Options[ CZDetectObjectsGeneric ] = Join[
-   Options[ CZDetectObjectsDefaults ],{
-   Threshold->0.6,
-   NMSIntersectionOverUnionThreshold->.45
-}];
-CZDetectObjectsGeneric[ img_Image, net_, netDims_, fitting_, opts:OptionsPattern[] ] :=
+CZDetectObjectsGeneric[ img_Image, net_, netDims_, fitting_, opts:OptionsPattern[ CZDetectObjects ] ] :=
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
    CZObjectsDeconformer[ img, netDims, fitting ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
    (net[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
@@ -118,7 +93,5 @@ Weights in below file converted from:
    Title: MobileNetV2: Inverted Residuals and Linear Bottlenecks
    Authors: Mark Sandler Andrew Howard Menglong Zhu Andrey Zhmoginov Liang-Chieh Chen
    Year: 2018
-*)
-
 *)
 SSDMobileNetv2 = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDMobileNetv2.wlnet"],"WLNet"];
