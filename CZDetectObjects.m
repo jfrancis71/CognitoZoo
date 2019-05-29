@@ -1,15 +1,20 @@
 (* ::Package:: *)
 
+CZDetectionNets = { "MobileNet", "SSDVGG512COCO", "RetinaNet", "SSDVGG300Pascal", "SSDVGG512Pascal" };
+
+
 Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
    Threshold->.6, (* Note some default thresholds can vary in reference tests, but a good default choice *)
    NMSIntersectionOverUnionThreshold->.45,
    NMSMethod->CZNonMaxSuppression
 };
-CZDetectObjects[ image_,  opts:OptionsPattern[ { CZDetectObjects, Method->"SSDVGG512COCO" } ] ] := Switch[ OptionValue[ Method ],
+CZDetectObjects[ image_,  opts:OptionsPattern[ { CZDetectObjects, Method->"MobileNet" } ] ] := Switch[ OptionValue[ Method ],
    "SSDVGG512COCO", CZDetectObjectsSSDVGG512COCO[ image, FilterRules[ {opts}, Options[  CZDetectObjects ] ] ],
    "RetinaNet", CZDetectObjectsRetinaNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   "MobileNet", CZDetectObjectsMobileNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ]
+   "MobileNet", CZDetectObjectsMobileNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
+   "SSDVGG300Pascal", CZDetectObjectsSSDVGG300Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
+   "SSDVGG512Pascal", CZDetectObjectsSSDVGG512Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ]
 ];
 
 
@@ -18,30 +23,36 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[ CZDetectObjects ] ] := Highl
    CZDisplayObject /@ CZDetectObjects[ img, opts ]];
 
 
-CZDetectObjectsSSDVGG512COCO[ image_, opts:OptionsPattern[ CZDetectObjects]  ] := CZDetectObjectsGeneric[ image, SSDVGG512COCONet, {512,512}, "Stretch", opts ];
+CZDetectObjectsSSDVGG512COCO[ image_, opts:OptionsPattern[ CZDetectObjects]  ] := CZDetectObjectsGeneric[ image, SSDVGG512COCONet, {512,512}, "Stretch", CZCOCOClasses, opts ];
 
 
-CZDetectObjectsRetinaNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, RetinaNetR101FPNLR2Net, {1152,896}, "Fit", opts ];
+CZDetectObjectsRetinaNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, RetinaNetR101FPNLR2Net, {1152,896}, "Fit", CZCOCOClasses, opts ];
 
 
-CZDetectObjectsMobileNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, SSDMobileNetv2, {300,300}, "Stretch", opts ];
+CZDetectObjectsMobileNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, SSDMobileNetv2, {300,300}, "Stretch", CZCOCOClasses, opts ];
+
+
+CZDetectObjectsSSDVGG300Pascal[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, SSDVGG300PascalNet, {300,300}, "Stretch", CZPascalClasses, opts ];
+
+
+CZDetectObjectsSSDVGG512Pascal[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] := CZDetectObjectsGeneric[ image, SSDVGG512PascalNet, {512,512}, "Stretch", CZPascalClasses, opts ];
 
 
 <<CognitoZoo/CZUtils.m
 
 
-CZDetectObjectsGeneric[ img_Image, net_, netDims_, fitting_, opts:OptionsPattern[ CZDetectObjects ] ] :=
+CZDetectObjectsGeneric[ img_Image, net_, netDims_, fitting_, labels_, opts:OptionsPattern[ CZDetectObjects ] ] :=
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
-   CZObjectsDeconformer[ img, netDims, fitting ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   CZObjectsDeconformer[ img, netDims, fitting ]@CZOutputDecoder[ labels, OptionValue[ Threshold ] ]@
    (net[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
    CZImageConformer[ netDims, fitting]@img;
 
 
-CZOutputDecoder[ threshold_:.5 ][ netOutput_ ] := Module[{
+CZOutputDecoder[ labels_, threshold_:.5 ][ netOutput_ ] := Module[{
    detections = Position[netOutput["ClassProb"],x_/;x>threshold]},
    Transpose[{
       Rectangle@@@Extract[netOutput["Boxes"],detections[[All,1;;1]]],
-      Extract[CZCOCOClasses,detections[[All,2;;2]]],
+      Extract[labels,detections[[All,2;;2]]],
       Extract[netOutput["ClassProb"], detections ]
    }]
 ];
@@ -95,3 +106,17 @@ Weights in below file converted from:
    Year: 2018
 *)
 SSDMobileNetv2 = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDMobileNetv2.wlnet"],"WLNet"];
+
+
+(* The weights in the following wlnet file have been converted from: https://github.com/weiliu89/caffe/tree/ssd
+   See model reference: Pascal VOC 07+12 SSD300
+   Copyright and license details: https://github.com/weiliu89/caffe/blob/ssd/LICENSE
+*)
+SSDVGG300PascalNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG300PascalVOCReference20180920.wlnet"],"WLNet"];
+
+
+(* The weights in this file have been converted from: https://github.com/weiliu89/caffe/tree/ssd
+   See model reference: Pascal VOC 07++12+COCO SSD512
+   Copyright and license details: https://github.com/weiliu89/caffe/blob/ssd/LICENSE
+*)
+SSDVGG512PascalNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/SSDVGG512VOC07Plus12FT.wlnet"],"WLNet"];
