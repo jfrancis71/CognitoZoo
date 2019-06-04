@@ -5,8 +5,8 @@ CZDetectionNets = { "MobileNet", "SSDVGG512COCO", "RetinaNet", "SSDVGG300Pascal"
 
 Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
-   Threshold->.6, (* Note some default thresholds can vary in reference tests, but a good default choice *)
-   NMSIntersectionOverUnionThreshold->.45,
+   AcceptanceThreshold->.6, (* Note some default thresholds can vary in reference tests, but a good default choice *)
+   MaxOverlapFraction->.45,
    NMSMethod->CZNonMaxSuppression
 };
 CZDetectObjects[ image_,  opts:OptionsPattern[ { CZDetectObjects, Method->"MobileNet" } ] ] := Switch[ OptionValue[ Method ],
@@ -43,7 +43,7 @@ CZDetectObjectsSSDVGG512Pascal[ image_, opts:OptionsPattern[ CZDetectObjects ]  
 
 CZDetectObjectsGeneric[ img_Image, net_, netDims_, fitting_, labels_, opts:OptionsPattern[ CZDetectObjects ] ] :=
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
-   CZObjectsDeconformer[ img, netDims, fitting ]@CZOutputDecoder[ labels, OptionValue[ Threshold ] ]@
+   CZObjectsDeconformer[ img, netDims, fitting ]@CZOutputDecoder[ labels, OptionValue[ AcceptanceThreshold ] ]@
    (net[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
    CZImageConformer[ netDims, fitting]@img;
 

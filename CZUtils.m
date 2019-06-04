@@ -48,8 +48,8 @@ CZTakeWeightedRectangle[ objects_ ] :=
       Round[Total[objects[[All,-1]]*List@@@objects[[All,3]]]/Total[objects[[All,-1]]]],
       Nothing ]
 }
-CZNonMaxSuppressionMethod[ nonMaxSuppressionMethod_ ][ nmsIntersectionOverUnionThreshold_ ][ objects_ ] := 
-   nonMaxSuppressionMethod /@ Gather[ objects, (CZIntersectionOverUnion[#1[[1]],#2[[1]]]>nmsIntersectionOverUnionThreshold )& ];
+CZNonMaxSuppressionMethod[ nonMaxSuppressionMethod_ ][ maxOverlapFraction_ ][ objects_ ] := 
+   nonMaxSuppressionMethod /@ Gather[ objects, (CZIntersectionOverUnion[#1[[1]],#2[[1]]]> maxOverlapFraction )& ];
 CZNonMaxSuppression = CZNonMaxSuppressionMethod[ CZTakeMaxProbRectangle ];
 
 
@@ -60,13 +60,12 @@ CZNonMaxSuppression = CZNonMaxSuppressionMethod[ CZTakeMaxProbRectangle ];
 *)
 (* Does Non Max Suppression seperately by object class *)
 SyntaxInformation[ NMSMethod ]= {"ArgumentsPattern"->{_}};
-SyntaxInformation[ NMSIntersectionOverUnionThreshold ]= {"ArgumentsPattern"->{_}};
 Options[ CZNonMaxSuppressionPerClass ] = {
    NMSMethod->CZNonMaxSuppression,
-   NMSIntersectionOverUnionThreshold->.25 };
+   MaxOverlapFraction->.25 };
 CZNonMaxSuppressionPerClass[opts:OptionsPattern[] ][ objects_ ] :=
    Flatten[
-      Map[ Function[ objectsInClass, {#[[1]],objectsInClass[[1,2]],#[[2]]}&/@OptionValue[ NMSMethod ][ OptionValue[ NMSIntersectionOverUnionThreshold ]  ][ objectsInClass[[All,{1,3}]] ] ], GatherBy[ objects, #[[2]]& ] ], 1 ]
+      Map[ Function[ objectsInClass, {#[[1]],objectsInClass[[1,2]],#[[2]]}&/@OptionValue[ NMSMethod ][ OptionValue[ MaxOverlapFraction ]  ][ objectsInClass[[All,{1,3}]] ] ], GatherBy[ objects, #[[2]]& ] ], 1 ]
 
 
 CZDeconformRectangles[ {}, _, _, _ ] := {};

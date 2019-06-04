@@ -11,11 +11,11 @@
 
 Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
-   Threshold->.5,
-   NMSIntersectionOverUnionThreshold->.45
+   AcceptanceThreshold->.5,
+   MaxOverlapFraction->.45
 };
 CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
-   CZNonMaxSuppression[ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@CZObjectsDeconformer[ image, {544, 544}, "Fit" ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   CZNonMaxSuppression[ OptionValue[ MaxOverlapFraction ] ]@CZObjectsDeconformer[ image, {544, 544}, "Fit" ]@CZOutputDecoder[ OptionValue[ AcceptanceThreshold ] ]@
    (yolo9000Net[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[{544,544},"Fit", Padding->0.5]@image
 )
 

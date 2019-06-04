@@ -47,14 +47,14 @@ SyntaxInformation[ Detail ]= {"ArgumentsPattern"->{_}};
 SyntaxInformation[ GenderDetection ]= {"ArgumentsPattern"->{_}};
 Options[ CZDetectFaces ] = {
    TargetDevice->"CPU",
-   Threshold->.5,
+   AcceptanceThreshold->.5,
    Detail->"XGA",
    GenderDetection->False,
    NMSMethod->CZNonMaxSuppression,
-   NMSIntersectionOverUnionThreshold->.25 };
+   MaxOverlapFraction->.25 };
 CZDetectFaces[ image_Image, opts:OptionsPattern[] ] :=
    Function[detections,If[OptionValue[GenderDetection],Map[{#[[1]],CZGenderClassify[#[[2,1]]]}&,detections],detections[[All,1]]]]@
-   OptionValue[ NMSMethod ][ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@If[OptionValue[Detail]=="VGA",
+   OptionValue[ NMSMethod ][ OptionValue[ MaxOverlapFraction ] ]@If[OptionValue[Detail]=="VGA",
       CZObjectsDeconformer[ image, {640, 480}, "Fit" ]@(CZVGADetectFaces[#,FilterRules[{opts},Options[ CZVGADetectFaces ] ] ]&)@CZImageConformer[{640,480},"Fit"]@image,
       CZObjectsDeconformer[ image, {1280, 960}, "Fit" ]@(CZXGADetectFaces[#,FilterRules[{opts},Options[ CZXGADetectFaces ] ] ]&)@CZImageConformer[{1280,960},"Fit"]@image
    ]
@@ -75,10 +75,10 @@ CZHighlightFaces[ img_Image, opts:OptionsPattern[] ] := HighlightImage[
 
 Options[ CZVGADetectFaces ] = {
    TargetDevice->"CPU",
-   Threshold->.5
+   AcceptanceThreshold->.5
 };
 CZVGADetectFaces[ image_Image, opts:OptionsPattern[] ] :=
-   CZOutputDecoder[ OptionValue[ Threshold ], {640, 480} ]@(CZVisiNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@image;
+   CZOutputDecoder[ OptionValue[ AcceptanceThreshold ], {640, 480} ]@(CZVisiNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@image;
 
 
 CZMapAt[_,{},_]:={};
@@ -87,11 +87,11 @@ CZMapAt[f_,list_,spec_]:=MapAt[f,list,spec];
 
 Options[ CZXGADetectFaces ] = {
    TargetDevice->"CPU",
-   Threshold->.5
+   AcceptanceThreshold->.5
 };
 CZXGADetectFaces[ image_Image, opts:OptionsPattern[] ] := Join[
    CZObjectsDeconformer[ image, {640, 480}, "Fit" ]@CZVGADetectFaces[ CZImageConformer[{640,480},"Fit"]@image, opts ],
-CZOutputDecoder[ OptionValue[ Threshold ], {1280,960} ]@(CZXGAVisiNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@image
+CZOutputDecoder[ OptionValue[ AcceptanceThreshold ], {1280,960} ]@(CZXGAVisiNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@image
 ];
 
 

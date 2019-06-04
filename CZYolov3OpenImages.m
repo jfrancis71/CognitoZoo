@@ -39,11 +39,11 @@ CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
 ];
 
 
-CZNonMaxSuppression[ nmsThreshold_ ][ dets_ ] :=
+CZNonMaxSuppression[ maxOverlapFraction_ ][ dets_ ] :=
    DeleteCases[ Function[detection, {detection[[1]],
       Function[overlapBoxLabels,
          Select[detection[[2]],#[[2]]>Max@Extract[overlapBoxLabels[[All,All,2]],Position[overlapBoxLabels[[All,All,1]],#[[1]]]]&]]
-      [ Select[dets,(CZIntersectionOverUnion[detection[[1]],#[[1]]]>nmsThreshold&&!(detection[[1]]===#[[1]]))&][[All,2]] ] }]/@dets,
+      [ Select[dets,(CZIntersectionOverUnion[detection[[1]],#[[1]]]>maxOverlapFraction&&!(detection[[1]]===#[[1]]))&][[All,2]] ] }]/@dets,
       {_,{}}];
 
 
@@ -59,12 +59,12 @@ CZFilterClasses[ classes_ ][ detections_ ] :=
 SyntaxInformation[ DetectionClasses ]= {"ArgumentsPattern"->{_}};
 Options[ CZDetectObjects ] = {
    TargetDevice->"CPU",
-   Threshold->.5,
-   NMSIntersectionOverUnionThreshold->.45,
+   AcceptanceThreshold->.5,
+   MaxOverlapFraction->.45,
    DetectionClasses->All
 };
 CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
-   CZNonMaxSuppression[ OptionValue[ NMSIntersectionOverUnionThreshold ] ]@CZDetectionsDeconformer[ image, {608, 608}, "Fit" ]@CZFilterClasses[ OptionValue[ DetectionClasses ] ]@CZOutputDecoder[ OptionValue[ Threshold ] ]@
+   CZNonMaxSuppression[ OptionValue[ MaxOverlapFraction ] ]@CZDetectionsDeconformer[ image, {608, 608}, "Fit" ]@CZFilterClasses[ OptionValue[ DetectionClasses ] ]@CZOutputDecoder[ OptionValue[ AcceptanceThreshold ] ]@
    (yoloOpenImagesNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[ {608,608}, "Fit", Padding->0.5 ]@image
 )
 
