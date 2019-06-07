@@ -29,7 +29,7 @@ yoloOpenImagesNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/
 yoloOpenImagesClasses = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolov3OpenImagesClasses"],"List"];
 
 
-CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
+CZOutputDecoderYoloOpenImages[ threshold_:.5 ][ output_ ] := Module[{
    probs = output["Objectness"]*output["ClassProb"], detectionBoxes },
    detectionBoxes = Union@Flatten@SparseArray[UnitStep[probs-threshold]]["NonzeroPositions"][[All,1]];
    Map[ Function[{detectionBox}, {
@@ -39,7 +39,7 @@ CZOutputDecoder[ threshold_:.5 ][ output_ ] := Module[{
 ];
 
 
-CZNonMaxSuppression[ maxOverlapFraction_ ][ dets_ ] :=
+CZNonMaxSuppressionYoloOpenImages[ maxOverlapFraction_ ][ dets_ ] :=
    DeleteCases[ Function[detection, {detection[[1]],
       Function[overlapBoxLabels,
          Select[detection[[2]],#[[2]]>Max@Extract[overlapBoxLabels[[All,All,2]],Position[overlapBoxLabels[[All,All,1]],#[[1]]]]&]]
@@ -47,28 +47,28 @@ CZNonMaxSuppression[ maxOverlapFraction_ ][ dets_ ] :=
       {_,{}}];
 
 
-CZDetectionsDeconformer[ image_Image, netDims_List, fitting_String ][ objects_ ] :=
+CZDetectionsDeconformerYoloOpenImages[ image_Image, netDims_List, fitting_String ][ objects_ ] :=
    Transpose[ { CZDeconformRectangles[ objects[[All,1]], image, netDims, fitting ], objects[[All,2]] } ];
 
 
-CZFilterClasses[ All ][ detections_ ] := detections;
-CZFilterClasses[ classes_ ][ detections_ ] :=
+CZFilterClassesYoloOpenImages[ All ][ detections_ ] := detections;
+CZFilterClassesYoloOpenImages[ classes_ ][ detections_ ] :=
    DeleteCases[ {#[[1]], Select[#[[2]], Function[det, MemberQ[classes, det[[1]] ]] ]}&/@detections, { _, {} } ];
 
 
 SyntaxInformation[ DetectionClasses ]= {"ArgumentsPattern"->{_}};
-Options[ CZDetectObjects ] = {
+Options[ CZDetectYoloOpenImages ] = {
    TargetDevice->"CPU",
    AcceptanceThreshold->.5,
    MaxOverlapFraction->.45,
    DetectionClasses->All
 };
-CZDetectObjects[ image_Image , opts:OptionsPattern[] ] := (
-   CZNonMaxSuppression[ OptionValue[ MaxOverlapFraction ] ]@CZDetectionsDeconformer[ image, {608, 608}, "Fit" ]@CZFilterClasses[ OptionValue[ DetectionClasses ] ]@CZOutputDecoder[ OptionValue[ AcceptanceThreshold ] ]@
+CZDetectYoloOpenImages[ image_Image , opts:OptionsPattern[] ] := (
+   CZNonMaxSuppression[ OptionValue[ MaxOverlapFraction ] ]@CZDetectionsDeconformerYoloOpenImages[ image, {608, 608}, "Fit" ]@CZFilterClassesYoloOpenImages[ OptionValue[ DetectionClasses ] ]@CZOutputDecoderYoloOpenImages[ OptionValue[ AcceptanceThreshold ] ]@
    (yoloOpenImagesNet[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@CZImageConformer[ {608,608}, "Fit", Padding->0.5 ]@image
 )
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
-CZHighlightObjects[ image_Image, opts:OptionsPattern[]  ] :=
-   HighlightImage[ image, CZDisplayObject/@({#[[1]],ToString@#[[2,All,1]]}&/@CZDetectObjects[ image, opts ]) ];
+CZHighlightYoloOpenImages[ image_Image, opts:OptionsPattern[]  ] :=
+   HighlightImage[ image, CZDisplayObject/@({#[[1]],ToString@#[[2,All,1]]}&/@CZDetectYoloOpenImages[ image, opts ]) ];
