@@ -20,7 +20,7 @@ CZDetectObjects[ image_,  opts:OptionsPattern[ { CZDetectObjects, Method->"Mobil
 
 CZHighlightObjects[ img_Image, opts:OptionsPattern[ CZDetectObjects ] ] := HighlightImage[
    img,
-   CZDisplayObjects@CZDetectObjects[ img, opts ]];
+   CZDisplayObjects[ CZDetectObjects[ img, opts ], CZCmap ] ];
 
 
 CZDetectObjectsSSDVGG512COCO[ image_, opts:OptionsPattern[ CZDetectObjects]  ] := CZDetectObjectsGeneric[ image, SSDVGG512COCONet, {512,512}, "Stretch", CZCOCOClasses, opts ];
@@ -66,6 +66,10 @@ CZCOCOClasses = {"person","bicycle","car","motorcycle","airplane","bus","train",
 "cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard",
 "cell phone","microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear",
 "hair drier","toothbrush"};
+
+SeedRandom[1];
+Map[ (CZCmap[#] = RandomColor[])&, CZCOCOClasses ];
+Map[ (CZCmap[#] = RandomColor[])&, CZPascalClasses ];
 
 
 (* The weights in this file have been converted from: https://github.com/weiliu89/caffe/tree/ssd
