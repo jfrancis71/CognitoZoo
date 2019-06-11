@@ -20,7 +20,7 @@ CZDetectObjects[ image_,  opts:OptionsPattern[ { CZDetectObjects, Method->"Mobil
 
 CZHighlightObjects[ img_Image, opts:OptionsPattern[ CZDetectObjects ] ] := HighlightImage[
    img,
-   CZDisplayObject /@ CZDetectObjects[ img, opts ]];
+   CZDisplayObjects@CZDetectObjects[ img, opts ]];
 
 
 CZDetectObjectsSSDVGG512COCO[ image_, opts:OptionsPattern[ CZDetectObjects]  ] := CZDetectObjectsGeneric[ image, SSDVGG512COCONet, {512,512}, "Stretch", CZCOCOClasses, opts ];

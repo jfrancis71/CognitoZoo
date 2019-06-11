@@ -71,4 +71,4 @@ CZDetectYoloOpenImages[ image_Image , opts:OptionsPattern[] ] := (
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
 CZHighlightYoloOpenImages[ image_Image, opts:OptionsPattern[]  ] :=
-   HighlightImage[ image, CZDisplayObject/@({#[[1]],ToString@#[[2,All,1]]}&/@CZDetectYoloOpenImages[ image, opts ]) ];
+   HighlightImage[ image, CZDisplayObjects@({#[[1]],ToString@#[[2,All,1]]}&/@CZDetectYoloOpenImages[ image, opts ]) ];

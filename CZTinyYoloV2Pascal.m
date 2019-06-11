@@ -81,7 +81,7 @@ CZDetectObjects[ image_, opts:OptionsPattern[] ] :=
 
 
 Options[ CZHighlightObjects ] = Options[ CZDetectObjects ];
-CZHighlightObjects[ img_,  opts:OptionsPattern[] ] := HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img, opts]]
+CZHighlightObjects[ img_,  opts:OptionsPattern[] ] := HighlightImage[img, CZDisplayObjects@CZDetectObjects[img, opts]]
 
 
 (* Private Implementation Code *)
