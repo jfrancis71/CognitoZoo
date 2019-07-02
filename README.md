@@ -11,4 +11,6 @@ https://resources.wolframcloud.com/NeuralNetRepository/
 (See Object Detection)
 They were submitted by me and have been accepted into the official Wolfram neural net repository. You may find these models easier to use from this github repository as there are more helpful functions here to aid use.
 
+Please note, while all source code for CognitoZoo is subject to the MIT license attached to the CognitoZoo project, the neural net weights are the ownership of the respective creators. Please see the relevant source code file for each project for details.
+
 Please see the project Wiki (https://github.com/jfrancis71/CognitoZoo/wiki)
