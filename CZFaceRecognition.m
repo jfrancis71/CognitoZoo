@@ -11,6 +11,6 @@ CZClassifier[ desc_ ] := Module[{dists=EuclideanDistance[#,desc]&/@CZFaceRecogni
 
 CZHighlightFaces[ image_Image ] :=
    HighlightImage[
-      img,
+      image,
       {#["Gender"] /. "Male"->Blue /. "Female"->Pink,#["BoundingBox"],Inset[Style[CZClassifier[#["Descriptor"]],White,
-         FontSize->Scaled[1/50],Background->Black],First[#["BoundingBox"]],{Left,Bottom}]}&/@FindFaces[img,{"BoundingBox","Descriptor","Gender"}]];
+         FontSize->Scaled[1/50],Background->Black],First[#["BoundingBox"]],{Left,Bottom}]}&/@FindFaces[image,{"BoundingBox","Descriptor","Gender"}]];
