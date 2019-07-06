@@ -1,5 +1,11 @@
 (* ::Package:: *)
 
+(* Experimental in development, not ready for use *)
+(* Just here so it can be change management tracked *)
+
+<<CZUtils.m
+
+
 trunk = NetChain[{
    ConvolutionLayer[16,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
    ConvolutionLayer[32,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2],
@@ -14,45 +20,21 @@ n1 = NetGraph[{
    "l1"->trunk,
    "l2"->{ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]},
    "l3"->{ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]},
-   "l4"->{ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]},
-   "l5"->{ConvolutionLayer[256,{2,2}],Ramp},
-   "small1"->{ConvolutionLayer[2,{1,1}],SoftmaxLayer[1]},
-   "small2"->{ConvolutionLayer[5,{1,1}],SoftmaxLayer[1]},
-   "small3"->{ConvolutionLayer[17,{1,1}],SoftmaxLayer[1]},
-   "small4"->{ConvolutionLayer[65,{1,1}],SoftmaxLayer[1]},
-   "small5"->{ConvolutionLayer[257,{1,1}],SoftmaxLayer[1]},
-   "medium2"->{ConvolutionLayer[2,{1,1}],SoftmaxLayer[1]},
-   "big2"->{ConvolutionLayer[2,{1,1}],SoftmaxLayer[1]},
-   "medium3"->{ConvolutionLayer[5,{1,1}],SoftmaxLayer[1]},
-   "big3"->{ConvolutionLayer[5,{1,1}],SoftmaxLayer[1]},
-   "medium4"->{ConvolutionLayer[17,{1,1}],SoftmaxLayer[1]},
-   "big4"->{ConvolutionLayer[17,{1,1}],SoftmaxLayer[1]},
-   "medium5"->{ConvolutionLayer[65,{1,1}],SoftmaxLayer[1]},
-   "big5"->{ConvolutionLayer[65,{1,1}],SoftmaxLayer[1]},
-   "total"->{ConvolutionLayer[64+64+256+1,{1,1}],SoftmaxLayer[1]}
+   "small1"->{ConvolutionLayer[2,{1,1}],TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[1]},
+   "total1"->{ConvolutionLayer[3,{1,1}],TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[1]},
+   "small2"->{ConvolutionLayer[21,{1,1}],TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[1]},
+   "total2"->{ConvolutionLayer[21,{1,1}],TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[1]},
+   "small3"->{ConvolutionLayer[21,{1,1}],TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[1]},
+   "total3"->{ConvolutionLayer[21,{1,1}],TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[1]}
 },{
-   "l1"->"l2"->"l3"->"l4"->"l5"->"total",
-   "l1"->"small1",
-   "l2"->{"small2","medium2","big2"},
-   "l3"->{"small3","medium3","big3"},
-   "l4"->{"small4","medium4","big4"},
-   "l5"->{"small5","medium5","big5"},
-   "small1"->NetPort["small1"],
-   "small2"->NetPort["small2"],
-   "small3"->NetPort["small3"],
-   "small4"->NetPort["small4"],
-   "small5"->NetPort["small5"],
-   "medium2"->NetPort["medium2"],
-   "medium3"->NetPort["medium3"],
-   "medium4"->NetPort["medium4"],
-   "medium5"->NetPort["medium5"],
-   "big2"->NetPort["big2"],
-   "big3"->NetPort["big3"],
-   "big4"->NetPort["big4"],
-   "big5"->NetPort["big5"],
-   "total"->NetPort["total"]
+   "l1"->{"small1"->NetPort["small1"],"total1"->NetPort["total1"]},"l1"->"l2",
+   "l2"->{"small2"->NetPort["small2"],"total2"->NetPort["total2"]},"l2"->"l3",
+   "l3"->{"small3"->NetPort["small3"],"total3"->NetPort["total3"]}
 },
    "Input"->NetEncoder[{"Image",{512,512},"ColorSpace"->"RGB"}]];
+
+
+n1
 
 
 lossnet=NetGraph[
@@ -133,31 +115,37 @@ encode[rects_]:=Module[{sm1,sm2,sm3,sm4,sm5,m2,m3,m4,m5,b2,b3,b4,b5,total},
 
 
 (* ::Input:: *)
-(*mf1=CZImageConformer[{512,512},"Fit"]/@Import["~/ImageDataSets/FaceScrub/ActorImages/Original/ActorImages1/*.jpg"];*)
+(*vect[n_,len_]:=ReplacePart[ConstantArray[0,len],(n+1)->1]*)
+
+
+vecta[arr_,len_]:=Map[vect[#,len]&,arr,{2}];
+
+
+(* ::Input:: *)
+(*encode[rects_]:=Module[{small=CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]<130&], { 512, 512 }, { 16, 16 }, 32, 0 ],*)
+(*large=CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]>=130&], { 512, 512 }, { 16, 16 }, 32, 0 ]},*)
+(*Association[*)
+(*"total1"->small+large+1,*)
+(*"small1"->small+1,*)
+(*"total2"->Total[Partition[small+large,{2,2}],{3,4}]+1,*)
+(*"small2"->Total[Partition[small,{2,2}],{3,4}]+1,*)
+(*"total3"->Total[Partition[small+large,{4,4}],{3,4}]+1,*)
+(*"small3"->Total[Partition[small,{4,4}],{3,4}]+1*)
+(*]]*)
+
+
+(* ::Input:: *)
+(*mf1=CZImageConformer[{512,512},"Fit"]/@Import["~/ImageDataSets/FaceScrub/ActorImages/Original/ActorImages1/1*.jpg"];*)
 
 
 r1=FindFaces/@mf1;
 
 
 (* ::Input:: *)
-(*dataset=Table[Association["Input"->mf1[[k]],*)
-(*"small1"->encode[r1[[k]]]["small1"],*)
-(*"small2"->encode[r1[[k]]]["small2"],*)
-(*"small3"->encode[r1[[k]]]["small3"],*)
-(*"small4"->encode[r1[[k]]]["small4"],*)
-(*"small5"->encode[r1[[k]]]["small5"],*)
-(**)
-(*"medium2"->encode[r1[[k]]]["medium2"],*)
-(*"medium3"->encode[r1[[k]]]["medium3"],*)
-(*"medium4"->encode[r1[[k]]]["medium4"],*)
-(*"medium5"->encode[r1[[k]]]["medium5"],*)
-(**)
-(**)
-(*"big2"->encode[r1[[k]]]["big2"],*)
-(*"big3"->encode[r1[[k]]]["big3"],*)
-(*"big4"->encode[r1[[k]]]["big4"],*)
-(*"big5"->encode[r1[[k]]]["big5"],*)
-(*"total"->encode[r1[[k]]]["total"]],{k,1,Length[mf1]}];*)
+(*dataset=Table[Append[encode[r1[[k]]],"Input"->mf1[[k]]],{k,1,Length[mf1]}];*)
+
+
+dataset[[4]]
 
 
 (* ::Input:: *)
