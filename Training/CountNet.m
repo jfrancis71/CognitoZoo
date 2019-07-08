@@ -156,6 +156,9 @@ decoder[assoc_]:=First[Ordering[assoc["total"][[All,1,1]],-1]-1]
 (*large[jointarray_]:=Map[Total[Partition[#,5],{2}]&,jointarray,{2}]*)
 
 
+small[jointarray_,large_]:=MapThread[Partition[#1,5][[#2+1]]&,{jointarray,large},2];
+
+
 (* ::Input:: *)
 (*classify[vector_]:=First[Ordering[vector,-1]]-1*)
 
