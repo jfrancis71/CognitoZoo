@@ -23,15 +23,32 @@ decode1 = NetGraph[{
 },{
    "j"->"c1"->"r1"->"c2"->"f"->"o",
    {NetPort["internal"],NetPort["conditional"]}->"j"
-},"internal"->{256,16,16},"conditional"->{8,16,16}]
+},"internal"->{256,16,16},"conditional"->{9,16,16}];
+
+
+decode2 = NetGraph[{
+"j"->CatenateLayer[],
+   "c1"->ConvolutionLayer[16,{1,1}],"r1"->Ramp,
+   "c2"->ConvolutionLayer[1,{1,1}],"f"->PartLayer[1],"o"->LogisticSigmoid
+},{
+   "j"->"c1"->"r1"->"c2"->"f"->"o",
+   {NetPort["internal"],NetPort["conditional"]}->"j"
+},"internal"->{256,8,8},"conditional"->{12,8,8}];
 
 
 n1 = NetGraph[{
    "l1"->trunk,
-   "decode1"->decode1
+   "l2"->{ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]},
+   "decode1"->decode1,
+   "decode2"->decode2
 },{
    "l1"->NetPort[{"decode1","internal"}],
-   NetPort["conditional"]->NetPort[{"decode1","conditional"}]
+   "l1"->"l2"->NetPort[{"decode2","internal"}],
+
+   NetPort["conditional1"]->NetPort[{"decode1","conditional"}],
+   NetPort["conditional2"]->NetPort[{"decode2","conditional"}],
+   NetPort[{"decode1","Output"}]->NetPort["Small"],
+   NetPort[{"decode2","Output"}]->NetPort["Large"]
 },
    "Input"->NetEncoder[{"Image",{512,512},"ColorSpace"->"RGB"}]];
 
@@ -52,9 +69,13 @@ CZCentroidsToArray[ centroids_, inputDims_, arrayDims_, stride_, offset_ ] :=
 encode[rects_]:=(
 
    s1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]<=155&], { 512, 512 }, { 16, 16 }, 32, 0 ];
-   cond = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];
+   l1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]>155&], { 512, 512 }, { 8, 8 }, 64, 0 ];
+   cond1s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];
+   cond1 = Append[cond1s,First@ResizeLayer[{16,16}][{l1}]];
+   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];
+   cond2 = Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2}],{2}], {2,3,1} ] ];
    Association[
-   "Output"->s1,"conditional"->cond
+   "Small"->s1,"Large"->l1,"conditional1"->cond1,"conditional2"->cond2
 ]);
 
 
@@ -172,18 +193,38 @@ totdec[assoc_]:=render[ decoder[ assoc ] ]
 (*)*)
 
 
-render[ assoc_ ] := Join[
+(* ::Input:: *)
+(*vis[img_,sofar_]:=( *)
+(*s1=sofar[[1]];l1=sofar[[2]];*)
+(*cond1s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];*)
+(*   cond1 = Append[cond1s,First@ResizeLayer[{16,16}][{l1}]];*)
+(*   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];*)
+(*   cond2 = Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2}],{2}], {2,3,1} ] ];*)
+(**)
+(*r=net2[Association[*)
+(*"Input"->img,*)
+(*"conditional1"->cond1,*)
+(*"conditional2"->cond2]];*)
+(*m={(1-s1)*r["Small"],(1-l1)*r["Large"]};*)
+(*If[Max[m]<.5,{s1,l1},*)
+(*l=Position[m,Max[m]];vis[img,ReplacePart[sofar,l->1]]*)
+(*]*)
+(*)*)
+
+
+render[ result_ ] := Join[
    Map[
-         Rectangle[{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}-{100,100},{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}+{100,100}]&,
-      Position[assoc["Big"],x_/;x>0]],
+         Rectangle[{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}+{100,100}]&,
+      Position[result[[2]],x_/;x>0]],
    Map[
          Rectangle[{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}-{50,50},{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}+{50,50}]&,
-      Position[assoc["Small"],x_/;x>0]]
+      Position[result[[1]],x_/;x>0]]
       ];      
 
 
 (* ::Input:: *)
-(*HighlightImage[img,render[ Association[ "Small"->vis[img,ConstantArray[0,{16,16}]] ] ]];*)
+(*HighlightImage[img,render[ vis[img,{ConstantArray[0,{16,16}],ConstantArray[0,{8,8}]}] ] ];*)
 
 
-trained=NetTrain[n2,trainingSet,ValidationSet->validationSet,TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},TrainingProgressReporting->File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"]]
+trained=NetTrain[n2,trainingSet,ValidationSet->validationSet,TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},TrainingProgressReporting->File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"]];
+(* .011 is ok but not great *)
