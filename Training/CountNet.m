@@ -88,24 +88,26 @@ files9=FileNames["~/ImageDataSets/FaceScrub/ActressImages/512/ActressImages3/*.j
 files10=FileNames["~/ImageDataSets/FaceScrub/ActressImages/512/ActressImages4/*.jpg"];
 files11=FileNames["~/ImageDataSets/FaceScrub/ActressImages/512/ActressImages5/*.jpg"];
 files12=FileNames["~/ImageDataSets/FaceScrub/ActressImages/512/ActressImages6/*.jpg"];
+files13=FileNames["~/ImageDataSets/PascalVOC/VOC2007/512/*.jpg"];
 
-files=Join[files1,files2,files3,files4,files5,files6,files7,files8,files9,files10,files11,files12];
+files=Join[files1,files2,files3,files4,files5,files6,files7,files8,files9,files10,files11,files12,files13];
 
 
-faces1=Import["~/ImageDataSets/FaceScrub/ActorImages/MMFaceDetectActorImages1.mx"];
-faces2=Import["~/ImageDataSets/FaceScrub/ActorImages/MMFaceDetectActorImages2.mx"];
-faces3=Import["~/ImageDataSets/FaceScrub/ActorImages/MMFaceDetectActorImages3.mx"];
-faces4=Import["~/ImageDataSets/FaceScrub/ActorImages/MMFaceDetectActorImages4.mx"];
-faces5=Import["~/ImageDataSets/FaceScrub/ActorImages/MMFaceDetectActorImages5.mx"];
-faces6=Import["~/ImageDataSets/FaceScrub/ActorImages/MMFaceDetectActorImages6.mx"];
-faces7=Import["~/ImageDataSets/FaceScrub/ActressImages/MMFaceDetectActressImages1.mx"];
-faces8=Import["~/ImageDataSets/FaceScrub/ActressImages/MMFaceDetectActressImages2.mx"];
-faces9=Import["~/ImageDataSets/FaceScrub/ActressImages/MMFaceDetectActressImages3.mx"];
-faces10=Import["~/ImageDataSets/FaceScrub/ActressImages/MMFaceDetectActressImages4.mx"];
-faces11=Import["~/ImageDataSets/FaceScrub/ActressImages/MMFaceDetectActressImages5.mx"];
-faces12=Import["~/ImageDataSets/FaceScrub/ActressImages/MMFaceDetectActressImages6.mx"];
+faces1=Import["~/ImageDataSets/FaceScrub/ActorImages/DLibFaceDetectActor1.mx"];
+faces2=Import["~/ImageDataSets/FaceScrub/ActorImages/DLibFaceDetectActor2.mx"];
+faces3=Import["~/ImageDataSets/FaceScrub/ActorImages/DLibFaceDetectActor3.mx"];
+faces4=Import["~/ImageDataSets/FaceScrub/ActorImages/DLibFaceDetectActor4.mx"];
+faces5=Import["~/ImageDataSets/FaceScrub/ActorImages/DLibFaceDetectActor5.mx"];
+faces6=Import["~/ImageDataSets/FaceScrub/ActorImages/DLibFaceDetectActor6.mx"];
+faces7=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibFaceDetectActress1.mx"];
+faces8=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibFaceDetectActress2.mx"];
+faces9=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibFaceDetectActress3.mx"];
+faces10=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibFaceDetectActress4.mx"];
+faces11=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibFaceDetectActress5.mx"];
+faces12=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibFaceDetectActress6.mx"];
+faces13=Import["~/ImageDataSets/PascalVOC/VOC2007/DLibFaces.mx"];
 
-faces=Join[faces1,faces2,faces3,faces4,faces5,faces6,faces7,faces8,faces9,faces10,faces11,faces12];
+faces=Join[faces1,faces2,faces3,faces4,faces5,faces6,faces7,faces8,faces9,faces10,faces11,faces12,faces13];
 
 
 dataset=Table[Append[encode[faces[[k]]],"Input"->File[files[[k]]]],{k,1,Length[files]}];
@@ -114,10 +116,7 @@ dataset=Table[Append[encode[faces[[k]]],"Input"->File[files[[k]]]],{k,1,Length[f
 SeedRandom[1234];rnds=RandomSample[dataset];
 
 
-Length[dataset]
-
-
-{trainingSet,validationSet}={rnds[[;;84000]],rnds[[84001;;]]};
+{trainingSet,validationSet}={rnds[[;;90000]],rnds[[90001;;]]};
 
 
 (*
