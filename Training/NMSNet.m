@@ -33,22 +33,38 @@ decode2 = NetGraph[{
 },{
    "j"->"c1"->"r1"->"c2"->"f"->"o",
    {NetPort["internal"],NetPort["conditional"]}->"j"
-},"internal"->{256,8,8},"conditional"->{12,8,8}];
+},"internal"->{256,8,8},"conditional"->{13,8,8}];
+
+
+decode3 = NetGraph[{
+"j"->CatenateLayer[],
+   "c1"->ConvolutionLayer[16,{1,1}],"r1"->Ramp,
+   "c2"->ConvolutionLayer[1,{1,1}],"f"->PartLayer[1],"o"->LogisticSigmoid
+},{
+   "j"->"c1"->"r1"->"c2"->"f"->"o",
+   {NetPort["internal"],NetPort["conditional"]}->"j"
+},"internal"->{256,8,8},"conditional"->{9,8,8}];
 
 
 n1 = NetGraph[{
    "l1"->trunk,
    "l2"->{ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]},
+   "l3"->{ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp},
    "decode1"->decode1,
-   "decode2"->decode2
+   "decode2"->decode2,
+   "decode3"->decode3
+
 },{
    "l1"->NetPort[{"decode1","internal"}],
-   "l1"->"l2"->NetPort[{"decode2","internal"}],
+   "l2"->NetPort[{"decode2","internal"}],
+   "l1"->"l2"->"l3"->NetPort[{"decode3","internal"}],
 
    NetPort["conditional1"]->NetPort[{"decode1","conditional"}],
    NetPort["conditional2"]->NetPort[{"decode2","conditional"}],
+   NetPort["conditional3"]->NetPort[{"decode3","conditional"}],
    NetPort[{"decode1","Output"}]->NetPort["Small"],
-   NetPort[{"decode2","Output"}]->NetPort["Large"]
+   NetPort[{"decode2","Output"}]->NetPort["Medium"],
+   NetPort[{"decode3","Output"}]->NetPort["Large"]
 },
    "Input"->NetEncoder[{"Image",{512,512},"ColorSpace"->"RGB"}]];
 
@@ -68,14 +84,17 @@ CZCentroidsToArray[ centroids_, inputDims_, arrayDims_, stride_, offset_ ] :=
 
 encode[rects_]:=(
 
-   s1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]<=155&], { 512, 512 }, { 16, 16 }, 32, 0 ];
+   s1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]<108&], { 512, 512 }, { 16, 16 }, 32, 0 ];
+   m1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]>=108&&size[#]<=155&], { 512, 512 }, { 8, 8 }, 64, 0 ];
    l1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]>155&], { 512, 512 }, { 8, 8 }, 64, 0 ];
    cond1s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];
-   cond1 = Append[cond1s,First@ResizeLayer[{16,16}][{l1}]];
-   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];
-   cond2 = Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2}],{2}], {2,3,1} ] ];
+   cond1 = Append[cond1s,First@ResizeLayer[{16,16}][{m1}]];
+   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[m1],1]],{2,3,1}];
+   cond2 = Append[Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2}],{2}], {2,3,1} ] ], l1];
+   cond3s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];
+   cond3 = Append[cond3s,m1];
    Association[
-   "Small"->s1,"Large"->l1,"conditional1"->cond1,"conditional2"->cond2
+   "Small"->s1,"Medium"->m1,"Large"->l1,"conditional1"->cond1,"conditional2"->cond2,"conditional3"->cond3
 ]);
 
 
@@ -195,30 +214,39 @@ totdec[assoc_]:=render[ decoder[ assoc ] ]
 
 (* ::Input:: *)
 (*vis[img_,sofar_]:=( *)
-(*s1=sofar[[1]];l1=sofar[[2]];*)
-(*cond1s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];*)
-(*   cond1 = Append[cond1s,First@ResizeLayer[{16,16}][{l1}]];*)
-(*   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];*)
-(*   cond2 = Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2}],{2}], {2,3,1} ] ];*)
+(*s1=sofar[[1]];m1=sofar[[2]];l1=sofar[[3]];*)
+(*   cond1s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];*)
+(*   cond1 = Append[cond1s,First@ResizeLayer[{16,16}][{m1}]];*)
+(*   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[m1],1]],{2,3,1}];*)
+(*   cond2 = Append[Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2}],{2}], {2,3,1} ] ], l1];*)
+(*   cond3s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];*)
+(*   cond3 = Append[cond3s,m1];*)
 (**)
 (*r=net2[Association[*)
 (*"Input"->img,*)
 (*"conditional1"->cond1,*)
-(*"conditional2"->cond2]];*)
-(*m={(1-s1)*r["Small"],(1-l1)*r["Large"]};*)
-(*If[Max[m]<.5,{s1,l1},*)
+(*"conditional2"->cond2,"conditional3"->cond3]];AppendTo[sr,r];*)
+(*m={(1-s1)*r["Small"],(1-m1)*r["Medium"],(1-l1)*r["Large"]};*)
+(*If[Max[m]<.5,{s1,m1,l1},*)
 (*l=Position[m,Max[m]];vis[img,ReplacePart[sofar,l->1]]*)
 (*]*)
 (*)*)
 
 
 render[ result_ ] := Join[
+   
+
    Map[
-         Rectangle[{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}+{100,100}]&,
+         Rectangle[{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}+{37,37}]&,
+      Position[result[[1]],x_/;x>0]],
+   Map[   
+      Rectangle[{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}-{65,65}/2,{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}+{65,65}/2]&,
       Position[result[[2]],x_/;x>0]],
-   Map[
-         Rectangle[{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}-{50,50},{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}+{50,50}]&,
-      Position[result[[1]],x_/;x>0]]
+         
+         Map[
+      Rectangle[{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),512-64*(#[[1]]-.5)}+{100,100}]&,
+      Position[result[[3]],x_/;x>0]]
+
       ];      
 
 
