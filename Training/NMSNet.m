@@ -228,7 +228,7 @@ render[ result_ ] := Join[
          Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]&,
       Position[result[[1]],x_/;x>0]],
    Map[   
-      Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65}/2,{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}/2]&,
+      Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]&,
       Position[result[[2]],x_/;x>0]],
          
          Map[
@@ -239,7 +239,7 @@ render[ result_ ] := Join[
 
 
 (* ::Input:: *)
-(*HighlightImage[img,render[ vis[img,{ConstantArray[0,{16,16}],ConstantArray[0,{8,8}]}] ] ];*)
+(*HighlightImage[img,render[ vis[img,{ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{8,10}]} ] ] ];*)
 
 
 trained=NetTrain[n1,trainingSet,ValidationSet->validationSet,TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},TrainingProgressReporting->File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"]];
