@@ -128,13 +128,13 @@ faces12=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibVGAActress6.mx"];
 faces=Join[faces1,faces2,faces3,faces4,faces5,faces6,faces7,faces8,faces9,faces10,faces11,faces12];
 
 
-dataset=Table[Append[encode[faces1[[k]]],"Input"->File[files1[[k]]]],{k,1,Length[files1]}];
+dataset=Table[Append[encode[faces[[k]]],"Input"->File[files[[k]]]],{k,1,Length[files]}];
 
 
 SeedRandom[1234];rnds=RandomSample[dataset];
 
 
-{trainingSet,validationSet}={rnds[[;;7000]],rnds[[7001;;]]};
+{trainingSet,validationSet}={rnds[[;;85000]],rnds[[85001;;]]};
 
 
 (*
@@ -242,5 +242,5 @@ render[ result_ ] := Join[
 (*HighlightImage[img,render[ vis[img,{ConstantArray[0,{16,16}],ConstantArray[0,{8,8}]}] ] ];*)
 
 
-trained=NetTrain[n2,trainingSet,ValidationSet->validationSet,TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},TrainingProgressReporting->File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"]];
+trained=NetTrain[n1,trainingSet,ValidationSet->validationSet,TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},TrainingProgressReporting->File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"]];
 (* .011 is ok but not great *)
