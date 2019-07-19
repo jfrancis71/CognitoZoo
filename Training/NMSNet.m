@@ -106,17 +106,10 @@ CZCentroidsToArray[ centroids_, inputDims_, arrayDims_, stride_, offset_ ] :=
    CZReplacePart[ ConstantArray[ 0, arrayDims ], kt=Map[{Ceiling[(1+inputDims[[2]]-#[[2]])/stride+offset],(1+Floor[(#[[1]]-1)/stride-offset])}->1&,centroids] ]
 
 
-encode[rects_]:=(
-
-   s1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]<108&], { 640, 480 }, { 15, 20 }, 32, 0 ];
-   m1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]>=108&&size[#]<=155&], { 640, 480 }, { 8, 10 }, 64, 0 ];
-   l1 = CZCentroidsToArray[ RegionCentroid/@Select[rects,size[#]>155&], { 640, 480 }, { 8, 10 }, 64, 0 ];
-   cond1s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];
-   cond1 = Append[cond1s,(First@ResizeLayer[{Scaled[2],Scaled[2]},"Resampling"->"Nearest"][{m1}])[[;;15]]];
-   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[m1],1]],{2,3,1}];
-   cond2 = Append[Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2},2,1,0],{2}], {2,3,1} ] ], l1];
-   cond3s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];
-   cond3 = Append[cond3s,m1];
+CZEncodeTarget[ faces_ ]:=(
+   s1 = CZCentroidsToArray[ RegionCentroid/@Select[faces,size[#]<108&], { 640, 480 }, { 15, 20 }, 32, 0 ];
+   m1 = CZCentroidsToArray[ RegionCentroid/@Select[faces,size[#]>=108&&size[#]<=155&], { 640, 480 }, { 8, 10 }, 64, 0 ];
+   l1 = CZCentroidsToArray[ RegionCentroid/@Select[faces,size[#]>155&], { 640, 480 }, { 8, 10 }, 64, 0 ];
    Association[
    "FaceArray1"->s1,"FaceArray2"->m1,"FaceArray3"->l1,"GTFaceArray1"->s1,"GTFaceArray2"->m1,"GTFaceArray3"->l1
 ]);
@@ -152,50 +145,52 @@ faces12=Import["~/ImageDataSets/FaceScrub/ActressImages/DLibVGAActress6.mx"];
 faces=Join[faces1,faces2,faces3,faces4,faces5,faces6,faces7,faces8,faces9,faces10,faces11,faces12];
 
 
-dataset=Table[Append[encode[faces[[k]]],"Input"->File[files[[k]]]],{k,1,Length[files]}];
+dataset = Table[Append[CZEncodeTarget[faces[[k]]],"Input"->File[files[[k]]]],{k,1,Length[files]}];
 
 
-SeedRandom[1234];rnds=RandomSample[dataset];
+SeedRandom[1234]; rnds=RandomSample[dataset];
 
 
-{trainingSet,validationSet}={rnds[[;;85000]],rnds[[85001;;]]};
+{trainingSet, validationSet} = {rnds[[;;85000]], rnds[[85001;;]]};
 
 
 (* Export["~/Google Drive/Personal/Computer Science/CZModels/CountNet2.wlnet",trained]*)
 
 
-vis[img_,sofar_]:=(
-s1=sofar[[1]];m1=sofar[[2]];l1=sofar[[3]];
-r=net2[Association[
-"Input"->img,
-"GTFaceArray1"->s1,
-"GTFaceArray2"->m1,"GTFaceArray3"->l1]];AppendTo[sr,r];
-m={(1-s1)*r["FaceArray1"],(1-m1)*r["FaceArray2"],(1-l1)*r["FaceArray3"]};
-If[Max[m]<.5,{s1,m1,l1},
-l=Position[m,Max[m]];vis[img,ReplacePart[sofar,l->1]]
-]
-)
+CZICM[ img_ ] := CZICMStep[ img, {ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{8,10}]} ];
 
 
-render[ result_ ] := Join[
-   
+CZNMSNet = Import["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/2019-07-18T15:50:20_3_01_07084_1.36e-2_4.78e-3.wlnet"];
 
+
+CZICMStep[ img_, sofar_ ] := (
+   s1=sofar[[1]];m1=sofar[[2]];l1=sofar[[3]];
+   r=CZNMSNet[Association[
+      "Input"->img,
+      "GTFaceArray1"->s1,
+      "GTFaceArray2"->m1,
+      "GTFaceArray3"->l1]];
+   m={(1-s1)*r["FaceArray1"],(1-m1)*r["FaceArray2"],(1-l1)*r["FaceArray3"]};
+   If[Max[m]<.5,
+      {s1,m1,l1},
+      l=Position[m,Max[m]]; CZICMStep[img,ReplacePart[sofar,l->1]]]
+);
+
+
+CZDecodeArrays[ result_ ] := Join[
    Map[
          Rectangle[{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),480-32*(#[[1]]-.5)}+{37,37}]&,
       Position[result[[1]],x_/;x>0]],
    Map[   
       Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{65,65},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{65,65}]&,
       Position[result[[2]],x_/;x>0]],
-         
-         Map[
+   Map[
       Rectangle[{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}-{100,100},{64*(#[[2]]-.5),480-64*(#[[1]]-.5)}+{100,100}]&,
       Position[result[[3]],x_/;x>0]]
+];      
 
-      ];      
 
-
-(* ::Input:: *)
-(*HighlightImage[img,render[ vis[img,{ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{8,10}]} ] ] ];*)
+CZDetectFaces[ image_ ] := CZDeconformRectangles[ CZDecodeArrays@CZICM[ CZImageConformer[{640,480},"Fit"]@image ], image, {640, 480}, "Fit" ];
 
 
 (*
