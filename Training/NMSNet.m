@@ -16,55 +16,79 @@ trunk = NetChain[{
 (* trunk has receptive field of size 94x94 *)
 
 
+GTKernel=Delete[Flatten[Table[{ReplacePart[ConstantArray[0,{3,3}],{i,j}->1]},{i,1,3},{j,1,3}],1],5];
+
+
+GTKernel1=Flatten[Table[{ReplacePart[ConstantArray[0,{2,2}],{i,j}->1]},{i,1,2},{j,1,2}],1];
+
+
 decode1 = NetGraph[{
+   "cond1"->{ReshapeLayer[{1,15,20}],ConvolutionLayer[8,{3,3},"PaddingSize"->1,"Weights"->GTKernel]},
+   "cond2"->{ReshapeLayer[{1,8,10}],ResizeLayer[{Scaled[2],Scaled[2]},"Resampling"->"Nearest"],PartLayer[{All,;;15,All}]},
 "j"->CatenateLayer[],
    "c1"->ConvolutionLayer[16,{1,1}],"r1"->Ramp,
    "c2"->ConvolutionLayer[1,{1,1}],"f"->PartLayer[1],"o"->LogisticSigmoid
 },{
    "j"->"c1"->"r1"->"c2"->"f"->"o",
-   {NetPort["internal"],NetPort["conditional"]}->"j"
-},"internal"->{256,15,20},"conditional"->{9,15,20}];
+   NetPort["conditional1"]->"cond1",
+   NetPort["conditional2"]->"cond2",
+   {NetPort["internal"],"cond1","cond2"}->"j"
+},"internal"->{256,15,20},"conditional1"->{15,20},"conditional2"->{8,10}];
 
 
 decode2 = NetGraph[{
+   "cond1"->{ReshapeLayer[{1,15,20}],ConvolutionLayer[4,{2,2},"Stride"->2,"PaddingSize"->{{0,1},{0,1}},"Weights"->GTKernel1]},
+   "cond2"->{ReshapeLayer[{1,8,10}],ConvolutionLayer[8,{3,3},"PaddingSize"->1,"Weights"->GTKernel]},
+   "cond3"->ReshapeLayer[{1,8,10}],
 "j"->CatenateLayer[],
    "c1"->ConvolutionLayer[16,{1,1}],"r1"->Ramp,
    "c2"->ConvolutionLayer[1,{1,1}],"f"->PartLayer[1],"o"->LogisticSigmoid
 },{
    "j"->"c1"->"r1"->"c2"->"f"->"o",
-   {NetPort["internal"],NetPort["conditional"]}->"j"
-},"internal"->{256,8,10},"conditional"->{13,8,10}];
+   NetPort["conditional1"]->"cond1",
+   NetPort["conditional2"]->"cond2",
+   NetPort["conditional3"]->"cond3",
+   {NetPort["internal"],"cond1","cond2","cond3"}->"j"
+},"internal"->{256,8,10},"conditional1"->{15,20},"conditional2"->{8,10},"conditional3"->{8,10}];
 
 
 decode3 = NetGraph[{
+   "cond2"->ReshapeLayer[{1,8,10}],
+   "cond3"->{ReshapeLayer[{1,8,10}],ConvolutionLayer[8,{3,3},"PaddingSize"->1,"Weights"->GTKernel]},
 "j"->CatenateLayer[],
    "c1"->ConvolutionLayer[16,{1,1}],"r1"->Ramp,
    "c2"->ConvolutionLayer[1,{1,1}],"f"->PartLayer[1],"o"->LogisticSigmoid
 },{
    "j"->"c1"->"r1"->"c2"->"f"->"o",
-   {NetPort["internal"],NetPort["conditional"]}->"j"
-},"internal"->{256,8,10},"conditional"->{9,8,10}];
+   NetPort["conditional2"]->"cond2",
+   NetPort["conditional3"]->"cond3",
+   {NetPort["internal"],"cond2","cond3"}->"j"
+},"internal"->{256,8,10},"conditional2"->{8,10},"conditional3"->{8,10}];
 
 
-n1 = NetGraph[{
-   "l1"->trunk,
-   "l2"->{PaddingLayer[{{0,0},{0,1},{0,1}}], ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]},
-   "l3"->{ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp},
+(* Note very important, for training each of the ground truth's decoder conv for each layer should have
+learning rate set to 0
+   We don't want to learn ground truth = ground truth, that is trivial and uninteresting.
+*)
+nmsNet = NetGraph[{
+   "trunk"->{trunk,BatchNormalizationLayer[]},
+   "block2"->{PaddingLayer[{{0,0},{0,1},{0,1}}], ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp,PoolingLayer[{2,2},"Stride"->2]},
+   "block3"->{BatchNormalizationLayer[],ConvolutionLayer[256,{3,3},"PaddingSize"->1],Ramp},
    "decode1"->decode1,
    "decode2"->decode2,
    "decode3"->decode3
 
 },{
-   "l1"->NetPort[{"decode1","internal"}],
-   "l2"->NetPort[{"decode2","internal"}],
-   "l1"->"l2"->"l3"->NetPort[{"decode3","internal"}],
+   "trunk"->NetPort[{"decode1","internal"}],
+   "block2"->NetPort[{"decode2","internal"}],
+   "trunk"->"block2"->"block3"->NetPort[{"decode3","internal"}],
 
-   NetPort["conditional1"]->NetPort[{"decode1","conditional"}],
-   NetPort["conditional2"]->NetPort[{"decode2","conditional"}],
-   NetPort["conditional3"]->NetPort[{"decode3","conditional"}],
-   NetPort[{"decode1","Output"}]->NetPort["Small"],
-   NetPort[{"decode2","Output"}]->NetPort["Medium"],
-   NetPort[{"decode3","Output"}]->NetPort["Large"]
+   NetPort["GTFaceArray1"]->{NetPort[{"decode1","conditional1"}],NetPort[{"decode2","conditional1"}]},
+   NetPort["GTFaceArray2"]->{NetPort[{"decode1","conditional2"}],NetPort[{"decode2","conditional2"}],NetPort[{"decode3","conditional2"}]},
+   NetPort["GTFaceArray3"]->{NetPort[{"decode2","conditional3"}],NetPort[{"decode3","conditional3"}]},
+   NetPort[{"decode1","Output"}]->NetPort["FaceArray1"],
+   NetPort[{"decode2","Output"}]->NetPort["FaceArray2"],
+   NetPort[{"decode3","Output"}]->NetPort["FaceArray3"]
 },
    "Input"->NetEncoder[{"Image",{640,480},"ColorSpace"->"RGB"}]];
 
@@ -94,7 +118,7 @@ encode[rects_]:=(
    cond3s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];
    cond3 = Append[cond3s,m1];
    Association[
-   "Small"->s1,"Medium"->m1,"Large"->l1,"conditional1"->cond1,"conditional2"->cond2,"conditional3"->cond3
+   "FaceArray1"->s1,"FaceArray2"->m1,"FaceArray3"->l1,"GTFaceArray1"->s1,"GTFaceArray2"->m1,"GTFaceArray3"->l1
 ]);
 
 
@@ -137,88 +161,20 @@ SeedRandom[1234];rnds=RandomSample[dataset];
 {trainingSet,validationSet}={rnds[[;;85000]],rnds[[85001;;]]};
 
 
-(*
-   matrix is going to be 2*2*count
-   total is the total to be partition'd up.
-*)
-allocate[matrix_,tot_]:=
-Partition[First[MaximalBy[Flatten[Table[{n11,n12,n21,n22,matrix[[1,1,n11+1]]*matrix[[1,2,n12+1]]*matrix[[2,1,n21+1]]*matrix[[2,2,n22+1]]},{n11,0,tot},{n12,0,tot-n11},{n21,0,tot-(n11+n12)},{n22,tot-(n11+n12+n21),tot-(n11+n12+n21)}],3],Last]][[1;;4]],2]
-
-
-unpartition[matrices_]:=ImageData[ImageAssemble[Map[Image,matrices,{2}]]]
-
-
-large[jointarray_]:=Map[Total[Partition[#,5],{2}]&,jointarray,{2}]
-
-
-small[jointarray_,large_]:=MapThread[Partition[#1,5][[#2+1]]&,{jointarray,large},2];
-
-
-classify[vector_]:=First[Ordering[vector,-1]]-1
-
-
-decoder[assoc_]:=(
-   l5=Map[classify,large[assoc["joint5"]][[All,All]],{2}];
-   l4=unpartition[MapThread[allocate,{Partition[large[assoc["joint4"]],{2,2}],l5},2]];
-   l3=unpartition[MapThread[allocate,{Partition[large[assoc["joint3"]],{2,2}],l4},2]];
-   l2=unpartition[MapThread[allocate,{Partition[large[assoc["joint2"]],{2,2}],l3},2]];
-   l1=unpartition[MapThread[allocate,{Partition[large[assoc["joint1"]],{2,2}],l2},2]];
-   s5=Map[classify,small[assoc["joint5"],l5],{2}];
-   s4=unpartition[MapThread[allocate,{Partition[small[assoc["joint4"],l4],{2,2}],s5},2]];
-   s3=unpartition[MapThread[allocate,{Partition[small[assoc["joint3"],l3],{2,2}],s4},2]];
-   s2=unpartition[MapThread[allocate,{Partition[small[assoc["joint2"],l2],{2,2}],s3},2]];
-   s1=unpartition[MapThread[allocate,{Partition[small[assoc["joint1"],l1],{2,2}],s2},2]];
-   <|"Big"->l1,"Small"->s1|>
-   );
-
-
-render[ assoc_ ] := Join[
-   Map[
-         Rectangle[{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}-{100,100},{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}+{100,100}]&,
-      Position[assoc["Big"],x_/;x>0]],
-   Map[
-         Rectangle[{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}-{50,50},{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}+{50,50}]&,
-      Position[assoc["Small"],x_/;x>0]]
-      ];      
-
-
-totdec[assoc_]:=render[ decoder[ assoc ] ]
-
-
 (* Export["~/Google Drive/Personal/Computer Science/CZModels/CountNet2.wlnet",trained]*)
 
 
-(* ::Input:: *)
-(*vis[img_,locMatrix_]:=( *)
-(*r=net2[Association["Input"->img,"conditional"->Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[locMatrix],1]],{2,3,1}]]];*)
-(*m=(1-locMatrix)*r;*)
-(*If[Max[m]<.5,locMatrix,*)
-(*l=Position[m,Max[m]];*)
-(*vis[img,ReplacePart[locMatrix,l->1]]*)
-(*]*)
-(*)*)
-
-
-(* ::Input:: *)
-(*vis[img_,sofar_]:=( *)
-(*s1=sofar[[1]];m1=sofar[[2]];l1=sofar[[3]];*)
-(*   cond1s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[s1],1]],{2,3,1}];*)
-(*   cond1 = Append[cond1s,(First@ResizeLayer[{Scaled[2],Scaled[2]},"Resampling"->"Nearest"][{m1}])[[;;15]]];*)
-(*   cond2s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[m1],1]],{2,3,1}];*)
-(*   cond2 = Append[Join[cond2s, Transpose[Map[Flatten,Partition[s1,{2,2},2,1,0],{2}], {2,3,1} ] ], l1];*)
-(*   cond3s = Transpose[ImageData[ImageFilter[Delete[Flatten[#],5]&,Image[l1],1]],{2,3,1}];*)
-(*   cond3 = Append[cond3s,m1];*)
-(**)
-(**)
-(*r=net2[Association[*)
-(*"Input"->img,*)
-(*"conditional1"->cond1,*)
-(*"conditional2"->cond2,"conditional3"->cond3]];AppendTo[sr,r];*)
-(*m={(1-s1)*r["Small"],(1-m1)*r["Medium"],(1-l1)*r["Large"]};*)
-(*If[Max[m]<.5,{s1,m1,l1},*)
-(*l=Position[m,Max[m]];vis[img,ReplacePart[sofar,l->1]]*)
-(*]*)
-(*)*)
+vis[img_,sofar_]:=(
+s1=sofar[[1]];m1=sofar[[2]];l1=sofar[[3]];
+r=net2[Association[
+"Input"->img,
+"GTFaceArray1"->s1,
+"GTFaceArray2"->m1,"GTFaceArray3"->l1]];AppendTo[sr,r];
+m={(1-s1)*r["FaceArray1"],(1-m1)*r["FaceArray2"],(1-l1)*r["FaceArray3"]};
+If[Max[m]<.5,{s1,m1,l1},
+l=Position[m,Max[m]];vis[img,ReplacePart[sofar,l->1]]
+]
+)
 
 
 render[ result_ ] := Join[
@@ -242,5 +198,13 @@ render[ result_ ] := Join[
 (*HighlightImage[img,render[ vis[img,{ConstantArray[0,{15,20}],ConstantArray[0,{8,10}],ConstantArray[0,{8,10}]} ] ] ];*)
 
 
-trained=NetTrain[n1,trainingSet,ValidationSet->validationSet,TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},TrainingProgressReporting->File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"]];
-(* .011 is ok but not great *)
+(*
+trained = NetTrain[
+   nmsNet,
+   trainingSet,
+   ValidationSet->validationSet,
+   LearningRateMultipliers\[Rule]{{"decode1","cond1",2,"Weights"}\[Rule]None,{"decode2","cond1",2,"Weights"}\[Rule]None,{"decode2","cond2",2,"Weights"}\[Rule]None,{"decode3","cond3",2,"Weights"}\[Rule]None},
+   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},
+   TrainingProgressReporting\[Rule]{File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"],"Interval"\[Rule]Quantity[20,"Minutes"]}];
+*)
+(* validation loss .0047 works well *)
