@@ -3,7 +3,7 @@
 CZDisplayObject[object_]:={object[[1]],Text[Style[object[[2]],White,12],{20,20}+object[[1,1]],Background->Black]}
 
 
-CZDisplayObjects[ {}, _ ] := {}
+CZDisplayObjects[ {}, _:{} ] := {}
 CZDisplayObjects[ detections_, cmap_:{} ] := MapThread[
   {If[cmap==={},Red,cmap[#2]], #1, Inset[Style[#2,White,FontSize->Scaled[1/50],Background->Black],First[#1],{Left,Bottom}]}&,
    Transpose@detections ];
