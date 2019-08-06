@@ -19,7 +19,7 @@ CZImageConformer[ dims_, fitting_, opts:OptionsPattern[] ][ image_ ] := First@Co
 
 
 CZIntersection[a_Rectangle, b_Rectangle] := Module[{xa=Max[a[[1,1]],b[[1,1]]],ya=Max[a[[1,2]],b[[1,2]]],xb=Min[a[[2,1]],b[[2,1]]],yb=Min[a[[2,2]],b[[2,2]]]},
-   If[xa>xb||ya>yb,0,(xb-xa+1)*(yb-ya+1)]]
+   If[xa>xb||ya>yb,0,(xb-xa)*(yb-ya)]]
 CZArea[a_Rectangle] := ( a[[1,1]]-a[[2,1]] ) * ( a[[1,2]]-a[[2,2]] )
 CZUnion[a_Rectangle,b_Rectangle] := CZArea[a] + CZArea[b] - CZIntersection[a, b]
 
