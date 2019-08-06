@@ -34,7 +34,7 @@ files = FileBaseName/@FileNames["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/*.
 groundTruth = Table[CZConformObjects[
    CZImportPascalAnnotations["~/ImageDataSets/PascalVOC/VOC2012/Annotations/"<>files[[k]]<>".xml"],
    Import["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/"<>files[[k]]<>".jpg"] , {416,416}, "Fit"],
-   {k,1,100}];
+   {k,1,17125}];
 
 
 dataset = Table[
@@ -44,7 +44,7 @@ dataset = Table[
       "Input"->File["~/ImageDataSets/PascalVOC/VOC2012/ConformJPEGImages/"<>files[[k]]<>".jpg"],
       "Output"->lay,
       "cond"->lay]
-   ,{k,1,100}];
+   ,{k,1,17125}];
 
 
 GTKernel = Flatten[Table[ReplacePart[ConstantArray[0,{5,3,3}],{{l,y,x}->1,{l,2,2}->0}],{l,1,5},{y,1,3},{x,1,3}],2];GTKernel//Dimensions
@@ -72,3 +72,11 @@ trainedL2 = NetTrain[
    MaxTrainingRounds->100,LearningRate->.001,
    TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining/"},
    TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
+
+
+(*
+   Achieving 1.78 versus 1.68 for original Tiny Yolo based on IoU metric. Note that combines training/validation and may be class imbalanced (towards people)
+   Validation Error: 0.00241, Validation Loss: 0.00948, Training Error: 0.00248, Training Loss: 0.00939
+   Net analysis shows it seems to have learned max suppression on larger objects, but interestingly learnt opposite on smallest objects. Explanation: Larger
+   objects harder to localise, so max suppression more important. On smaller objects less important and they do seem to correlate locally together.
+*)
