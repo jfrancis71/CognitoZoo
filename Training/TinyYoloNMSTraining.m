@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-SetDirectory["~/CognitoZoo"]
+SetDirectory["~/CognitoZoo"];
 
 
 <<CZTinyYoloV2Pascal.m
@@ -22,61 +22,57 @@ boundingboxes = Table[CZGetBoundingBox[ {l,y,x}, ConstantArray[0,{125,13,13}]],{
 returnmax[matrix_] := Position[matrix,Max[matrix]][[1]]
 
 
-CZEncodeTarget[ objects_ ] :=
-   ReplacePart[ConstantArray[0,{5,13,13}],
-      Map[Function[{object},
-         returnmax@Map[CZIntersectionOverUnion[object[[1]],#]&,boundingboxes,{3}]->1],objects]]
+CZEncodeTarget[ objects_ ] := Flatten[
+   ReplacePart[ConstantArray[0,{5,20,13,13}],
+      Map[Function[{object},tp=
+         Module[{box = returnmax@Map[CZIntersectionOverUnion[object[[1]],#]&,boundingboxes,{3}] }, {box[[1]],Position[CZPascalClasses,object[[2]]][[1,1]],box[[2]],box[[3]]}]->1],objects]],1]
 
 
-files = FileBaseName/@FileNames["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/*.jpg"];Length[files]
+files = FileBaseName/@FileNames["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/*.jpg"];
+
+
+randomOrdering = Import["~/ImageDataSets/PascalVOC/VOC2012/RandomOrdering.mx"];
 
 
 groundTruth = Table[CZConformObjects[
-   CZImportPascalAnnotations["~/ImageDataSets/PascalVOC/VOC2012/Annotations/"<>files[[k]]<>".xml"],
-   Import["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/"<>files[[k]]<>".jpg"] , {416,416}, "Fit"],
+   CZImportPascalAnnotations["~/ImageDataSets/PascalVOC/VOC2012/Annotations/"<>files[[randomOrdering[[k]]]]<>".xml"],
+   Import["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/"<>files[[randomOrdering[[k]]]]<>".jpg"] , {416,416}, "Fit"],
    {k,1,17125}];
 
 
 dataset = Table[
-   pc=Import["~/ImageDataSets/PascalVOC/VOC2012/ConformJPEGImages/"<>files[[k]]<>".jpg"];
    lay=N@CZEncodeTarget[ groundTruth[[k]] ];
    Association[
-      "Input"->File["~/ImageDataSets/PascalVOC/VOC2012/ConformJPEGImages/"<>files[[k]]<>".jpg"],
+      "Input"->File["~/ImageDataSets/PascalVOC/VOC2012/ConformJPEGImages/"<>files[[randomOrdering[[k]]]]<>".jpg"],
       "Output"->lay,
       "cond"->lay]
    ,{k,1,17125}];
 
 
-GTKernel = Flatten[Table[ReplacePart[ConstantArray[0,{5,3,3}],{{l,y,x}->1,{l,2,2}->0}],{l,1,5},{y,1,3},{x,1,3}],2];GTKernel//Dimensions
+GTKernel = Flatten[Table[ReplacePart[ConstantArray[0,{5,20,3,3}],{{l,o,y,x}->1,{l,o,2,2}->0}],{l,1,5},{o,1,20},{y,1,3},{x,1,3}],{{1,2,3,4},{5,6}}];GTKernel//Dimensions;
 
 
 basenet = NetTake[YoloNet,{1,31}];
 
 
 nmsnet = NetGraph[{
-   "base"->basenet,"cond1"->{ConvolutionLayer[45,{3,3},"PaddingSize"->1,"Weights"->GTKernel,"Biases"->None]},
+   "base"->basenet,"cond1"->{ConvolutionLayer[900,{3,3},"PaddingSize"->1,"Weights"->GTKernel,"Biases"->None]},
    "bn"->ElementwiseLayer[#&],
-   "cat"->CatenateLayer[],"c2"->{ConvolutionLayer[5,{1,1}]},"log"->LogisticSigmoid},{
+   "cat"->CatenateLayer[],"c2"->{ConvolutionLayer[100,{1,1}]},"log"->LogisticSigmoid},{
    {"bn","cond1"}->"cat"->"c2"->"log",
    NetPort["Input"]->"base"->"bn",
    NetPort["cond"]->"cond1"}];
 
 
-SeedRandom[1234];
-resample = RandomSample[dataset];
-
-
 trainedL2 = NetTrain[
-   nmsnet,resample[[1;;16000]],ValidationSet->resample[[16001;;]],
+   nmsnet,dataset[[1;;16000]],ValidationSet->dataset[[16001;;]],
    LearningRateMultipliers->{{"cond1",1,"Weights"}->0,{"base",_}->0},
    MaxTrainingRounds->100,LearningRate->.001,
-   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining/"},
-   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
+   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining2/"},
+   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining2/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
 
 
 (*
-   Achieving 1.78 versus 1.68 for original Tiny Yolo based on IoU metric. Note that combines training/validation and may be class imbalanced (towards people)
-   Validation Error: 0.00241, Validation Loss: 0.00948, Training Error: 0.00248, Training Loss: 0.00939
-   Net analysis shows it seems to have learned max suppression on larger objects, but interestingly learnt opposite on smallest objects. Explanation: Larger
-   objects harder to localise, so max suppression more important. On smaller objects less important and they do seem to correlate locally together.
+   Achieving 0.00064503 validation loss with validation error 0.000135016
+   Not great result in practice. Ground truth positives have low probability
 *)
