@@ -40,7 +40,18 @@ CZDetectObjectsNMS[ image_, opts:OptionsPattern[] ] :=
 CZHighlightObjectsNMS[img_,opts:OptionsPattern[]]:=HighlightImage[img,CZDisplayObjects@CZDetectObjectsNMS[img,opts]]
 
 
-CZErrorMatchingRectangles[ rects1_, rects2_ ] := (Length[rects1]+Length[rects2]-2*Total@N@Map[CZIntersectionOverUnion[rects1[[#[[1,1]]]],rects2[[#[[2,1]]]]]&,FindIndependentEdgeSet[ Graph[Flatten@Table[l[i]->r[j],{i,1,Length[rects1]},{j,1,Length[rects2]}], EdgeWeight->Flatten@Table[CZIntersectionOverUnion[rects1[[i]],rects2[[j]]],{i,1,Length[rects1]},{j,1,Length[rects2]}]] ] ])
+(*
+   Returns a triple, first element is rectangle matchings, second element is unmatched elements from rects1
+   and third element is unmatched elements from rects2
+*)
+CZMatchingRectangles[ rects1_, rects2_ ] := Module[ { matching = FindIndependentEdgeSet[ Graph[
+   Flatten@Table[{1,i}->{2,j},{i,1,Length[rects1]},{j,1,Length[rects2]}],
+   EdgeWeight->Flatten@Table[CZIntersectionOverUnion[rects1[[i]],rects2[[j]]],{i,1,Length[rects1]},{j,1,Length[rects2]}]]] },
+   { Map[rects1[[#[[1,2]]]]->rects2[[#[[2,2]]]]&,matching], Delete[rects1,{#}&/@matching[[All,1,2]]], Delete[rects2,{#}&/@matching[[All,2,2]]] }];
+
+
+CZErrorMatchingRectangles[ rects1_, rects2_ ] := Length[rects1]+Length[rects2]-2*Length[CZMatchingRectangles[rects1,rects2][[1]]] +
+   Total@N@Map[1-CZIntersectionOverUnion[#[[1]],#[[2]]]&,CZMatchingRectangles[rects1,rects2][[1]]];
 
 
 CZErrorMatchingObjects[ objs1_, objs2_ ] := CZErrorMatchingRectangles[ objs1[[All,1]], objs2[[All,1]] ]
