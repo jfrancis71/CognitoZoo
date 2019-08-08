@@ -37,7 +37,7 @@ randomOrdering = Import["~/ImageDataSets/PascalVOC/VOC2012/RandomOrdering.mx"];
 groundTruth = Table[CZConformObjects[
    CZImportPascalAnnotations["~/ImageDataSets/PascalVOC/VOC2012/Annotations/"<>files[[randomOrdering[[k]]]]<>".xml"],
    Import["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/"<>files[[randomOrdering[[k]]]]<>".jpg"] , {416,416}, "Fit"],
-   {k,1,17125}];
+   {k,1,100}];
 
 
 dataset = Table[
@@ -46,7 +46,7 @@ dataset = Table[
       "Input"->File["~/ImageDataSets/PascalVOC/VOC2012/ConformJPEGImages/"<>files[[randomOrdering[[k]]]]<>".jpg"],
       "Output"->lay,
       "cond"->lay]
-   ,{k,1,17125}];
+   ,{k,1,100}];
 
 
 GTKernel = Flatten[Table[ReplacePart[ConstantArray[0,{5,20,3,3}],{{l,o,y,x}->1,{l,o,2,2}->0}],{l,1,5},{o,1,20},{y,1,3},{x,1,3}],{{1,2,3,4},{5,6}}];GTKernel//Dimensions;
@@ -64,15 +64,20 @@ nmsnet = NetGraph[{
    NetPort["cond"]->"cond1"}];
 
 
+lossNet=NetGraph[{"nms"->nmsnet,"focus"->Alpha},
+{NetPort["Output"]->NetPort[{"focus","Target"}],NetPort[{"nms","Output"}]->NetPort[{"focus","Input"}]}]
+
+
 trainedL2 = NetTrain[
-   nmsnet,dataset[[1;;16000]],ValidationSet->dataset[[16001;;]],
-   LearningRateMultipliers->{{"cond1",1,"Weights"}->0,{"base",_}->0},
+   lossNet,dataset[[1;;16000]],ValidationSet->dataset[[16001;;]],
+   LearningRateMultipliers->{{"nms","cond1",1,"Weights"}->0,{"nms","base",_}->0},
    MaxTrainingRounds->100,LearningRate->.001,
-   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining2/"},
-   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining2/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
+   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining4/"},
+   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining4/results.csv"],"Interval"->Quantity[20,"Minutes"]},LossFunction->"Loss"];
 
 
 (*
+Old: without focusloss
    Achieving 0.00064503 validation loss with validation error 0.000135016
    Not great result in practice. Ground truth positives have low probability
 *)
