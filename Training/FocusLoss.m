@@ -12,9 +12,13 @@
 
 
 (* ::Input:: *)
-(*FocusLossLayer=NetGraph[<|"pt"->pt,"sq"->ElementwiseLayer[-((1-#)^2)&],"crossentropy"->ElementwiseLayer[Log],"times"->ThreadingLayer[Times],"res"->SummationLayer[]|>,*)
+(*FocusLossLayer=NetGraph[<|"pt"->pt,"sq"->ElementwiseLayer[-((1-#)^2)&],"crossentropy"->ElementwiseLayer[Log],"times"->ThreadingLayer[Times]|>,*)
 (*{"pt"->"sq",*)
 (*"pt"->"crossentropy",*)
 (*{"sq","crossentropy"}->"times",*)
-(*"times"->"res","res"->NetPort["Loss"]*)
+(*"times"->NetPort["Loss"]*)
 (*}];*)
+
+
+Alpha=NetGraph[{"focus"->FocusLossLayer,"pos"->ElementwiseLayer[#*20&],"neg"->ElementwiseLayer[(1-#)&],"weighting"->ThreadingLayer[Plus],"alpha"->ThreadingLayer[Times]},
+{NetPort["Target"]->{NetPort[{"focus","Target"}],"pos","neg"},{"pos","neg"}->"weighting",{NetPort["focus","Loss"],"weighting"}->"alpha"->NetPort["Loss"]}];
