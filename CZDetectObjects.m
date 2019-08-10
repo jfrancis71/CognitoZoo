@@ -9,12 +9,14 @@ Options[ CZDetectObjects ] = {
    MaxOverlapFraction->.45,
    NMSMethod->CZNonMaxSuppression
 };
-CZDetectObjects[ image_,  opts:OptionsPattern[ { CZDetectObjects, Method->"MobileNet" } ] ] := Switch[ OptionValue[ Method ],
+CZDetectObjects::method = "CZDetectObjects method `1` should be one of SSDVGG512COCO, RetinaNet, MobileNet, SSDVGG300Pascal, SSDVGG512Pascal";
+CZDetectObjects[ image_Image,  opts:OptionsPattern[ { CZDetectObjects, Method->"MobileNet" } ] ] := Switch[ OptionValue[ Method ],
    "SSDVGG512COCO", CZDetectObjectsSSDVGG512COCO[ image, FilterRules[ {opts}, Options[  CZDetectObjects ] ] ],
    "RetinaNet", CZDetectObjectsRetinaNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
    "MobileNet", CZDetectObjectsMobileNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
    "SSDVGG300Pascal", CZDetectObjectsSSDVGG300Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   "SSDVGG512Pascal", CZDetectObjectsSSDVGG512Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ]
+   "SSDVGG512Pascal", CZDetectObjectsSSDVGG512Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
+   _, Message[ CZDetectObjects::method, OptionValue[ Method ] ]
 ];
 
 
