@@ -70,3 +70,13 @@ trained = NetTrain[
    MaxTrainingRounds->100,LearningRate->.001,
    TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingLocalisation/"},
    TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingLocalisation/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
+
+
+(*
+   Validation Error 0.00256, Training Error 0.00249
+   Validation Loss 0.0103, Training Loss 0.0094
+   First 100 examples
+      Ground truth 245 examples
+      Best threshold .36 with 29 false negative, 207 false positive, 236 total errors.
+      Total cross entropy 885. With 752 accounted for by ground truth positives and 132 by ground truth negatives
+*)
