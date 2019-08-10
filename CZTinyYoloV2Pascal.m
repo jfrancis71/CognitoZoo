@@ -5,7 +5,7 @@
    tiny YOLO is a computer vision object detection and localisation model designed to detect
    20 object categories (e.g. people, horses, dogs etc)
    
-   Usage: HighlightImage[img, CZDisplayObject /@ CZDetectObjects[img]]
+   Usage: HighlightImage[img, CZDisplayObjects@CZDetectObjects[img]]
    or:    CZHighlightObjects[ img ]
       
    Takes about .28 secs to run on an image (MacBook air, CPU). (Darknet has reported tiny YOLO running at
