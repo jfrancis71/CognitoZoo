@@ -6,10 +6,6 @@ CZDisplayObjects[ detections_, cmap_:{} ] := MapThread[
    Transpose@detections ];
 
 
-CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-   "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
-
-
 Options[ CZImageConformer ] = {
    Padding->0.0 };
 CZImageConformer[ dims_, fitting_, opts:OptionsPattern[] ][ image_ ] := First@ConformImages[ {image}, dims, fitting , Padding->OptionValue[ Padding ] ];
