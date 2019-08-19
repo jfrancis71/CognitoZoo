@@ -2,13 +2,14 @@
 
 (* Highly experimental.....Attempt to try building a tiny yolo based detector with conditional decoding *)
 
-net=Import["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTraining/2019-07-31T21:56:15_1_023_18400_9.39e-3_9.52e-3.wlnet"];
+
+net=Import["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingLocalisation/2019-08-09T09:48:16_0_016_12800_9.40e-3_1.03e-2.wlnet"];
 
 
 SetDirectory["~/CognitoZoo"]
 
 
-<<CZTinyYoloV2Pascal.m
+<<CZDetectObjects.m
 
 
 nmsnet=NetTake[net,{"cond1","log"}];
