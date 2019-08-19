@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-CZDetectionNets = { "MobileNet", "SSDVGG512COCO", "RetinaNet", "SSDVGG300Pascal", "SSDVGG512Pascal", "TinyYolo" };
+CZDetectionNets = { "MobileNet", "SSDVGG512COCO", "RetinaNet", "SSDVGG300Pascal", "SSDVGG512Pascal", "TinyYolo", "Yolo9000" };
 
 
 Options[ CZDetectObjects ] = {
@@ -17,6 +17,7 @@ CZDetectObjects[ image_Image,  opts:OptionsPattern[ { CZDetectObjects, Method->"
    "SSDVGG300Pascal", CZDetectObjectsSSDVGG300Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
    "SSDVGG512Pascal", CZDetectObjectsSSDVGG512Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
    "TinyYolo", CZDetectObjectsTinyYolo[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
+   "Yolo9000", CZDetectObjectsYolo9000[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
    _, Message[ CZDetectObjects::method, OptionValue[ Method ] ]
 ];
 
@@ -27,37 +28,41 @@ CZHighlightObjects[ img_Image, opts:OptionsPattern[ CZDetectObjects ] ] := Highl
 
 
 CZDetectObjectsSSDVGG512COCO[ image_, opts:OptionsPattern[ CZDetectObjects]  ] :=
-   CZDetectObjectsSingleStage[ image, SSDVGG512COCONet, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {512,512}, "Stretch", CZCOCOClasses, opts ];
+   CZDetectObjectsSingleStage[ image, SSDVGG512COCONet, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {512,512}, "Stretch", 0, CZCOCOClasses, opts ];
 
 
 CZDetectObjectsRetinaNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
-   CZDetectObjectsSingleStage[ image, RetinaNetR101FPNLR2Net, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {1152,896}, "Fit", CZCOCOClasses, opts ];
+   CZDetectObjectsSingleStage[ image, RetinaNetR101FPNLR2Net, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {1152,896}, "Fit", 0, CZCOCOClasses, opts ];
 
 
 CZDetectObjectsMobileNet[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
-   CZDetectObjectsSingleStage[ image, SSDMobileNetv2, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {300,300}, "Stretch", CZCOCOClasses, opts ];
+   CZDetectObjectsSingleStage[ image, SSDMobileNetv2, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {300,300}, "Stretch", 0, CZCOCOClasses, opts ];
 
 
 CZDetectObjectsSSDVGG300Pascal[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
-   CZDetectObjectsSingleStage[ image, SSDVGG300PascalNet, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {300,300}, "Stretch", CZPascalClasses, opts ];
+   CZDetectObjectsSingleStage[ image, SSDVGG300PascalNet, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {300,300}, "Stretch", 0, CZPascalClasses, opts ];
 
 
 CZDetectObjectsSSDVGG512Pascal[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
-   CZDetectObjectsSingleStage[ image, SSDVGG512PascalNet, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {512,512}, "Stretch", CZPascalClasses, opts ];
+   CZDetectObjectsSingleStage[ image, SSDVGG512PascalNet, CZLogisticOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.6, {512,512}, "Stretch", 0, CZPascalClasses, opts ];
 
 
 CZDetectObjectsTinyYolo[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
-   CZDetectObjectsSingleStage[ image, YoloNet, CZTinyYoloOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.24, {416,416}, "Fit", CZPascalClasses, opts ];
+   CZDetectObjectsSingleStage[ image, YoloNet, CZTinyYoloOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.24, {416,416}, "Fit", 0, CZPascalClasses, opts ];
+
+
+CZDetectObjectsYolo9000[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
+   CZDetectObjectsSingleStage[ image, yolo9000Net, CZYolo9000OutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.24, {544,544}, "Fit", 0.5, yolo9000Names, opts ];
 
 
 <<CognitoZoo/CZUtils.m
 
 
-CZDetectObjectsSingleStage[ img_Image, net_, outputDecoder_, threshold_, netDims_, fitting_, labels_, opts:OptionsPattern[ CZDetectObjects ] ] :=
+CZDetectObjectsSingleStage[ img_Image, net_, outputDecoder_, threshold_, netDims_, fitting_, padding_, labels_, opts:OptionsPattern[ CZDetectObjects ] ] :=
    CZNonMaxSuppressionPerClass[FilterRules[ {opts}, Options[ CZNonMaxSuppressionPerClass ] ] ]@
    CZObjectsDeconformer[ img, netDims, fitting ]@outputDecoder[ labels, threshold ]@
    (net[ #, TargetDevice->OptionValue[ TargetDevice ] ]&)@
-   CZImageConformer[ netDims, fitting]@img;
+   CZImageConformer[ netDims, fitting, Padding->padding ]@img;
 
 
 CZLogisticOutputDecoder[ labels_, threshold_:.5 ][ netOutput_ ] := Module[{
@@ -85,6 +90,7 @@ CZPascalClasses = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car
 SeedRandom[1];
 Map[ (CZCmap[#] = RandomColor[])&, CZCOCOClasses ];
 Map[ (CZCmap[#] = RandomColor[])&, CZPascalClasses ];
+CZCmap[ _ ] = Blue;
 
 
 (* The weights in this file have been converted from: https://github.com/weiliu89/caffe/tree/ssd
@@ -179,3 +185,47 @@ CZTinyYoloOutputDecoder[ labels_, threshold_:.24 ][ netOutput_ ] :=(
    slots = LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
    slotPositions = Position[slots, x_/;x>threshold];
    Map[{CZGetBoundingBox[#,netOutput],labels[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]]}&,slotPositions]);
+
+
+(*
+@article{yolov3,
+  title={YOLOv3: An Incremental Improvement},
+  author={Redmon, Joseph and Farhadi, Ali},
+  journal = {arXiv},
+  year={2018}
+}
+*)
+
+
+(*
+   Below 3 Import files were converted from Yolo
+   Available form: https://github.com/pjreddie/darknet
+   See licence: https://github.com/pjreddie/darknet/blob/master/LICENSE.mit
+*)
+
+yolo9000Names = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolo9000Names"],"List"];
+yolo9000Graph = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolo9000Graph"],"WXF"];
+yolo9000Net = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/Yolo9000.wlnet"],"WLNet"];
+
+
+CZYolo9000ClassDecoder[ startingVertex_, startingProbability_, threshold_, class_ ] := Module[ {children = Rest@VertexOutComponent[ yolo9000Graph, {startingVertex}, 1 ] },
+   If[
+      children=={},
+      {startingVertex,startingProbability},
+      If[
+         Length[children]==1,
+         CZYolo9000ClassDecoder[ First@children, startingProbability, class ],
+         If[
+            startingProbability*(SoftmaxLayer[][ class[[ children ]] ])[[ Last@Ordering[ class[[children]] ] ]] < threshold,
+            { startingVertex, startingProbability },
+            CZYolo9000ClassDecoder[ children[[ Last@Ordering[ class[[children]] ] ]], startingProbability*(SoftmaxLayer[][ class[[ children ]] ])[[ Last@Ordering[ class[[children]] ] ]], threshold, class ]]]]
+];
+
+
+CZYolo9000OutputDecoder[ labels_, threshold_:.5 ][ netOutput_ ] := Module[
+   { detections = Position[ netOutput["Objectness"], x_/;x>threshold ][[All,1]] },
+   Map[ Function[ {detectionBox},{
+      Rectangle@@netOutput["Boxes"][[detectionBox]],
+      labels[[ First@CZYolo9000ClassDecoder[ 0, netOutput["Objectness"][[ detectionBox ]], threshold, netOutput["ClassHierarchy"][[detectionBox]] ] ]],
+      CZYolo9000ClassDecoder[ 0, LogisticSigmoid@netOutput["Objectness"][[ detectionBox ]], threshold, netOutput["ClassHierarchy"][[detectionBox]] ][[2]]}
+   ], detections ] ];
