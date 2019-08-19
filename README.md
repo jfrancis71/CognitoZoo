@@ -20,4 +20,6 @@ The SetDirectory command below should be set to where you installed CognitoZoo.
 
 CZDetectObject and CZHighlightObjects supports AcceptanceThreshold and MaxOverlapFraction options.
 
+Note the top level Mathematica packages are intended for general public use. You are welcome to use any packages in the subfolders, but they may contain platform specific code (and may not be useful without modification).
+
 [Licensing Information](https://github.com/jfrancis71/CognitoZoo/Credits)
