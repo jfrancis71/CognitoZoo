@@ -1,16 +1,23 @@
-# CognitoZoo
-Mathematica neural net implementations (uses Mathematica MXNet v12 Machine Learning functionality)
+# Welcome to CognitoZoo
 
-This project provides implementations for Single Shot Detectors both VGG and MobileNet and also RetinaNet.
-We also have a Tiny Yolo implementation.
+CognitoZoo implements a number of popular object detection models, including TinyYolo, SSDMobileNet, SSDVGG300,
+and RetinaNet. The Single Shot Detector models are also in the Wolfram Neural Net repository (they were submitted by me and accepted into the repository). The other models are not yet at present.
 
-The project should be very easy to install and use, so please any difficulties indicates a fault in the code or lack of clarity in the documentation, either of which should be fixible, so do please open an issue, and I will try to fix it.
+## Installation
 
-The following models: SSDVGG300Pascal, SSDVGG512Pascal and SSDVGG512COCO are also available from:
-https://resources.wolframcloud.com/NeuralNetRepository/
-(See Object Detection)
-They were submitted by me and have been accepted into the official Wolfram neural net repository. You may find these models easier to use from this github repository as there are more helpful functions here to aid use.
+From the command line: 
 
-Please note, while all source code for CognitoZoo is subject to the MIT license attached to the CognitoZoo project, the neural net weights are the ownership of the respective creators. Please see the relevant source code file for each project for details.
+git clone https://github.com/jfrancis71/CognitoZoo.git
 
-Please see the project Wiki (https://github.com/jfrancis71/CognitoZoo/wiki)
+This should be run from a working directory where you intend to install CognitoZoo.
+
+## In Mathematica:
+
+Note on first use of running CZDetectObjects.m it will pull all the neural models from my Wolfram repository. This may take a few minutes (depending on your internet connection speed). These models are then cached on your local machine.
+The SetDirectory command below should be set to where you installed CognitoZoo.
+
+![output](https://github.com/jfrancis71/CognitoZoo/blob/master/doc/images/CognitoDemo.jpg)
+
+CZDetectObject and CZHighlightObjects supports AcceptanceThreshold and MaxOverlapFraction options.
+
+[Licensing Information](https://github.com/jfrancis71/CognitoZoo/Credits)
