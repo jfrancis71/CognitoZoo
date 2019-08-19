@@ -21,6 +21,13 @@ CZMakeArrays[ netOutput_ ] := {
 };
 
 
+CZMakeArrays[ netOutput_ ] := {
+   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[1,y,x]],1]]],{y,1,8},{x,1,8}]-.06],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ],
+   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[2,y,x]],1]]],{y,1,4},{x,1,4}]-.1],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ],
+   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[3,y,x]],1]]],{y,1,4},{x,1,4}]-.1],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ]
+};
+
+
 CZDecodeArrays[ result_ ] := Join[
    Map[
          Rectangle[{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}-{37,37},{32*(#[[2]]-.5),512-32*(#[[1]]-.5)}+{37,37}]&,
