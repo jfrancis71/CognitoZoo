@@ -22,4 +22,4 @@ CZDetectObject and CZHighlightObjects supports AcceptanceThreshold and MaxOverla
 
 Note the top level Mathematica packages are intended for general public use. You are welcome to use any packages in the subfolders, but they may contain platform specific code (and may not be useful without modification).
 
-[Licensing Information](https://github.com/jfrancis71/CognitoZoo/Credits)
+[Licensing Information](https://github.com/jfrancis71/CognitoZoo/wiki/Credits)
