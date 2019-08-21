@@ -36,7 +36,7 @@ CZCentroidsToArray[ centroids_, inputDims_, arrayDims_, stride_, offset_ ] :=
    CZReplacePart[ ConstantArray[ 0, arrayDims ], kt=Map[{Ceiling[(1+inputDims[[2]]-#[[2]])/stride+offset],(1+Floor[(#[[1]]-1)/stride-offset])}->1&,centroids] ]
 
 
-codebook=Import["~/Google Drive/Personal/Computer Science/CZModels/SparseFace/codebook.mx"];codebook//Dimensions
+codebook=Import["~/Google Drive/Personal/Computer Science/CZModels/SparseFace/codebook1.mx"];
 
 
 CZEncodeTarget[ faces_ ]:=(
@@ -83,10 +83,10 @@ faces=Join[faces1,faces2,faces3,faces4,faces5,faces6,faces7,faces8,faces9,faces1
 dataset = Table[File[files[[k]]]->CZEncodeTarget[faces[[k]]],{k,1,Length[files]}];
 
 
-SeedRandom[1234]; rnds=RandomSample[dataset];
+rnds = Import["~/ImageDataSets/FaceScrub/TrainingRandomisation.mx"];
 
 
-{trainingSet, validationSet} = {rnds[[;;85000]], rnds[[85001;;]]};
+{ trainingSet, validationSet } = { dataset[[rnds[[1;;80000]] ]], dataset[[rnds[[80001;;]] ]] };
 
 
 (* Export["~/Google Drive/Personal/Computer Science/CZModels/CountNet2.wlnet",trained]*)
@@ -94,11 +94,9 @@ SeedRandom[1234]; rnds=RandomSample[dataset];
 
 (*
 trained = NetTrain[
-   nmsNet,
+   trunk,
    trainingSet,
    ValidationSet->validationSet,
-   LearningRateMultipliers\[Rule]{{"decode1","cond1",2,"Weights"}\[Rule]None,{"decode2","cond1",2,"Weights"}\[Rule]None,{"decode2","cond2",2,"Weights"}\[Rule]None,{"decode3","cond3",2,"Weights"}\[Rule]None},
-   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/"},
-   TrainingProgressReporting\[Rule]{File["~/Google Drive/Personal/Computer Science/CZModels/NMSNetTraining/results.csv"],"Interval"\[Rule]Quantity[20,"Minutes"]}];
+   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/SparseFace/"},
+   TrainingProgressReporting\[Rule]{File["~/Google Drive/Personal/Computer Science/CZModels/SparseFace/results.csv"],"Interval"\[Rule]Quantity[20,"Minutes"]}];
 *)
-(* validation loss .0047 works well *)
