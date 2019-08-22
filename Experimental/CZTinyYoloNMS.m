@@ -27,11 +27,15 @@ If[Max[m]<.24,sofar,CZICMStep[out, ReplacePart[sofar,Position[m,Max[m]]->1]] ])
 CZICM[ out_ ]:= (CZICMStep[ out, ConstantArray[0,{5,13,13}]])
 
 
+bxNet=NetTake[TinyYoloNet,{NetPort["Input"],"decoderNet"}];
+
+
 CZOutput[threshold_:.24][image_]:=( 
-netOutput=YoloNet[image];
+netOutput=NetTake[TinyYoloNet,{NetPort["Input"],"trunkNet"}][image];
+bx=bxNet[image];
 slots=LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
 nms=Position[CZICM[ trunknet[ image ] ],1];
-Map[{CZGetBoundingBox[#,netOutput],Extract[CZPascalClasses,Ordering[Extract[slots,#],-1]],Max@Extract[slots,#]}&,nms]);
+Map[{Rectangle@@bx[["Boxes",#[[2]],#[[3]],#[[1]]]],Extract[CZPascalClasses,Ordering[Extract[slots,#],-1]],Max@Extract[slots,#]}&,nms]);
 
 
 CZDetectObjectsNMS[ image_, opts:OptionsPattern[] ] :=
