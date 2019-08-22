@@ -9,13 +9,16 @@ net=Import["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingCla
 SetDirectory["~/CognitoZoo"]
 
 
-<<CZTinyYoloV2Pascal.m
+<<CZDetectObjects.m
 
 
 nmsnet=NetTake[net,{"cond1","log"}];
 
 
 trunknet=NetTake[net,{"base","base"}];
+
+
+bxNet=NetTake[TinyYoloNet,{NetPort["Input"],"decoderNet"}];
 
 
 CZICMStep[ out_, sofar_ ] := ( 
@@ -28,10 +31,10 @@ CZICM[ out_ ]:= (CZICMStep[ out, ConstantArray[0,{100,13,13}]])
 
 
 CZOutput[threshold_:.24][image_]:=( 
-netOutput=YoloNet[image];
+netOutput=NetTake[TinyYoloNet,{NetPort["Input"],"trunkNet"}][image];
 slots=LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
 nms=Position[Partition[CZICM[ trunknet[ image ] ],20],1];
-Map[{CZGetBoundingBox[{#[[1]],#[[3]],#[[4]]},netOutput],CZPascalClasses[[#[[2]]]],.5}&,nms]);
+Map[{Rectangle@@bx[["Boxes",#[[2]],#[[3]],#[[1]]]],CZPascalClasses[[#[[2]]]],.5}&,nms]);
 
 
 CZDetectObjectsNMS[ image_, opts:OptionsPattern[] ] :=
