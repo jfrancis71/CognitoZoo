@@ -11,15 +11,15 @@ Options[ CZDetectObjects ] = {
 };
 CZDetectObjects::method = "CZDetectObjects method `1` should be one of "<>StringRiffle[ CZDetectionNets, ", " ];
 CZDetectObjects[ image_Image,  opts:OptionsPattern[ { CZDetectObjects, Method->"MobileNet" } ] ] := Switch[ OptionValue[ Method ],
-   "SSDVGG512COCO", CZDetectObjectsSSDVGG512COCO[ image, FilterRules[ {opts}, Options[  CZDetectObjects ] ] ],
-   "RetinaNet", CZDetectObjectsRetinaNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   "MobileNet", CZDetectObjectsMobileNet[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   "SSDVGG300Pascal", CZDetectObjectsSSDVGG300Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   "SSDVGG512Pascal", CZDetectObjectsSSDVGG512Pascal[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   "TinyYolo", CZDetectObjectsTinyYolo[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   "Yolo9000", CZDetectObjectsYolo9000[ image, FilterRules[ {opts}, Options[ CZDetectObjects ] ] ],
-   _, Message[ CZDetectObjects::method, OptionValue[ Method ] ]
-];
+   "SSDVGG512COCO", CZDetectObjectsSSDVGG512COCO,
+   "RetinaNet", CZDetectObjectsRetinaNet,
+   "MobileNet", CZDetectObjectsMobileNet,
+   "SSDVGG300Pascal", CZDetectObjectsSSDVGG300Pascal,
+   "SSDVGG512Pascal", CZDetectObjectsSSDVGG512Pascal,
+   "TinyYolo", CZDetectObjectsTinyYolo,
+   "Yolo9000", CZDetectObjectsYolo9000,
+   _, (Message[ CZDetectObjects::method, OptionValue[ Method ] ]; Abort[] )
+   ] [ image, FilterRules[ {opts}, Options[  CZDetectObjects ] ] ];
 
 
 CZHighlightObjects[ img_Image, opts:OptionsPattern[ CZDetectObjects ] ] := HighlightImage[
@@ -166,11 +166,12 @@ SSDVGG512PascalNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com
 *)
 TinyYoloNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/TinyYoloV2.wlnet"],"WLNet"];
 CZTinyYoloOutputDecoder[ labels_, threshold_:.24 ][ netOutput_ ] := Module[{
-   detections = Position[netOutput["ClassProb"]*netOutput["Objectness"],x_/;x>threshold]},k1=detections;k2=netOutput;
+   jointProbs = netOutput["ClassProb"]*netOutput["Objectness"], detections },
+   detections = Position[jointProbs,x_/;x>threshold];
    Transpose[{
       Rectangle@@@Extract[netOutput["Boxes"],detections[[All,1;;1]]],
       Extract[labels,detections[[All,2;;2]]],
-      Extract[netOutput["ClassProb"]*netOutput["Objectness"], detections ]
+      Extract[jointProbs, detections ]
    }]
 ];
 
