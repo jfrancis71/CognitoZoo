@@ -8,10 +8,10 @@
 <<CZUtils.m
 
 
-CZSparseNet = Import["~/Google Drive/Personal/Computer Science/CZModels/SparseFace/2019-08-16T16:43:16_1_04_27323_8.35e-2_8.11e-2.wlnet"];
+CZSparseNet=Import["~/Google Drive/Personal/Computer Science/CZModels/SparseFace/2019-08-20T09:00:05_1_08_51038_4.00e-2_5.41e-2.wlnet"];
 
 
-codebook=Import["~/Google Drive/Personal/Computer Science/CZModels/SparseFace/codebook.mx"];
+codebook=Import["~/Google Drive/Personal/Computer Science/CZModels/SparseFace/codebook1.mx"];
 
 
 CZMakeArrays[ netOutput_ ] := {
@@ -22,9 +22,9 @@ CZMakeArrays[ netOutput_ ] := {
 
 
 CZMakeArrays[ netOutput_ ] := {
-   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[1,y,x]],1]]],{y,1,8},{x,1,8}]-.06],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ],
-   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[2,y,x]],1]]],{y,1,4},{x,1,4}]-.1],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ],
-   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[3,y,x]],1]]],{y,1,4},{x,1,4}]-.1],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ]
+   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[1,y,x]],1]]],{y,1,8},{x,1,8}]-.05],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ],
+   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[2,y,x]],1]]],{y,1,4},{x,1,4}]-.05],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ],
+   Flatten[ Table[UnitStep[Table[Apply[Times,Extract[netOutput[[All,cy,cx]],Position[codebook[[3,y,x]],1]]],{y,1,4},{x,1,4}]-.05],{cy,1,2},{cx,1,2}], { {1,3}, {2,4} } ]
 };
 
 
