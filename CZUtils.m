@@ -105,6 +105,12 @@ CZConformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ] :=
    ]];
 
 
+(* Red is negative, blue is positive, expects values between -1 and +1 clips outside this range *)
+CZHeatmap[bwarray_] :=
+ ColorCombine[
+  Image /@ {Clip[-bwarray, {0, 1}], bwarray*0.0,
+    Clip[bwarray, {0, 1}]}]
+
 
 (*
    Utility. Gives an indication of how many MULADDS are involved in a net.
