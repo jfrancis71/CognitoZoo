@@ -48,7 +48,7 @@ CZDetectObjectsSSDVGG512Pascal[ image_, opts:OptionsPattern[ CZDetectObjects ]  
 
 
 CZDetectObjectsTinyYolo[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
-   CZDetectObjectsSingleStage[ image, YoloNet, CZTinyYoloOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.24, {416,416}, "Fit", 0, CZPascalClasses, opts ];
+   CZDetectObjectsSingleStage[ image, TinyYoloNet, CZTinyYoloOutputDecoder, OptionValue[ AcceptanceThreshold ] /. "ModelSpecific"->.24, {416,416}, "Fit", 0, CZPascalClasses, opts ];
 
 
 CZDetectObjectsYolo9000[ image_, opts:OptionsPattern[ CZDetectObjects ]  ] :=
@@ -161,30 +161,15 @@ SSDVGG512PascalNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com
       year = {2013--2016}
       }      
 *)
-(*
-   Note some of below logic could be shifted into the net to simplify implementation
-*)
-biases={{1.08,1.19},{3.42,4.41},{6.63,11.38},{9.42,5.11},{16.62,10.52}};
-CZGetBoundingBox[ cubePos_, conv15_ ]:=
-(
-   centX=
-      (1/13)*(cubePos[[3]]-1+LogisticSigmoid[conv15[[1+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]);
-   centY=
-      (1/13)*(cubePos[[2]]-1+LogisticSigmoid[conv15[[2+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]);
-   w=(1/13)*Exp[conv15[[3+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],1]];
-   h=
-      (1/13)*(Exp[conv15[[4+(cubePos[[1]]-1)*25,cubePos[[2]],cubePos[[3]]]]]*biases[[cubePos[[1]],2]]);
-   Rectangle[416*{centX-w/2,1-(centY+h/2)},416*{centX+w/2,1-(centY-h/2)}]
-)
-
-(* The weights in the following wlnet file have been converted from: https://pjreddie.com/media/files/tiny-yolo-voc.weights
-   Copyright and license details: https://github.com/pjreddie/darknet/blob/master/LICENSE.mit
-*)
-YoloNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/TinyYolov2.wlnet"],"WLNet"];
-CZTinyYoloOutputDecoder[ labels_, threshold_:.24 ][ netOutput_ ] :=(
-   slots = LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
-   slotPositions = Position[slots, x_/;x>threshold];
-   Map[{CZGetBoundingBox[#,netOutput],labels[[#[[4]]]],slots[[#[[1]],#[[2]],#[[3]],#[[4]]]]}&,slotPositions]);
+TinyYoloNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/TinyYoloV2.wlnet"],"WLNet"];
+CZTinyYoloOutputDecoder[ labels_, threshold_:.24 ][ netOutput_ ] := Module[{
+   detections = Position[netOutput["ClassProb"]*netOutput["Objectness"],x_/;x>threshold]},k1=detections;k2=netOutput;
+   Transpose[{
+      Rectangle@@@Extract[netOutput["Boxes"],detections[[All,1;;1]]],
+      Extract[labels,detections[[All,2;;2]]],
+      Extract[netOutput["ClassProb"]*netOutput["Objectness"], detections ]
+   }]
+];
 
 
 (*
