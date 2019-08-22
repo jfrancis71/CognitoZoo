@@ -34,7 +34,8 @@ CZOutput[threshold_:.24][image_]:=(
 netOutput=NetTake[TinyYoloNet,{NetPort["Input"],"trunkNet"}][image];
 slots=LogisticSigmoid[netOutput[[5;;105;;25]]]*SoftmaxLayer[][Transpose[Partition[netOutput,25][[All,6;;25]],{1,4,2,3}]];
 nms=Position[Partition[CZICM[ trunknet[ image ] ],20],1];
-Map[{Rectangle@@bx[["Boxes",#[[2]],#[[3]],#[[1]]]],CZPascalClasses[[#[[2]]]],.5}&,nms]);
+bx=bxNet[image];
+Map[{Rectangle@@bx[["Boxes",#[[3]],#[[4]],#[[1]]]],CZPascalClasses[[#[[2]]]],.5}&,nms]);
 
 
 CZDetectObjectsNMS[ image_, opts:OptionsPattern[] ] :=
