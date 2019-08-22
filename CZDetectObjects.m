@@ -161,6 +161,9 @@ SSDVGG512PascalNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com
       year = {2013--2016}
       }      
 *)
+(* The weights in the following wlnet file have been converted from: https://pjreddie.com/media/files/tiny-yolo-voc.weights
+   Copyright and license details: https://github.com/pjreddie/darknet/blob/master/LICENSE.mit
+*)
 TinyYoloNet = Import[LocalCache@CloudObject["https://www.wolframcloud.com/objects/julian.w.francis/TinyYoloV2.wlnet"],"WLNet"];
 CZTinyYoloOutputDecoder[ labels_, threshold_:.24 ][ netOutput_ ] := Module[{
    detections = Position[netOutput["ClassProb"]*netOutput["Objectness"],x_/;x>threshold]},k1=detections;k2=netOutput;
