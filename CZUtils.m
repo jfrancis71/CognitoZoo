@@ -50,6 +50,11 @@ CZTakeWeightedRectangle[ objects_ ] :=
 CZNonMaxSuppressionMethod[ nonMaxSuppressionMethod_ ][ maxOverlapFraction_ ][ objects_ ] := 
    nonMaxSuppressionMethod /@ Gather[ objects, (CZIntersectionOverUnion[#1[[1]],#2[[1]]]> maxOverlapFraction )& ];
 CZNonMaxSuppression = CZNonMaxSuppressionMethod[ CZTakeMaxProbRectangle ];
+CZNonMaxSuppressionSorted[ maxOverlapFraction_ ][ {} ] := {}
+CZNonMaxSuppressionSorted[ maxOverlapFraction_ ][ detections_ ] := Append[
+  CZNonMaxSuppressionSorted[ maxOverlapFraction ][ Pick[Rest[detections], CZIntersectionOverUnion[First[detections][[1]], #[[1]]] < maxOverlapFraction & /@ Rest[detections]]],
+  First[ detections ] ];
+CZNonMaxSuppression[ maxOverlapFraction_ ][ detections_ ] := CZNonMaxSuppressionSorted[ maxOverlapFraction ][ Reverse@SortBy[detections, #[[2]] &] ];
 
 
 (*
