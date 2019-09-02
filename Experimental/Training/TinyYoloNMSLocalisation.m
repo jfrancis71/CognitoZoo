@@ -3,9 +3,6 @@
 SetDirectory["~/CognitoZoo"];
 
 
-<<CZTinyYoloV2Pascal.m
-
-
 <<DataSetUtils/ImportPascalAnnotations.m
 
 
@@ -16,16 +13,19 @@ CZConformObjects[ objects_, image_Image, netDims_List, "Fit" ] :=
    Transpose@{CZConformRectangles[ objects[[All,1]], image, netDims, "Fit" ], objects[[All,2]] }
 
 
-boundingboxes = Table[CZGetBoundingBox[ {l,y,x}, ConstantArray[0,{125,13,13}]],{l,1,5},{y,1,13},{x,1,13}];
+biases={{1.08,1.19},{3.42,4.41},{6.63,11.38},{9.42,5.11},{16.62,10.52}};
+
+
+boundingboxes = Flatten[Table[Module[{cx=(x+.5)/13,cy=(y+.5)/13,width=biases[[l,1]]/13,height=biases[[l,2]]/13},Rectangle[416*{cx-width/2,1-cy-height/2},416*{cx+width/2,1-cy+height/2}]],{y,0,12},{x,0,12},{l,1,5}],2];
 
 
 returnmax[matrix_] := Position[matrix,Max[matrix]][[1]]
 
 
 CZEncodeTarget[ objects_ ] :=
-   ReplacePart[ConstantArray[0,{5,13,13}],
+   ReplacePart[ConstantArray[0,{845}],
       Map[Function[{object},
-         returnmax@Map[CZIntersectionOverUnion[object[[1]],#]&,boundingboxes,{3}]->1],objects]]
+         returnmax@Map[CZIntersectionOverUnion[object[[1]],#]&,boundingboxes]->1],objects]]
 
 
 files = FileBaseName/@FileNames["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/*.jpg"];
