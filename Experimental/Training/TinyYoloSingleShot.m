@@ -24,7 +24,7 @@ Map[Function[object,
 SSDStyleYoloTargets[ objects_, anchors_, labels_ ] :=
    Module[{matches=CZObjectsToAnchors[objects,anchors]},
       Association[
-         "ClassProbs"->ReplacePart[ConstantArray[0,{845,20}],
+         "ClassProbs"->ReplacePart[ConstantArray[0,{Length[anchors],Length[labels]}],
             Flatten[MapThread[Function[{matchPerObj,obj},Map[{#,First@First@Position[labels,obj[[2]]]}->1&,matchPerObj]],{matches,objects}],1]],
-         "Objectness"->ReplacePart[ConstantArray[0,{845}],(#->1&)/@Flatten[matches]],
-         "Boxes"->ConstantArray[0,{845,2,2}]]];
+         "Objectness"->ReplacePart[ConstantArray[0,{Length[anchors]}],(#->1&)/@Flatten[matches]],
+         "Boxes"->ConstantArray[0,{Length[anchors],2,2}]]];
