@@ -6,6 +6,9 @@ SetDirectory["~/CognitoZoo"];
 <<DataSetUtils/ImportPascalAnnotations.m
 
 
+<<CZDetectObjects.m
+
+
 CZConformObjects[ {}, image_Image, netDims_List, "Fit" ] := {}
 
 
@@ -16,16 +19,16 @@ CZConformObjects[ objects_, image_Image, netDims_List, "Fit" ] :=
 biases={{1.08,1.19},{3.42,4.41},{6.63,11.38},{9.42,5.11},{16.62,10.52}};
 
 
-boundingboxes = Flatten[Table[Module[{cx=(x+.5)/13,cy=(y+.5)/13,width=biases[[l,1]]/13,height=biases[[l,2]]/13},Rectangle[416*{cx-width/2,1-cy-height/2},416*{cx+width/2,1-cy+height/2}]],{y,0,12},{x,0,12},{l,1,5}],2];
+boundingboxes = Table[Module[{cx=(x+.5)/13,cy=(y+.5)/13,width=biases[[l,1]]/13,height=biases[[l,2]]/13},Rectangle[416*{cx-width/2,1-cy-height/2},416*{cx+width/2,1-cy+height/2}]],{l,1,5},{y,0,12},{x,0,12}];
 
 
 returnmax[matrix_] := Position[matrix,Max[matrix]][[1]]
 
 
 CZEncodeTarget[ objects_ ] :=
-   ReplacePart[ConstantArray[0,{845}],
+   ReplacePart[ConstantArray[0,{5,13,13}],
       Map[Function[{object},
-         returnmax@Map[CZIntersectionOverUnion[object[[1]],#]&,boundingboxes]->1],objects]]
+         returnmax@Map[CZIntersectionOverUnion[object[[1]],#]&,boundingboxes,{3}]->1],objects]]
 
 
 files = FileBaseName/@FileNames["~/ImageDataSets/PascalVOC/VOC2012/JPEGImages/*.jpg"];
@@ -52,7 +55,7 @@ dataset = Table[
 GTKernel = Flatten[Table[ReplacePart[ConstantArray[0,{5,3,3}],{{l,y,x}->1,{l,2,2}->0}],{l,1,5},{y,1,3},{x,1,3}],2];
 
 
-basenet = NetTake[YoloNet,{1,31}];
+basenet = NetTake[NetExtract[TinyYoloNet,"trunkNet"],{1,31},"Input"->NetEncoder[{"Image",{416,416},ColorSpace->"RGB"}]];
 
 
 nmsnet = NetGraph[{
