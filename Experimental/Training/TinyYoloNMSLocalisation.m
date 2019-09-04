@@ -52,34 +52,45 @@ dataset = Table[
    ,{k,1,17125}];
 
 
-GTKernel = Flatten[Table[ReplacePart[ConstantArray[0,{5,3,3}],{{l,y,x}->1,{l,2,2}->0}],{l,1,5},{y,1,3},{x,1,3}],2];
+GTKernel = Table[Flatten[Table[ReplacePart[ConstantArray[0,{5,3,3}],{{l,y,x}->1,{c,2,2}->0}],{l,1,5},{y,1,3},{x,1,3}],2],{c,1,5}];
 
 
 basenet = NetTake[NetExtract[TinyYoloNet,"trunkNet"],{1,31},"Input"->NetEncoder[{"Image",{416,416},ColorSpace->"RGB"}]];
 
 
+condGraph[kernel_] := NetGraph[{
+   ConvolutionLayer[45,{3,3},"PaddingSize"->1,"Weights"->kernel,"Biases"->None],
+   CatenateLayer[],
+   ConvolutionLayer[1,{1,1}],
+   LogisticSigmoid},{
+   NetPort["Input"]->2,NetPort["cond"]->1->2,2->3->4}]
+
+
 nmsnet = NetGraph[{
-   "base"->basenet,"cond1"->{ConvolutionLayer[45,{3,3},"PaddingSize"->1,"Weights"->GTKernel,"Biases"->None]},
-   "bn"->ElementwiseLayer[#&],
-   "cat"->CatenateLayer[],"c2"->{ConvolutionLayer[5,{1,1}]},"log"->LogisticSigmoid},{
-   {"bn","cond1"}->"cat"->"c2"->"log",
-   NetPort["Input"]->"base"->"bn",
-   NetPort["cond"]->"cond1"}];
+   "base"->basenet,
+   "cond1"->condGraph[GTKernel[[1]]],
+   "cond2"->condGraph[GTKernel[[2]]],
+   "cond3"->condGraph[GTKernel[[3]]],
+   "cond4"->condGraph[GTKernel[[4]]],
+   "cond5"->condGraph[GTKernel[[5]]],
+   "cat"->CatenateLayer[]},{
+   "base"->{"cond1","cond2","cond3","cond4","cond5"},{"cond1","cond2","cond3","cond4","cond5"}->"cat"
+}];
 
 
 trained = NetTrain[
    nmsnet,dataset[[1;;16000]],ValidationSet->dataset[[16001;;]],
-   LearningRateMultipliers->{{"cond1",1,"Weights"}->0,{"base",_}->0},
+   LearningRateMultipliers->{
+   {"cond1",1,"Weights"}->0,
+   {"cond2",1,"Weights"}->0,
+   {"cond3",1,"Weights"}->0,
+   {"cond4",1,"Weights"}->0,
+   {"cond5",1,"Weights"}->0,
+   {"base",_}->0},
    MaxTrainingRounds->100,LearningRate->.001,
-   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingLocalisation/"},
-   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingLocalisation/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
+   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingLocalisation1/"},
+   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingLocalisation1/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
 
 
 (*
-   Validation Error 0.00256, Training Error 0.00249
-   Validation Loss 0.0103, Training Loss 0.0094
-   First 100 examples
-      Ground truth 245 examples
-      Best threshold .36 with 29 false negative, 207 false positive, 236 total errors.
-      Total cross entropy 885. With 752 accounted for by ground truth positives and 132 by ground truth negatives
 *)

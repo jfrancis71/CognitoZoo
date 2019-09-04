@@ -3,10 +3,10 @@
 SetDirectory["~/CognitoZoo"];
 
 
-<<CZTinyYoloV2Pascal.m
-
-
 <<DataSetUtils/ImportPascalAnnotations.m
+
+
+<<CZDetectObjects.m
 
 
 CZConformObjects[ {}, image_Image, netDims_List, "Fit" ] := {}
@@ -16,7 +16,10 @@ CZConformObjects[ objects_, image_Image, netDims_List, "Fit" ] :=
    Transpose@{CZConformRectangles[ objects[[All,1]], image, netDims, "Fit" ], objects[[All,2]] }
 
 
-boundingboxes = Table[CZGetBoundingBox[ {l,y,x}, ConstantArray[0,{125,13,13}]],{l,1,5},{y,1,13},{x,1,13}];
+biases={{1.08,1.19},{3.42,4.41},{6.63,11.38},{9.42,5.11},{16.62,10.52}};
+
+
+boundingboxes = Table[Module[{cx=(x+.5)/13,cy=(y+.5)/13,width=biases[[l,1]]/13,height=biases[[l,2]]/13},Rectangle[416*{cx-width/2,1-cy-height/2},416*{cx+width/2,1-cy+height/2}]],{l,1,5},{y,0,12},{x,0,12}];
 
 
 returnmax[matrix_] := Position[matrix,Max[matrix]][[1]]
@@ -49,33 +52,35 @@ dataset = Table[
    ,{k,1,17125}];
 
 
-GTKernel = Flatten[Table[ReplacePart[ConstantArray[0,{5,20,3,3}],{{l,o,y,x}->1,{l,o,2,2}->0}],{l,1,5},{o,1,20},{y,1,3},{x,1,3}],{{1,2,3,4},{5,6}}];GTKernel//Dimensions;
+GTKernel = Table[Flatten[Table[ReplacePart[ConstantArray[0,{100,3,3}],{{l,y,x}->1,{c,2,2}->0}],{l,1,100},{y,1,3},{x,1,3}],2],{c,1,100}];
 
 
-basenet = NetTake[YoloNet,{1,31}];
+basenet = NetTake[NetExtract[TinyYoloNet,"trunkNet"],{1,31},"Input"->NetEncoder[{"Image",{416,416},ColorSpace->"RGB"}]];
+
+
+condGraph[kernel_] := NetGraph[{
+   ConvolutionLayer[900,{3,3},"PaddingSize"->1,"Weights"->kernel,"Biases"->None],
+   CatenateLayer[],
+   ConvolutionLayer[1,{1,1}],
+   LogisticSigmoid},{
+   NetPort["Input"]->2,NetPort["cond"]->1->2,2->3->4}]
 
 
 nmsnet = NetGraph[{
-   "base"->basenet,"cond1"->{ConvolutionLayer[900,{3,3},"PaddingSize"->1,"Weights"->GTKernel,"Biases"->None]},
-   "bn"->ElementwiseLayer[#&],
-   "cat"->CatenateLayer[],"c2"->{ConvolutionLayer[100,{1,1}]},"log"->LogisticSigmoid},{
-   {"bn","cond1"}->"cat"->"c2"->"log",
-   NetPort["Input"]->"base"->"bn",
-   NetPort["cond"]->"cond1"}];
+   "base"->basenet,
+   Sequence@@Table["cond"<>ToString[k]->condGraph[GTKernel[[k]]],{k,1,100}],
+   "cat"->CatenateLayer[]},{
+   "base"->Table["cond"<>ToString[k],{k,1,100}]->"cat"
+}];
 
 
 trained = NetTrain[
    nmsnet,dataset[[1;;16000]],ValidationSet->dataset[[16001;;]],
-   LearningRateMultipliers->{{"cond1",1,"Weights"}->0,{"base",_}->0},
+   LearningRateMultipliers->Append[
+      Table[{"cond"<>ToString[k],1,"Weights"}->0,{k,1,100}],{"base",_}->0],
    MaxTrainingRounds->100,LearningRate->.001,
-   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingClasses/"},
-   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingClasses/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
+   TrainingProgressCheckpointing->{"Directory","~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingClasses1/"},
+   TrainingProgressReporting->{File["~/Google Drive/Personal/Computer Science/CZModels/TinyNMSTrainingClasses1/results.csv"],"Interval"->Quantity[20,"Minutes"]}];
 
 (*
-   Validation Error 0.000134, Training Error 0.000132
-   Validation Loss 0.000633, Training Loss 0.000583
-   First 100 examples:
-      Ground truth 246 objects
-      Best threshold 0.4 with 223 false negative, 15 false positive, 238 total errors
-      Total cross entropy 1100. With 966 accounted for by ground truth positives, and 134 by ground truth negatives
 *)
