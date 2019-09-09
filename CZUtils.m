@@ -110,6 +110,11 @@ CZConformRectangles[ rboxes_List, image_Image, netDims_List, "Fit" ] :=
    ]];
 
 
+CZConformObjects[ {}, image_Image, netDims_List, "Fit" ] := {};
+CZConformObjects[ objects_, image_Image, netDims_List, "Fit" ] :=
+   Transpose@{CZConformRectangles[ objects[[All,1]], image, netDims, "Fit" ], objects[[All,2]] }
+
+
 (* Red is negative, blue is positive, expects values between -1 and +1 clips outside this range *)
 CZHeatmap[bwarray_] :=
  ColorCombine[
