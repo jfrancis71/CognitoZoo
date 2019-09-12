@@ -1,5 +1,8 @@
 (* ::Package:: *)
 
+CZSoftmax[v_]:=Exp[v]/Total[Exp[v]]
+
+
 (*
 wt is a weight vector
 *)
@@ -7,10 +10,10 @@ CZBayesProbT[ t_, wt_ ] := Exp[wt[[t]]]/Total[Exp[wt]];
 
 
 (*
-   pcond[v,t,w] v is a vector, t is a scalar between 1...N, w is a matrix with N rows and |v| columns
+   pcond[v,t,w] v is a vector, t is a scalar between 1...N, w is a tensor N*|v|*U where U is number of possible entries in single element of v
  returns a scalar
 *)
-CZBayesCondProbVonT[ v_, t_, w_ ] := Apply[Times, LogisticSigmoid[w[[t]]]*v+(1-LogisticSigmoid[w[[t]]])*(1-v)];
+CZBayesCondProbVonT[ v_, t_, w_ ] := Apply[Times,MapThread[#1[[1+#2]]&,{(CZSoftmax[#]&/@w[[t]]),v}]]
 
 
 (*
@@ -41,14 +44,14 @@ CZBayesLoss[ v_, w_, nt_] := Log[CZBayesMarginalV[v,w,nt]];
 (*
    data is in Examples*Features format, N is number of hidden states
 *)
-CZBayesMLE[data_,N_] := Module[{fw,fwt,loss,tw1},
-   fw=Table[w[t,k],{t,1,N},{k,1,Length[data[[1]]]}];
+CZBayesMLE[data_,N_,U_] := Module[{fw,fwt,loss,tw1},
+   fw=Table[w[t,k,u],{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}];
    fwt=Table[wt[t],{t,1,N}];
-   loss=Total[CZBayesLoss[#,{fw,fwt},N]&/@data];
+   loss=Total[CZBayesLoss[#,{fw,fwt},N]&/@data];fw1=fw;fwt1=fwt;floss=loss;
    tw1=Join[
-      Flatten[Table[{w[t,k],Random[]},{t,1,N},{k,1,Length[data[[1]]]}],1],
+      Flatten[Table[{w[t,k,u],Random[]},{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}],2],
       Table[{wt[t],Random[]},{t,1,N}]
-   ];
-   algo = FindMaximum[loss,tw1];
-   {algo[[1]]/Length[data], Table[w[t,k],{t,1,N},{k,1,Length[data[[1]]]}] /. algo[[2]]}
+   ];tw11=tw1;
+   algo = FindMaximum[loss,tw1];zalgo=algo;
+   {algo[[1]]/Length[data], Table[w[t,k,u],{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}] /. algo[[2]]}
 ];
