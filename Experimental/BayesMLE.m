@@ -1,10 +1,16 @@
 (* ::Package:: *)
 
+(*
+   Note these are all discrete distributions. Do not try and pass a continuous
+   distribution, eg from a pixel in.
+*)
+
+
 CZSoftmax[v_]:=Exp[v]/Total[Exp[v]]
 
 
 (*
-wt is a weight vector
+   wt is a weight vector
 *)
 CZBayesProbT[ t_, wt_ ] := Exp[wt[[t]]]/Total[Exp[wt]];
 
@@ -45,9 +51,9 @@ CZBayesLoss[ v_, w_, nt_] := Log[CZBayesMarginalV[v,w,nt]];
    data is in Examples*Features format, N is number of hidden states
 *)
 CZBayesMLE[data_,N_,U_] := Module[{fw,fwt,loss,tw1},
-   fw=Table[w[t,k,u],{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}];
-   fwt=Table[wt[t],{t,1,N}];
-   loss=Total[CZBayesLoss[#,{fw,fwt},N]&/@data];fw1=fw;fwt1=fwt;floss=loss;
+   fw=Table[w[t,k,u],{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}];de=fw;
+   fwt=Table[wt[t],{t,1,N}];fw1=fw;fwt1=fwt;
+   loss=Total[CZBayesLoss[#,{fw,fwt},N]&/@data];floss=loss;
    tw1=Join[
       Flatten[Table[{w[t,k,u],Random[]},{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}],2],
       Table[{wt[t],Random[]},{t,1,N}]
@@ -55,3 +61,38 @@ CZBayesMLE[data_,N_,U_] := Module[{fw,fwt,loss,tw1},
    algo = FindMaximum[loss,tw1];zalgo=algo;
    {algo[[1]]/Length[data], Table[w[t,k,u],{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}] /. algo[[2]]}
 ];
+
+
+(* Neural net implementation not working great. Not sure why
+*)
+
+
+CreateCondNet:=NetGraph[{
+   {ConstantArrayLayer["Output"->100,"Array"->RandomReal[{-.5,.5},100]],LogisticSigmoid},
+   ThreadingLayer[Times],
+   ElementwiseLayer[1-#&],
+   ElementwiseLayer[1-#&],
+   ThreadingLayer[Times],
+   ThreadingLayer[Plus],
+   ElementwiseLayer[Log[#]&],
+   SummationLayer[]
+  },{
+   {1,NetPort["Input"]}->2,
+   1->4,
+   {3,4}->5,
+   {2,5}->6->7->8
+}];
+
+
+CreateBayesNet[k_]:=NetGraph[Flatten@Join[{
+   "prior"->{ConstantArrayLayer["Output"->k,"Array"->RandomReal[{-.001,.001},k]],SoftmaxLayer[]}},
+   {Table[ToString[n]->{CreateCondNet,ElementwiseLayer[Exp],ReplicateLayer[1,"Input"->"Real"]},{n,1,k}]},
+   {"concat"->CatenateLayer["Inputs"->ConstantArray[1,k]],
+   "post"->ThreadingLayer[Times],
+   "plus"->SummationLayer[],
+   "loss"->ElementwiseLayer[-Log[#]&]}],{
+   Table[ToString[n],{n,k}]->"concat",
+   {"concat","prior"}->"post"->"plus",
+   "plus"->"loss"->NetPort["Loss"]
+}]
+
