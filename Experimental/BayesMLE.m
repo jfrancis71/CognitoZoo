@@ -59,7 +59,7 @@ CZBayesMLE[data_,N_,U_] := Module[{fw,fwt,loss,tw1},
       Table[{wt[t],Random[]},{t,1,N}]
    ];tw11=tw1;
    algo = FindMaximum[loss,tw1];zalgo=algo;
-   {algo[[1]]/Length[data], Table[w[t,k,u],{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}] /. algo[[2]]}
+   { algo[[1]]/Length[data], { Table[wt[t],{t,1,N}], Table[w[t,k,u],{t,1,N},{k,1,Length[data[[1]]]},{u,1,U}] } /. algo[[2]] }
 ];
 
 
