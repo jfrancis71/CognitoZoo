@@ -15,21 +15,24 @@ https: https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md
 *)
 
 
-BNConvLayer[ outputChannels_Integer, kernelSize_List, stride_Integer, paddingSize_Integer ] := NetChain[{
-   ConvolutionLayer[ outputChannels, kernelSize, "Stride"->stride, "PaddingSize"->paddingSize ],
-   BatchNormalizationLayer[]
-}];
-
-
 ResBranch2[ outputChannels_, stride_ ] := NetChain[{
-   "a"->{BNConvLayer[ outputChannels/4, {1,1}, stride, 0 ], Ramp},
-   "b"->{BNConvLayer[ outputChannels/4, {3,3}, 1, 1 ], Ramp},
-   "c"->BNConvLayer[ outputChannels, {1,1}, 1, 0 ]
-}];
+   "conv1a"->ConvolutionLayer[ outputChannels/4, {1,1}, "Stride"->stride, "PaddingSize"->0 ],
+   "bn1a"-> BatchNormalizationLayer[],
+   "relu1a"-> Ramp,
+   "conv1b"->ConvolutionLayer[outputChannels/4, {3,3}, "Stride"->1, "PaddingSize"->1],
+   "bn1b"-> BatchNormalizationLayer[],
+   "relu1b"-> Ramp,
+   "conv1c"->ConvolutionLayer[outputChannels, {1,1}, "Stride"->1, "PaddingSize"->0],
+   "bn1c"-> BatchNormalizationLayer[]}
+];
 
 
-ResBottleneck[ outputChannels_, stride_, identityShortCut_Symbol: True ] := NetGraph[{
-   If [identityShortCut, Nothing, "branch1"->BNConvLayer[ outputChannels, {1,1}, stride, 0 ] ],
+ResBlock[ outputChannels_, stride_, identityShortCut_Symbol: True ] := NetGraph[{
+   If [identityShortCut,
+      Nothing,
+      "branch1"->{
+         ConvolutionLayer[ outputChannels, {1,1} , "Stride"->stride, "PaddingSize"->-0 ],
+         BatchNormalizationLayer[]} ],
    "branch2"->ResBranch2[ outputChannels, stride ],
    "sum"->TotalLayer[],
    "relu"->Ramp
@@ -38,24 +41,31 @@ ResBottleneck[ outputChannels_, stride_, identityShortCut_Symbol: True ] := NetG
 }];
 
 
-ResChain[ repeats_, channels_, initStride_] := NetChain[Prepend[
-   ToString[0]->ResBottleneck[ channels, initStride, False ]][
-   Table[ ToString[k]->ResBottleneck[ channels, 1 ], {k, repeats} ]
-]];
+ResChain[ resBlockRootName_, repeats_, channels_, initStride_] := Prepend[
+   resBlockRootName<>"_"<>ToString[0]->ResBlock[ channels, initStride, False ]][
+   Table[ resBlockRootName<>"_"<>ToString[k]->ResBlock[ channels, 1 ], {k, repeats} ]
+];
 
 
-ResBackboneNet = NetGraph[{
-   "conv1"->{BNConvLayer[ 64, {7,7}, 2, 3 ], Ramp},
+ResBackboneNet = NetGraph[Flatten@{
+   "conv1"->{
+      ConvolutionLayer[ 64, {7,7} , "Stride"->2, "PaddingSize"->3 ],
+      BatchNormalizationLayer[],
+      Ramp },
    "pool1"->PoolingLayer[ {3,3}, "Stride"->2, "PaddingSize"->1 ],   
-   "res2"->ResChain[ 2, 256, 1 ],
-   "res3"->ResChain[ 3, 512, 2 ],
-   "res4"->ResChain[ 22, 1024, 2 ],
-   "res5"->ResChain[ 2, 2048, 2 ]
+   ResChain[ "res2", 2, 256, 1 ],
+   ResChain[ "res3", 3, 512, 2 ],
+   ResChain[ "res4", 22, 1024, 2 ],
+   ResChain[ "res5", 2, 2048, 2 ]
 },{
-   "conv1"->"pool1"->"res2"->"res3"->"res4"->"res5",
-   "res3"->NetPort["res3_3_sum"],
-   "res4"->NetPort["res4_22_sum"],
-   "res5"->NetPort["res5_2_sum"]
+   "conv1"->"pool1"->"res2_0","res2_2"->"res3_0","res3_3"->"res4_0","res4_22"->"res5_0",
+   Table["res2_"<>ToString[i-1]-> "res2_"<>ToString[i],{i,1,2}],
+   Table["res3_"<>ToString[i-1]-> "res3_"<>ToString[i],{i,1,3}],
+   Table["res4_"<>ToString[i-1]-> "res4_"<>ToString[i],{i,1,22}],
+   Table["res5_"<>ToString[i-1]-> "res5_"<>ToString[i],{i,1,2}],
+   "res3_3"->NetPort["res3_3_sum"],
+   "res4_22"->NetPort["res4_22_sum"],
+   "res5_2"->NetPort["res5_2_sum"]
 }];
 
 
