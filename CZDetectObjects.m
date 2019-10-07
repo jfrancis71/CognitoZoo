@@ -66,7 +66,7 @@ CZDetectObjectsSingleStage[ img_Image, net_, outputDecoder_, threshold_, netDims
 
 
 CZLogisticOutputDecoder[ labels_, threshold_:.5 ][ netOutput_ ] := Module[{
-   detections = Position[netOutput["ClassProb"],x_/;x>threshold]},
+   detections = Position[Unitize@UnitStep[netOutput["ClassProb"]-threshold],1]},
    Transpose[{
       Rectangle@@@Extract[netOutput["Boxes"],detections[[All,1;;1]]],
       Extract[labels,detections[[All,2;;2]]],
