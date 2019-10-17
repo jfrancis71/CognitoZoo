@@ -1,5 +1,10 @@
 (* ::Package:: *)
 
+(*
+   This repo was helpful as VaE guide: https://jmetzen.github.io/2015-11-27/vae.html
+*)
+
+
 CZCreateEncoder[ inputUnits_, latentUnits_, h1_:500, h2_: 500 ] :=
    NetGraph[{
       "h1"->{h1,Ramp},
