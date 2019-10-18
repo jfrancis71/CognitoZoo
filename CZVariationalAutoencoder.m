@@ -1,6 +1,9 @@
 (* ::Package:: *)
 
 (*
+   Auto-Encoding Variational Bayes, 2014. Kingma & Welling.
+   http: https://arxiv.org/abs/1312.6114
+
    This repo was helpful as VaE guide: https://jmetzen.github.io/2015-11-27/vae.html
 *)
 
@@ -68,11 +71,17 @@ CZTrainVaE[ inputUnits_, latentUnits_, samples_, h1_:500, h2_:500 ] := Module[{t
    f[assoc_] := MapThread[Association["Input"->#1,"Target"->#1,"RandomSample"->#2]&,{RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
    lossNet = CZCreateVaELoss[ inputUnits, latentUnits, h1, h2 ];
    trained = NetTrain[ lossNet, f, LossFunction->{"kl_loss", "recon_loss"} ];
-   NetExtract[ trained, "VaE" ]
+   trained
 ];
 
 
-(* trainedvae = CZTrainVaE[ 784, 8, rawproc ] *)
+CZGetEncoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, {"VaE", "encoder" } ]
+
+
+CZGetDecoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, {"VaE", "decoder" } ]
+
+
+(* trainedvaeloss = CZTrainVaE[ 784, 8, rawproc ] *)
 
 
 (* dec=NetExtract[trainedvae, "decoder"] *)
