@@ -48,29 +48,33 @@ CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
       NetPort[{"encoder","LogVar"}]->NetPort["LogVar"]}];
 
 
+(* We're really assuming data space is binary (by virtue of the loss function)
+*)
 CZCreateVaELoss[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
    NetGraph[{
       "VaE"->CZCreateVaE[ inputUnits, latentUnits, h1, h2 ],
-      "recon_loss"->CrossEntropyLossLayer["Binary"],
-      "exp"->ElementwiseLayer[Exp],
-      "sq"->ElementwiseLayer[#^2&],
+      "mean_recon_loss"->CrossEntropyLossLayer["Binary"],
+      "total_recon_loss"->ElementwiseLayer[#*latentUnits&],
+      "var"->ElementwiseLayer[Exp],
+      "meansq"->ElementwiseLayer[#^2&],
       "th"->ThreadingLayer[Plus],
-      "neg"->ElementwiseLayer[-1-#&],
+      "neg"->ElementwiseLayer[+1-#&],
       "ag"->AggregationLayer[Total,1],
       "kl_loss"->ElementwiseLayer[0.5*#/784.&]},{
-      NetPort[{"VaE","Output"}]->NetPort[{"recon_loss","Input"}],
-      NetPort[{"VaE","LogVar"}]->"exp",
-      NetPort[{"VaE","Mean"}]->"sq",
+      NetPort[{"VaE","Output"}]->NetPort[{"mean_recon_loss","Input"}],
+      NetPort[{"VaE","LogVar"}]->"var",
+      NetPort[{"VaE","Mean"}]->"meansq",
       NetPort[{"VaE","LogVar"}]->"neg",
-      {"exp","sq","neg"}->"th"->"ag"->"kl_loss"->NetPort["kl_loss"],
-      NetPort[{"recon_loss","Loss"}]->NetPort["recon_loss"]
+      {"var","meansq","neg"}->"th"->"ag"->"kl_loss"->NetPort["kl_loss"],
+      NetPort[{"mean_recon_loss","Loss"}]->NetPort[{"total_recon_loss","Input"}],
+      NetPort[{"total_recon_loss","Output"}]->NetPort["recon_loss"]
 }];
 
 
 CZTrainVaE[ inputUnits_, latentUnits_, samples_, h1_:500, h2_:500 ] := Module[{trained, lossNet, f},
    f[assoc_] := MapThread[Association["Input"->#1,"Target"->#1,"RandomSample"->#2]&,{RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
    lossNet = CZCreateVaELoss[ inputUnits, latentUnits, h1, h2 ];
-   trained = NetTrain[ lossNet, f, LossFunction->{"kl_loss", "recon_loss"} ];
+   trained = NetTrain[ lossNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
    trained
 ];
 
