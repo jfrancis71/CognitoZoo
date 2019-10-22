@@ -67,12 +67,13 @@ CZCreateVaELoss[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
       NetPort[{"VaE","LogVar"}]->"neg",
       {"var","meansq","neg"}->"th"->"ag"->"kl_loss"->NetPort["kl_loss"],
       NetPort[{"mean_recon_loss","Loss"}]->NetPort[{"total_recon_loss","Input"}],
-      NetPort[{"total_recon_loss","Output"}]->NetPort["recon_loss"]
+      NetPort[{"total_recon_loss","Output"}]->NetPort["recon_loss"],
+      NetPort["Input"]->NetPort[{"mean_recon_loss","Target"}]
 }];
 
 
 CZTrainVaE[ inputUnits_, latentUnits_, samples_, h1_:500, h2_:500 ] := Module[{trained, lossNet, f},
-   f[assoc_] := MapThread[Association["Input"->#1,"Target"->#1,"RandomSample"->#2]&,{RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
+   f[assoc_] := MapThread[Association["Input"->#1,"RandomSample"->#2]&,{RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
    lossNet = CZCreateVaELoss[ inputUnits, latentUnits, h1, h2 ];
    trained = NetTrain[ lossNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
    trained
