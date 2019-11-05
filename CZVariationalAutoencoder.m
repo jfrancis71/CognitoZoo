@@ -58,7 +58,7 @@ CZCreateVaELoss[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
       "var"->ElementwiseLayer[Exp],
       "meansq"->ElementwiseLayer[#^2&],
       "th"->ThreadingLayer[Plus],
-      "neg"->ElementwiseLayer[+1-#&],
+      "neg"->ElementwiseLayer[-1-#&],
       "ag"->AggregationLayer[Total,1],
       "kl_loss"->ElementwiseLayer[0.5*#/784.&]},{
       NetPort[{"VaE","Output"}]->NetPort[{"mean_recon_loss","Input"}],
