@@ -81,6 +81,27 @@ GenerativePixelCNN = NetGraph[{
 }];
 
 
+ConditionalPixel = NetGraph[{
+   "reshapeInput"->ReshapeLayer[{1,28,28}],
+   "reshapeConditional"->ReshapeLayer[{1,28,28}],
+   "log"->LogisticSigmoid,
+   "loss"->CrossEntropyLossLayer["Binary"]},{
+   NetPort["Input"]->"reshapeInput"->NetPort[{"loss","Target"}],
+   NetPort["Conditional"]->"reshapeConditional"->"log"->NetPort[{"loss","Input"}],
+   "loss"->NetPort["Loss"],
+   "log"->NetPort["Output"]},
+   "Input"->{28,28}
+];
+
+
+GenerativePixel = NetGraph[{
+   "global"->ConstantArrayLayer[{28,28}],
+   "condpixel"->ConditionalPixel},{
+   NetPort["Input"]->NetPort[{"condpixel","Input"}],
+   "global"->NetPort[{"condpixel","Conditional"}]
+}];
+
+
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
