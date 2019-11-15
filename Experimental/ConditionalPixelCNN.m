@@ -5,20 +5,21 @@
 (**)*)
 
 
-pixels1=ConstantArray[0,{1,28,28}];
-pixels1[[1,1;;28;;2,1;;28;;2]]=1;
-pixels2=ConstantArray[0,{1,28,28}];
-pixels2[[1,2;;28;;2,2;;28;;2]]=1;
-pixels3=ConstantArray[0,{1,28,28}];
-pixels3[[1,1;;28;;2,2;;28;;2]]=1;
-pixels4=ConstantArray[0,{1,28,28}];
-pixels4[[1,2;;28;;2,1;;28;;2]]=1;
+pixels1=pixels2=pixels3=pixels4=pixels5=pixels6=pixels7=pixels8=pixels9=ConstantArray[0,{1,28,28}];
+pixels = {
+   (pixels1[[1,1;;28;;3,1;;28;;3]]=1;pixels1),
+   (pixels2[[1,3;;28;;3,3;;28;;3]]=1;pixels2),
+   (pixels3[[1,2;;28;;3,2;;28;;3]]=1;pixels3),
+   (pixels4[[1,3;;28;;3,1;;28;;3]]=1;pixels4),
+   (pixels5[[1,1;;28;;3,3;;28;;3]]=1;pixels5),
+   (pixels6[[1,2;;28;;3,1;;28;;3]]=1;pixels6),
+   (pixels7[[1,3;;28;;3,2;;28;;3]]=1;pixels7),
+   (pixels8[[1,2;;28;;3,3;;28;;3]]=1;pixels8),
+   (pixels9[[1,1;;28;;3,2;;28;;3]]=1;pixels9)
+};
 
 
-mask1=mask2=mask3=mask4=ConstantArray[0,{1,28,28}];
-mask2=mask1+pixels1;
-mask3=mask2+pixels2;
-mask4=mask3+pixels3;
+masks = FoldList[ Plus, ConstantArray[ 0, { 1, 28, 28} ], pixels ];
 
 
 MaskLayer[mask_]:=NetGraph[{
@@ -40,35 +41,26 @@ MaskLossLayer[mask_]:=NetGraph[{
 PredictLayer[mask_]:=NetGraph[{
    "mask"->MaskLayer[mask],
    "cat"->CatenateLayer[],
-   "conv"->ConvolutionLayer[1,{3,3},"PaddingSize"->1]},{
+   "conv"->{ConvolutionLayer[16,{5,5},"PaddingSize"->2],Ramp,ConvolutionLayer[1,{1,1}]}},{
    NetPort["Image"]->"mask",
    {"mask",NetPort["Glob"]}->"cat"->"conv"}];
 
 
-ConditionalPixelCNN = NetGraph[{
+ConditionalPixelCNN = NetGraph[Flatten@{
    "reshapeInput"->ReshapeLayer[{1,28,28}],
    "reshapeConditional"->ReshapeLayer[{1,28,28}],
-   "conv1"->PredictLayer[mask1],
-   "log1"->LogisticSigmoid,
-   "loss1"->MaskLossLayer[pixels1],
-   "conv2"->PredictLayer[mask2],
-   "log2"->LogisticSigmoid,
-   "loss2"->MaskLossLayer[pixels2],
-   "conv3"->PredictLayer[mask3],
-   "log3"->LogisticSigmoid,
-   "loss3"->MaskLossLayer[pixels3],
-   "conv4"->PredictLayer[mask4],
-   "log4"->LogisticSigmoid,
-   "loss4"->MaskLossLayer[pixels4],
+   Table[{
+      "conv"<>ToString[k]->PredictLayer[masks[[k]]],
+      "log"<>ToString[k]->LogisticSigmoid,
+      "loss"<>ToString[k]->MaskLossLayer[pixels[[k]]]},
+      {k,1,Length[pixels]}],
    "loss"->TotalLayer[]
 },{
    NetPort["Input"]->"reshapeInput",
    NetPort["Conditional"]->"reshapeConditional",
-   "reshapeInput"->"conv1"->"log1"->"loss1", "reshapeConditional"->NetPort[{"conv1","Glob"}], "reshapeInput"->NetPort[{"loss1","Target"}],"log1"->NetPort["Output1"],
-   "reshapeInput"->"conv2"->"log2"->"loss2", "reshapeConditional"->NetPort[{"conv2","Glob"}], "reshapeInput"->NetPort[{"loss2","Target"}],"log2"->NetPort["Output2"],
-   "reshapeInput"->"conv3"->"log3"->"loss3", "reshapeConditional"->NetPort[{"conv3","Glob"}], "reshapeInput"->NetPort[{"loss3","Target"}],"log3"->NetPort["Output3"],
-   "reshapeInput"->"conv4"->"log4"->"loss4", "reshapeConditional"->NetPort[{"conv4","Glob"}], "reshapeInput"->NetPort[{"loss4","Target"}],"log4"->NetPort["Output4"],
-   {"loss1","loss2","loss3","loss4"}->"loss"->NetPort["Loss"]
+   Table[{
+      "reshapeInput"->"conv"<>ToString[k]->"log"<>ToString[k]->"loss"<>ToString[k], "reshapeConditional"->NetPort[{"conv"<>ToString[k],"Glob"}], "reshapeInput"->NetPort[{"loss"<>ToString[k],"Target"}],"log"<>ToString[k]->NetPort["Output"<>ToString[k]]},{k,1,Length[pixels]}],
+   Table["loss"<>ToString[k],{k,1,Length[pixels]}]->"loss"->NetPort["Loss"]
 },
    "Input"->{28,28}];
 
@@ -115,7 +107,7 @@ Train[ GenerativePixelNet[ generativePixelNet_ ] ][ examples_ ] :=
 
 
 LogDensity[ GenerativePixelNet[ generativePixelNet_ ] ][ example_ ] :=
-   -generativePixelNet[ example ][ "Loss" ]
+   -generativePixelNet[ example ][ "Loss" ]*784
 
 
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
@@ -131,27 +123,27 @@ Train[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ][ examples_ ] :=
          {"condpixelcnn","conv1","mask"}->0,{"condpixelcnn","loss1","mask"}->0,
          {"condpixelcnn","conv2","mask"}->0,{"condpixelcnn","loss2","mask"}->0,
          {"condpixelcnn","conv3","mask"}->0,{"condpixelcnn","loss3","mask"}->0,
-         {"condpixelcnn","conv4","mask"}->0,{"condpixelcnn","loss4","mask"}->0
+         {"condpixelcnn","conv4","mask"}->0,{"condpixelcnn","loss4","mask"}->0,  
+         {"condpixelcnn","conv5","mask"}->0,{"condpixelcnn","loss5","mask"}->0,
+         {"condpixelcnn","conv6","mask"}->0,{"condpixelcnn","loss6","mask"}->0,
+         {"condpixelcnn","conv7","mask"}->0,{"condpixelcnn","loss7","mask"}->0,
+         {"condpixelcnn","conv8","mask"}->0,{"condpixelcnn","loss8","mask"}->0,
+         {"condpixelcnn","conv9","mask"}->0,{"condpixelcnn","loss9","mask"}->0
       },
       MaxTrainingRounds->10000,LossFunction->"Loss" ]
 ];
 
 
 LogDensity[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ][ example_ ] :=
-   -generativePixelCNNNet[ example ][ "Loss" ]
+   -generativePixelCNNNet[ example ][ "Loss" ]*784/9
 
 
-Sample[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ] := (
-   l1=generativePixelCNNNet[ConstantArray[0,{28,28}]]["Output1"][[1]];
-   s1=Map[rndBinary,l1,{2}]*pixels1[[1]];
-   l2=generativePixelCNNNet[s1]["Output2"][[1]];
-   s2=Map[rndBinary,l2,{2}]*pixels2[[1]]+s1;
-   l3=generativePixelCNNNet[s2]["Output3"][[1]];
-   s3=Map[rndBinary,l3,{2}]*pixels3[[1]]+s2;
-   l4=generativePixelCNNNet[s3]["Output4"][[1]];
-   s4=Map[rndBinary,l4,{2}]*pixels4[[1]]+s3;
-   s4
-);
+Sample[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{28,28}]},
+   For[k=1,k<=Length[pixels],k++,
+      l = generativePixelCNNNet[s]["Output"<>ToString[k]][[1]];
+      s = Map[rndBinary,l,{2}]*pixels[[k]][[1]]+s;
+   ];
+   s]
 
 
 (* ::Input:: *)
