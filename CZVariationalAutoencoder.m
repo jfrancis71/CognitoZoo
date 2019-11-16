@@ -49,7 +49,12 @@ CZKLLoss = NetGraph[{
 }];
 
 
-CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
+SyntaxInformation[ VariationalAutoencoder ]= {"ArgumentsPattern"->{_,_,_}};
+
+
+CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] := VariationalAutoencoder[
+   inputUnits,
+   latentUnits,
    NetGraph[{
       "encoder"->CZCreateEncoder[ inputUnits, latentUnits, h1, h2 ],
       "sampler"->CZCreateSampler[],
@@ -65,24 +70,30 @@ CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
       NetPort["Input"]->NetPort[{"mean_recon_loss","Target"}],
       NetPort[{"mean_recon_loss","Loss"}]->"total_recon_loss"->NetPort["recon_loss"],
       NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
-}];
-
-
-CZTrainVaE[ inputUnits_, latentUnits_, samples_, h1_:500, h2_:500 ] := Module[{trained, lossNet, f},
-   f[assoc_] := MapThread[Association["Input"->#1,"RandomSample"->#2]&,{RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
-   lossNet = CZCreateVaE[ inputUnits, latentUnits, h1, h2 ];
-   trained = NetTrain[ lossNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
-   trained
+   }]
 ];
 
 
-CZGetEncoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, "encoder" ]
+CZTrainVaE[ VariationalAutoencoder[ inputUnits_, latentUnits_, vae_ ], samples_ ] := Module[{trained, lossNet, f},
+   f[assoc_] := MapThread[
+      Association["Input"->#1,"RandomSample"->#2]&,
+      {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
+   trained = NetTrain[ vae, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
+   VariationalAutoencoder[ inputUnits, latentUnits, trained ]
+];
 
 
-CZGetDecoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, "decoder" ]
+CZLogDensity[ VariationalAutoencoder[ inputUnits_, latentUnits_, vae_ ], sample_ ] :=
+   Module[{proc=vae[ Association["Input"->sample, "RandomSample"->ConstantArray[0, latentUnits ] ] ]},
+      -(proc["kl_loss"]+proc["recon_loss"])]
 
 
-(* trainedvaeloss = CZTrainVaE[ 784, 8, rawproc ] *)
+rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-(* dec=NetExtract[trainedvae, "decoder"] *)
+CZSample[ VariationalAutoencoder[ inputUnits_, latentUnits_, vae_ ] ] :=
+   Module[{decoder=NetExtract[ vae, "decoder" ], probMap },
+   probMap = decoder[
+      RandomVariate@MultinormalDistribution[ ConstantArray[0, latentUnits ], IdentityMatrix[ latentUnits ] ] ];
+   rndBinary /@ probMap
+];
