@@ -53,44 +53,33 @@ CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
    NetGraph[{
       "encoder"->CZCreateEncoder[ inputUnits, latentUnits, h1, h2 ],
       "sampler"->CZCreateSampler[],
-      "decoder"->CZCreateDecoder[ inputUnits, h1, h2 ]},{
-      NetPort[{"encoder","Mean"}]->NetPort[{"sampler","Mean"}],
-      NetPort[{"encoder","LogVar"}]->NetPort[{"sampler","LogVar"}],
-      NetPort[{"sampler","Output"}]->NetPort[{"decoder","Input"}],
-      NetPort[{"encoder","Mean"}]->NetPort["Mean"],
-      NetPort[{"encoder","LogVar"}]->NetPort["LogVar"]}];
-
-
-(* We're really assuming data space is binary (by virtue of the loss function)
-*)
-CZCreateVaELoss[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
-   NetGraph[{
-      "VaE"->CZCreateVaE[ inputUnits, latentUnits, h1, h2 ],
+      "decoder"->CZCreateDecoder[ inputUnits, h1, h2 ],
+      "kl_loss"->CZKLLoss,
       "mean_recon_loss"->CrossEntropyLossLayer["Binary"],
-      "total_recon_loss"->ElementwiseLayer[#*inputUnits&],
-      "kl_loss"->CZKLLoss},{
-      NetPort[{"VaE","Output"}]->NetPort[{"mean_recon_loss","Input"}],
-      NetPort[{"VaE","LogVar"}]->NetPort[{"kl_loss","LogVar"}],
-      NetPort[{"VaE","Mean"}]->NetPort[{"kl_loss","Mean"}],
-      NetPort[{"mean_recon_loss","Loss"}]->NetPort[{"total_recon_loss","Input"}],
-      NetPort[{"total_recon_loss","Output"}]->NetPort["recon_loss"],
+      "total_recon_loss"->ElementwiseLayer[#*inputUnits&]
+      },{
+      NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}],NetPort["Mean"]},
+      NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}],NetPort["LogVar"]},
+      NetPort[{"sampler","Output"}]->NetPort[{"decoder","Input"}],
+      NetPort[{"decoder","Output"}]->{NetPort["Output"],NetPort[{"mean_recon_loss","Input"}]},
       NetPort["Input"]->NetPort[{"mean_recon_loss","Target"}],
+      NetPort[{"mean_recon_loss","Loss"}]->"total_recon_loss"->NetPort["recon_loss"],
       NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
 }];
 
 
 CZTrainVaE[ inputUnits_, latentUnits_, samples_, h1_:500, h2_:500 ] := Module[{trained, lossNet, f},
    f[assoc_] := MapThread[Association["Input"->#1,"RandomSample"->#2]&,{RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
-   lossNet = CZCreateVaELoss[ inputUnits, latentUnits, h1, h2 ];
+   lossNet = CZCreateVaE[ inputUnits, latentUnits, h1, h2 ];
    trained = NetTrain[ lossNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
    trained
 ];
 
 
-CZGetEncoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, {"VaE", "encoder" } ]
+CZGetEncoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, "encoder" ]
 
 
-CZGetDecoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, {"VaE", "decoder" } ]
+CZGetDecoder[ vaeLossNet_ ] := NetExtract[ vaeLossNet, "decoder" ]
 
 
 (* trainedvaeloss = CZTrainVaE[ 784, 8, rawproc ] *)
