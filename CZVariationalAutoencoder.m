@@ -54,13 +54,13 @@ CZCreateVaELoss[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
    NetGraph[{
       "VaE"->CZCreateVaE[ inputUnits, latentUnits, h1, h2 ],
       "mean_recon_loss"->CrossEntropyLossLayer["Binary"],
-      "total_recon_loss"->ElementwiseLayer[#*latentUnits&],
+      "total_recon_loss"->ElementwiseLayer[#*inputUnits&],
       "var"->ElementwiseLayer[Exp],
       "meansq"->ElementwiseLayer[#^2&],
       "th"->ThreadingLayer[Plus],
       "neg"->ElementwiseLayer[-1-#&],
       "ag"->AggregationLayer[Total,1],
-      "kl_loss"->ElementwiseLayer[0.5*#/784.&]},{
+      "kl_loss"->ElementwiseLayer[0.5*#&]},{
       NetPort[{"VaE","Output"}]->NetPort[{"mean_recon_loss","Input"}],
       NetPort[{"VaE","LogVar"}]->"var",
       NetPort[{"VaE","Mean"}]->"meansq",
