@@ -36,6 +36,19 @@ CZCreateSampler[] :=
       {NetPort["Mean"],"times"}->"sum"}];
 
 
+CZKLLoss = NetGraph[{
+   "var"->ElementwiseLayer[Exp],
+   "meansq"->ElementwiseLayer[#^2&],
+   "th"->ThreadingLayer[Plus],
+   "neg"->ElementwiseLayer[-1-#&],
+   "ag"->AggregationLayer[Total,1],
+   "kl_loss"->ElementwiseLayer[0.5*#&]},{
+   NetPort["LogVar"]->{"var","neg"},
+   NetPort["Mean"]->"meansq",
+   {"var","meansq","neg"}->"th"->"ag"->"kl_loss"->NetPort["Loss"]
+}];
+
+
 CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
    NetGraph[{
       "encoder"->CZCreateEncoder[ inputUnits, latentUnits, h1, h2 ],
@@ -55,20 +68,14 @@ CZCreateVaELoss[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
       "VaE"->CZCreateVaE[ inputUnits, latentUnits, h1, h2 ],
       "mean_recon_loss"->CrossEntropyLossLayer["Binary"],
       "total_recon_loss"->ElementwiseLayer[#*inputUnits&],
-      "var"->ElementwiseLayer[Exp],
-      "meansq"->ElementwiseLayer[#^2&],
-      "th"->ThreadingLayer[Plus],
-      "neg"->ElementwiseLayer[-1-#&],
-      "ag"->AggregationLayer[Total,1],
-      "kl_loss"->ElementwiseLayer[0.5*#&]},{
+      "kl_loss"->CZKLLoss},{
       NetPort[{"VaE","Output"}]->NetPort[{"mean_recon_loss","Input"}],
-      NetPort[{"VaE","LogVar"}]->"var",
-      NetPort[{"VaE","Mean"}]->"meansq",
-      NetPort[{"VaE","LogVar"}]->"neg",
-      {"var","meansq","neg"}->"th"->"ag"->"kl_loss"->NetPort["kl_loss"],
+      NetPort[{"VaE","LogVar"}]->NetPort[{"kl_loss","LogVar"}],
+      NetPort[{"VaE","Mean"}]->NetPort[{"kl_loss","Mean"}],
       NetPort[{"mean_recon_loss","Loss"}]->NetPort[{"total_recon_loss","Input"}],
       NetPort[{"total_recon_loss","Output"}]->NetPort["recon_loss"],
-      NetPort["Input"]->NetPort[{"mean_recon_loss","Target"}]
+      NetPort["Input"]->NetPort[{"mean_recon_loss","Target"}],
+      NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
 }];
 
 
