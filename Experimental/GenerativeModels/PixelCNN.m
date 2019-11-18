@@ -97,14 +97,14 @@ GenerativePixel = GenerativePixelNet[ NetGraph[{
 }] ];
 
 
-Train[ GenerativePixelNet[ generativePixelNet_ ] ][ examples_ ] :=
-   GenerativePixelNet[ NetTrain[ generativePixelNet, Association["Image"->#]&/@examples, 
+Train[ GenerativePixelNet[ generativePixelNet_ ], samples_ ] :=
+   GenerativePixelNet[ NetTrain[ generativePixelNet, Association["Image"->#]&/@samples, 
       MaxTrainingRounds->10000,LossFunction->"Loss" ]
 ];
 
 
-LogDensity[ GenerativePixelNet[ generativePixelNet_ ] ][ example_ ] :=
-   -generativePixelNet[ example ][ "Loss" ]*784
+LogDensity[ GenerativePixelNet[ generativePixelNet_ ],  sample_ ] :=
+   -generativePixelNet[ sample ][ "Loss" ]
 
 
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
@@ -114,8 +114,8 @@ Sample[ GenerativePixelNet[ generativePixelNet_ ] ] :=
    Map[ rndBinary, generativePixelNet[ ConstantArray[0, {28, 28 } ] ][ "Output" ][[1]], {2} ];
 
 
-Train[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ][ examples_ ] :=
-   GenerativePixelCNNNet[ NetTrain[ generativePixelCNNNet, Association["Image"->#]&/@examples,
+Train[ GenerativePixelCNNNet[ generativePixelCNNNet_ ], samples_ ] :=
+   GenerativePixelCNNNet[ NetTrain[ generativePixelCNNNet, Association["Image"->#]&/@samples,
       LearningRateMultipliers->
          Flatten[Table[
          {{"condpixelcnn","conv"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
@@ -124,8 +124,8 @@ Train[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ][ examples_ ] :=
 ];
 
 
-LogDensity[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ][ example_ ] :=
-   -generativePixelCNNNet[ example ][ "Loss" ]*784/9
+LogDensity[ GenerativePixelCNNNet[ generativePixelCNNNet_ ], sample_ ] :=
+   -generativePixelCNNNet[ sample ][ "Loss" ]*784/9
 
 
 Sample[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{28,28}]},
