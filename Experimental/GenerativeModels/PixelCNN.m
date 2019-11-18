@@ -62,10 +62,10 @@ ConditionalPixelCNN = NetGraph[Flatten@{
    "Image"->{28,28}];
 
 
-SyntaxInformation[ GenerativePixelCNNNet ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ PixelCNN ]= {"ArgumentsPattern"->{_}};
 
 
-GenerativePixelCNN = GenerativePixelCNNNet[ NetGraph[{
+CreatePixelCNN[] := PixelCNN[ NetGraph[{
    "global"->ConstantArrayLayer[{28,28}],
    "condpixelcnn"->ConditionalPixelCNN},{
    NetPort["Image"]->NetPort[{"condpixelcnn","Image"}],
@@ -73,49 +73,11 @@ GenerativePixelCNN = GenerativePixelCNNNet[ NetGraph[{
 }] ];
 
 
-ConditionalPixel = NetGraph[{
-   "reshapeInput"->ReshapeLayer[{1,28,28}],
-   "reshapeConditional"->ReshapeLayer[{1,28,28}],
-   "log"->LogisticSigmoid,
-   "loss"->CrossEntropyLossLayer["Binary"]},{
-   NetPort["Image"]->"reshapeInput"->NetPort[{"loss","Target"}],
-   NetPort["Conditional"]->"reshapeConditional"->"log"->NetPort[{"loss","Input"}],
-   "loss"->NetPort["Loss"],
-   "log"->NetPort["Output"]},
-   "Image"->{28,28}
-];
-
-
-SyntaxInformation[ GenerativePixelNet ]= {"ArgumentsPattern"->{_}};
-
-
-GenerativePixel = GenerativePixelNet[ NetGraph[{
-   "global"->ConstantArrayLayer[{28,28}],
-   "condpixel"->ConditionalPixel},{
-   NetPort["Image"]->NetPort[{"condpixel","Image"}],
-   "global"->NetPort[{"condpixel","Conditional"}]
-}] ];
-
-
-Train[ GenerativePixelNet[ generativePixelNet_ ], samples_ ] :=
-   GenerativePixelNet[ NetTrain[ generativePixelNet, Association["Image"->#]&/@samples, 
-      MaxTrainingRounds->10000,LossFunction->"Loss" ]
-];
-
-
-LogDensity[ GenerativePixelNet[ generativePixelNet_ ],  sample_ ] :=
-   -generativePixelNet[ sample ][ "Loss" ]
-
-
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-Sample[ GenerativePixelNet[ generativePixelNet_ ] ] :=
-   Map[ rndBinary, generativePixelNet[ ConstantArray[0, {28, 28 } ] ][ "Output" ][[1]], {2} ];
-
-
-Train[ GenerativePixelCNNNet[ generativePixelCNNNet_ ], samples_ ] :=
-   GenerativePixelCNNNet[ NetTrain[ generativePixelCNNNet, Association["Image"->#]&/@samples,
+Train[ PixelCNN[ pixelCNNNet_ ], samples_ ] :=
+   PixelCNN[ NetTrain[ pixelCNNNet, Association["Image"->#]&/@samples,
       LearningRateMultipliers->
          Flatten[Table[
          {{"condpixelcnn","conv"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
@@ -124,13 +86,13 @@ Train[ GenerativePixelCNNNet[ generativePixelCNNNet_ ], samples_ ] :=
 ];
 
 
-LogDensity[ GenerativePixelCNNNet[ generativePixelCNNNet_ ], sample_ ] :=
-   -generativePixelCNNNet[ sample ][ "Loss" ]*784/9
+LogDensity[ PixelCNN[ pixelCNNNet_ ], sample_ ] :=
+   -pixelCNNNet[ sample ][ "Loss" ]*784/9
 
 
-Sample[ GenerativePixelCNNNet[ generativePixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{28,28}]},
+Sample[ PixelCNN[ pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{28,28}]},
    For[k=1,k<=Length[pixels],k++,
-      l = generativePixelCNNNet[s]["Output"<>ToString[k]][[1]];
+      l = pixelCNNNet[s]["Output"<>ToString[k]][[1]];
       s = Map[rndBinary,l,{2}]*pixels[[k]][[1]]+s;t=s;
    ];
    s]
