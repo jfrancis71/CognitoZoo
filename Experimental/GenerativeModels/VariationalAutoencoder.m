@@ -74,26 +74,45 @@ CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] := VariationalAutoenc
 ];
 
 
-CZTrainVaE[ VariationalAutoencoder[ inputUnits_, latentUnits_, vae_ ], samples_ ] := Module[{trained, lossNet, f},
+CZTrain[ VariationalAutoencoder[ inputUnits_, latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
    f[assoc_] := MapThread[
       Association["Input"->#1,"RandomSample"->#2]&,
       {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
-   trained = NetTrain[ vae, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
+   trained = NetTrain[ vaeNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
    VariationalAutoencoder[ inputUnits, latentUnits, trained ]
 ];
 
 
-CZLogDensity[ VariationalAutoencoder[ inputUnits_, latentUnits_, vae_ ], sample_ ] :=
-   Module[{proc=vae[ Association["Input"->sample, "RandomSample"->ConstantArray[0, latentUnits ] ] ]},
+CZLogDensity[ VariationalAutoencoder[ inputUnits_, latentUnits_, vaeNet_ ], sample_ ] :=
+   Module[{proc=vaeNet[ Association["Input"->sample, "RandomSample"->ConstantArray[0, latentUnits ] ] ]},
       -(proc["kl_loss"]+proc["recon_loss"])]
 
 
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-CZSample[ VariationalAutoencoder[ inputUnits_, latentUnits_, vae_ ] ] :=
-   Module[{decoder=NetExtract[ vae, "decoder" ], probMap },
+CZSample[ VariationalAutoencoder[ inputUnits_, latentUnits_, vaeNet_ ] ] :=
+   Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },
    probMap = decoder[
       RandomVariate@MultinormalDistribution[ ConstantArray[0, latentUnits ], IdentityMatrix[ latentUnits ] ] ];
    rndBinary /@ probMap
 ];
+
+
+SyntaxInformation[ VariationalAutoencoderImage ]= {"ArgumentsPattern"->{_,_,_}};
+
+
+CZCreateVaEImage[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] :=
+   ReplacePart[ CZCreateVaE[ inputUnits, latentUnits, h1, h2 ], 0->VariationalAutoencoderImage ]
+
+
+CZTrain[ VariationalAutoencoderImage[ inputUnits_, latentUnits_, vaeNet_ ], samples_ ] :=
+   ReplacePart[ CZTrain[ VariationalAutoencoder[ inputUnits, latentUnits, vaeNet ], Flatten/@samples ], 0->VariationalAutoencoderImage ]; 
+
+
+CZLogDensity[ VariationalAutoencoderImage[ inputUnits_, latentUnits_, vaeNet_ ], sample_ ] :=
+   CZLogDensity[ VariationalAutoencoder[ inputUnits, latentUnits, vaeNet ], Flatten@sample ] 
+
+
+CZSample[ VariationalAutoencoderImage[ inputUnits_, latentUnits_, vaeNet_ ] ] :=
+   Partition[ CZSample[ VariationalAutoencoder[ inputUnits, latentUnits, vaeNet ] ], 28];
