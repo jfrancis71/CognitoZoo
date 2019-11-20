@@ -116,3 +116,56 @@ CZLogDensity[ VariationalAutoencoderImage[ inputUnits_, latentUnits_, vaeNet_ ],
 
 CZSample[ VariationalAutoencoderImage[ inputUnits_, latentUnits_, vaeNet_ ] ] :=
    Partition[ CZSample[ VariationalAutoencoder[ inputUnits, latentUnits, vaeNet ] ], 28];
+
+
+CZCreateDecoderDiscreteImage[ h1_:500, h2_:500 ] :=
+   NetChain[{
+      {h1,Ramp},
+      {h2,Ramp},
+      10*28*28,
+      ReshapeLayer[{28,28,10}],
+      SoftmaxLayer[]}];
+
+
+Discretize[image_]:=Map[ReplacePart[ConstantArray[0,{10}],1+Floor[#*10]->1]&,ImageData[image],{2}]
+
+
+CZCreateVaEDiscreteImage[ latentUnits_, h1_:500, h2_:500 ] := VaEDiscreteImage[
+   latentUnits,
+   NetGraph[{
+      "r"->FlattenLayer[],
+      "encoder"->CZCreateEncoder[ 784*10, latentUnits, h1, h2 ],
+      "sampler"->CZCreateSampler[],
+      "decoder"->CZCreateDecoderDiscreteImage[ h1, h2 ],
+      "kl_loss"->CZKLLoss,
+      "mean_recon_loss"->CrossEntropyLossLayer["Probabilities"],
+      "total_recon_loss"->ElementwiseLayer[#*784*10&]
+      },{
+      NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}],NetPort["Mean"]},
+      NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}],NetPort["LogVar"]},
+      NetPort[{"sampler","Output"}]->NetPort[{"decoder","Input"}],
+      NetPort[{"decoder","Output"}]->{NetPort["Output"],NetPort[{"mean_recon_loss","Input"}]},
+      NetPort["Input"]->NetPort[{"mean_recon_loss","Target"}],
+      NetPort[{"mean_recon_loss","Loss"}]->"total_recon_loss"->NetPort["recon_loss"],
+      NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"],
+      "r"->"encoder"
+   },"Input"->{28,28,10}]
+];
+
+
+rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
+
+
+CZTrain[ VaEDiscreteImage[ latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
+   f[assoc_] := MapThread[
+      Association["Input"->(Discretize@#1),"RandomSample"->#2]&,
+      {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];tmp=f;
+   trained = NetTrain[ vaeNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128, MaxTrainingRounds->10000 ];
+   VaEDiscreteImage[ latentUnits, trained ]
+];
+
+
+CZSample[ VaEDiscreteImage[ latentUnits_, vaeNet_ ] ] := (
+   decoder=NetExtract[trained[[2]],"decoder"];
+   Image[(Map[rndMult,decoder[RandomVariate[MultinormalDistribution[ConstantArray[0,{8}],IdentityMatrix[8]]]],{2}]-1)/10.]
+)
