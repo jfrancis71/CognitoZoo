@@ -21,22 +21,14 @@ CZNBModelBinaryVectorNet = NetGraph[{
 }];
 
 
-SyntaxInformation[ CZNBModelBinaryVector ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{}};
 
 
-CZCreateNBModelBinaryVector[] := CZNBModelBinaryVector[ CZNBModelBinaryVectorNet ];
+CZCreateNBModelBinaryVector[] := CZNBModel[ CZBinaryVector, CZNBModelBinaryVectorNet ];
 
 
-CZSample[ CZNBModelBinaryVector[ net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
+CZSample[ CZNBModel[ CZBinaryVector, net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
    rndBinary /@ out ];
-
-
-CZTrain[ CZNBModelBinaryVector[ net_ ], samples_ ] :=
-   CZNBModelBinaryVector[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
-
-
-CZLogDensity[ CZNBModelBinaryVector[ net_ ], sample_ ] :=
-   -net[ Association["Input" -> sample ] ]["Loss"];
 
 
 CZNBConditionalModelBinaryImageNet = NetGraph[{
@@ -56,22 +48,14 @@ CZNBModelBinaryImageNet = NetGraph[{
 }];
 
 
-SyntaxInformation[ CZNBModelBinaryImage ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreateNBModelBinaryImage[] := CZNBModelBinaryImage[ CZNBModelBinaryImageNet ];
+CZCreateNBModelBinaryImage[] := CZNBModel[ CZBinaryImage, CZNBModelBinaryImageNet ];
 
 
-CZSample[ CZNBModelBinaryImage[ net_ ] ] :=
+CZSample[ CZNBModel[ CZBinaryImage, net_ ] ] :=
    Map[ rndBinary, net[ ConstantArray[0,{28,28}]]["Output"], {2} ];
-
-
-CZTrain[ CZNBModelBinaryImage[ net_ ], samples_ ] :=
-   CZNBModelBinaryImage[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
-
-
-CZLogDensity[ CZNBModelBinaryImage[ net_ ], sample_ ] :=
-   -net[ Association["Input" -> sample ] ]["Loss"];
 
 
 CZNBConditionalModelDiscreteImageNet = NetGraph[{
@@ -97,22 +81,25 @@ CZNBModelDiscreteImageNet = NetGraph[{
 CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
 
 
-SyntaxInformation[ CZNBModelDiscreteImage ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreateNBModelDiscreteImage[] := CZNBModelDiscreteImage[ CZNBModelDiscreteImageNet ];
+CZCreateNBModelDiscreteImage[] := CZNBModel[ CZDiscreteImage, CZNBModelDiscreteImageNet ];
 
 
 rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
 
 
-CZSample[ CZNBModelDiscreteImage[ net_ ] ] :=
+CZSample[ CZNBModel[ CZDiscreteImage, net_ ] ] :=
    Map[ rndMult, net[ConstantArray[1,{28,28}]]["Output"], {2} ]/10.;
 
 
-CZTrain[ CZNBModelDiscreteImage[ net_ ], samples_ ] :=
-   CZNBModelDiscreteImage[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
+SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{_,_}};
 
 
-CZLogDensity[ CZNBModelDiscreteImage[ net_ ], sample_ ] :=
+CZTrain[ CZNBModel[ modelType_, net_ ], samples_ ] :=
+   CZNBModel[ modelType, NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
+
+
+CZLogDensity[ CZNBModel[ _, net_ ], sample_ ] :=
    -net[ Association["Input" -> sample ] ]["Loss"];
