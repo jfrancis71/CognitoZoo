@@ -15,7 +15,7 @@ CZNBConditionalModelBinaryVectorNet = NetGraph[{
 
 CZNBModelBinaryVectorNet = NetGraph[{
    "array"->ConstantArrayLayer[{784}],
-   "decoder"->NBConditionalModelBinaryVectorNet},{
+   "decoder"->CZNBConditionalModelBinaryVectorNet},{
    "array"->NetPort[{"decoder","Conditional"}],
    NetPort["Input"]->NetPort[{"decoder","Input"}]
 }];
@@ -27,7 +27,7 @@ SyntaxInformation[ CZNBModelBinaryVector ]= {"ArgumentsPattern"->{_}};
 CZCreateNBModelBinaryVector[] := CZNBModelBinaryVector[ CZNBModelBinaryVectorNet ];
 
 
-CZSample[ NBModelBinaryVector[ net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
+CZSample[ CZNBModelBinaryVector[ net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
    rndBinary /@ out ];
 
 
