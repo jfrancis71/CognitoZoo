@@ -3,41 +3,58 @@
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-NBModelBinaryVectorNet = NetGraph[{
-   "array"->ConstantArrayLayer[{784}],
+NBConditionalModelBinaryVectorNet = NetGraph[{
    "log"->LogisticSigmoid,
    "crossentropy"->CrossEntropyLossLayer["Binary"]},{
-   "array"->"log"->"crossentropy"->NetPort["Loss"],
+   "log"->"crossentropy"->NetPort["Loss"],
    "log"->NetPort["Output"],
-   NetPort["Input"]->NetPort[{"crossentropy","Target"}]
+   NetPort["Input"]->NetPort[{"crossentropy","Target"}],
+   NetPort["Conditional"]->"log"
+}];
+
+
+NBModelBinaryVectorNet = NetGraph[{
+   "array"->ConstantArrayLayer[{784}],
+   "decoder"->NBConditionalModelBinaryVectorNet},{
+   "array"->NetPort[{"decoder","Conditional"}],
+   NetPort["Input"]->NetPort[{"decoder","Input"}]
 }];
 
 
 SyntaxInformation[ NBModelBinaryVector ]= {"ArgumentsPattern"->{_}};
 
 
-CreateNBModelBinaryVector[] := NBModelVector[ NBModelBinaryVectorNet ];
+CreateNBModelBinaryVector[] := NBModelBinaryVector[ NBModelBinaryVectorNet ];
 
 
-Sample[ NBModelBinaryVector[ net_ ] ] := Module[{out=NetTake[net,{"array","log"}]},t=out;
-   rndBinary /@ out[] ];
+Sample[ NBModelBinaryVector[ net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
+   rndBinary /@ out ];
 
 
 Train[ NBModelBinaryVector[ net_ ], samples_ ] :=
-   NBModelBinaryVector[ NetTrain[ net, Association[ "Input"->#, "Output"->#]&/@samples, LossFunction->"Loss" ] ];
+   NBModelBinaryVector[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
 
 
 LogDensity[ NBModelBinaryVector[ net_ ], sample_ ] :=
    -net[ Association["Input" -> sample ] ]["Loss"];
 
 
+NBConditionalModelBinaryImageNet = NetGraph[{
+   "cond"->NBConditionalModelBinaryVectorNet,
+   "reshapeConditional"->ReshapeLayer[{784}],
+   "reshapeInput"->ReshapeLayer[{784}],
+   "reshapeOutput"->ReshapeLayer[{28,28}]},{
+   NetPort["Input"]->"reshapeInput"->NetPort[{"cond","Input"}],
+   NetPort["Conditional"]->"reshapeConditional"->NetPort[{"cond","Conditional"}],
+   NetPort[{"cond","Output"}]->"reshapeOutput"->NetPort["Output"]
+}];
+
+
 NBModelBinaryImageNet = NetGraph[{
-   "nbmodel"->NBModelBinaryVectorNet,
-   "reshapeinput"->ReshapeLayer[{784}],
-   "reshapeoutput"->ReshapeLayer[{28,28}]},{
-   NetPort["Input"]->"reshapeinput"->NetPort[{"nbmodel","Input"}],
-   NetPort[{"nbmodel","Output"}]->"reshapeoutput"->NetPort["Output"],
-   NetPort[{"nbmodel","Loss"}]->NetPort["Loss"]
+   "cond"->NBConditionalModelBinaryImageNet,
+   "array"->ConstantArrayLayer[{28,28}]},{
+   "array"->NetPort[{"cond","Conditional"}],
+   NetPort[{"cond","Loss"}]->NetPort["Loss"]
 }];
 
 
@@ -47,27 +64,37 @@ SyntaxInformation[ NBModelBinaryImage ]= {"ArgumentsPattern"->{_}};
 CreateNBModelBinaryImage[] := NBModelBinaryImage[ NBModelBinaryImageNet ];
 
 
-Sample[ NBModelBinaryImage[ net_ ] ] := Module[{nbm=NetTake[net,"reshapeoutput"]},
-   Map[ rndBinary, nbm[ ConstantArray[0,{28,28}]]["Output"], {2} ] ];
+Sample[ NBModelBinaryImage[ net_ ] ] :=
+   Map[ rndBinary, net[ ConstantArray[0,{28,28}]]["Output"], {2} ];
 
 
+(* I am not sure why we are needing to specify output here, it shouldn't form part of loss function
+*)
 Train[ NBModelBinaryImage[ net_ ], samples_ ] :=
-   NBModelBinaryImage[ NetTrain[ net, Association[ "Input"->#, "Output"->#]&/@samples, LossFunction->"Loss" ] ];
+   NBModelBinaryImage[ NetTrain[ net, Association[ "Input"->#,"Output"->#]&/@samples, LossFunction->"Loss" ] ];
 
 
 LogDensity[ NBModelBinaryImage[ net_ ], sample_ ] :=
    -net[ Association["Input" -> sample ] ]["Loss"];
 
 
-NBModelDiscreteImageNet = NetGraph[{
-   "const"->ConstantArrayLayer[{28,28,10}],
+NBConditionalModelDiscreteImageNet = NetGraph[{
    "softmax"->SoftmaxLayer[],
    "crossentropyloss"->CrossEntropyLossLayer["Probabilities"]
 },{
-   "const"->"softmax",
+   NetPort["Conditional"]->"softmax",
    NetPort["Input"]->NetPort[{"crossentropyloss","Target"}],
    NetPort[{"softmax","Output"}]->{NetPort[{"crossentropyloss","Input"}],NetPort["Output"]},
    NetPort[{"crossentropyloss","Loss"}]->NetPort["Loss"]
+}];
+
+
+NBModelDiscreteImageNet = NetGraph[{
+   "const"->ConstantArrayLayer[{28,28,10}],
+   "cond"->NBConditionalModelDiscreteImageNet
+},{
+   "const"->NetPort[{"cond","Conditional"}],
+   NetPort["Input"]->NetPort[{"cond","Input"}]
 }];
 
 
@@ -83,8 +110,8 @@ CreateNBModelDiscreteImage[] := NBModelDiscreteImage[ NBModelDiscreteImageNet ];
 rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
 
 
-Sample[ NBModelDiscreteImage[ net_ ] ] := Module[{nbm=NetTake[net,{"const","softmax"}]},tmp=nbm;
-   Map[ rndMult, nbm[], {2} ] ]/10.;
+Sample[ NBModelDiscreteImage[ net_ ] ] :=
+   Map[ rndMult, net[ConstantArray[0,{28,28,10}]]["Output"], {2} ]/10.;
 
 
 Train[ NBModelDiscreteImage[ net_ ], samples_ ] :=
