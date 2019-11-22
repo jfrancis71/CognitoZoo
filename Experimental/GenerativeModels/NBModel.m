@@ -40,13 +40,11 @@ LogDensity[ NBModelBinaryVector[ net_ ], sample_ ] :=
 
 
 NBConditionalModelBinaryImageNet = NetGraph[{
-   "cond"->NBConditionalModelBinaryVectorNet,
-   "reshapeConditional"->ReshapeLayer[{784}],
-   "reshapeInput"->ReshapeLayer[{784}],
-   "reshapeOutput"->ReshapeLayer[{28,28}]},{
-   NetPort["Input"]->"reshapeInput"->NetPort[{"cond","Input"}],
-   NetPort["Conditional"]->"reshapeConditional"->NetPort[{"cond","Conditional"}],
-   NetPort[{"cond","Output"}]->"reshapeOutput"->NetPort["Output"]
+   "log"->LogisticSigmoid,
+   "crossentropy"->CrossEntropyLossLayer["Binary"]},{
+   NetPort["Conditional"]->"log"->{NetPort[{"crossentropy","Input"}],NetPort["Output"]},
+   NetPort["Input"]->NetPort[{"crossentropy","Target"}],
+   NetPort[{"crossentropy","Loss"}]->NetPort["Loss"]
 }];
 
 
@@ -68,10 +66,8 @@ Sample[ NBModelBinaryImage[ net_ ] ] :=
    Map[ rndBinary, net[ ConstantArray[0,{28,28}]]["Output"], {2} ];
 
 
-(* I am not sure why we are needing to specify output here, it shouldn't form part of loss function
-*)
 Train[ NBModelBinaryImage[ net_ ], samples_ ] :=
-   NBModelBinaryImage[ NetTrain[ net, Association[ "Input"->#,"Output"->#]&/@samples, LossFunction->"Loss" ] ];
+   NBModelBinaryImage[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
 
 
 LogDensity[ NBModelBinaryImage[ net_ ], sample_ ] :=
