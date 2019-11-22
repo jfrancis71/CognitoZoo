@@ -75,8 +75,8 @@ LogDensity[ NBModelBinaryImage[ net_ ], sample_ ] :=
 
 
 NBConditionalModelDiscreteImageNet = NetGraph[{
-   "softmax"->SoftmaxLayer[],
-   "crossentropyloss"->CrossEntropyLossLayer["Probabilities"]
+   "softmax"->{TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]},
+   "crossentropyloss"->CrossEntropyLossLayer["Index"]
 },{
    NetPort["Conditional"]->"softmax",
    NetPort["Input"]->NetPort[{"crossentropyloss","Target"}],
@@ -86,7 +86,7 @@ NBConditionalModelDiscreteImageNet = NetGraph[{
 
 
 NBModelDiscreteImageNet = NetGraph[{
-   "const"->ConstantArrayLayer[{28,28,10}],
+   "const"->ConstantArrayLayer[{10,28,28}],
    "cond"->NBConditionalModelDiscreteImageNet
 },{
    "const"->NetPort[{"cond","Conditional"}],
@@ -94,7 +94,7 @@ NBModelDiscreteImageNet = NetGraph[{
 }];
 
 
-Discretize[image_]:=Map[ReplacePart[ConstantArray[0,{10}],1+Round[#*9]->1]&,ImageData[image],{2}]
+Discretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
 
 
 SyntaxInformation[ NBModelDiscreteImage ]= {"ArgumentsPattern"->{_}};
@@ -107,7 +107,7 @@ rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
 
 
 Sample[ NBModelDiscreteImage[ net_ ] ] :=
-   Map[ rndMult, net[ConstantArray[0,{28,28,10}]]["Output"], {2} ]/10.;
+   Map[ rndMult, net[ConstantArray[1,{28,28}]]["Output"], {2} ]/10.;
 
 
 Train[ NBModelDiscreteImage[ net_ ], samples_ ] :=
