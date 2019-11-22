@@ -3,7 +3,7 @@
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-NBConditionalModelBinaryVectorNet = NetGraph[{
+CZNBConditionalModelBinaryVectorNet = NetGraph[{
    "log"->LogisticSigmoid,
    "crossentropy"->CrossEntropyLossLayer["Binary"]},{
    "log"->"crossentropy"->NetPort["Loss"],
@@ -13,7 +13,7 @@ NBConditionalModelBinaryVectorNet = NetGraph[{
 }];
 
 
-NBModelBinaryVectorNet = NetGraph[{
+CZNBModelBinaryVectorNet = NetGraph[{
    "array"->ConstantArrayLayer[{784}],
    "decoder"->NBConditionalModelBinaryVectorNet},{
    "array"->NetPort[{"decoder","Conditional"}],
@@ -21,25 +21,25 @@ NBModelBinaryVectorNet = NetGraph[{
 }];
 
 
-SyntaxInformation[ NBModelBinaryVector ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZNBModelBinaryVector ]= {"ArgumentsPattern"->{_}};
 
 
-CreateNBModelBinaryVector[] := NBModelBinaryVector[ NBModelBinaryVectorNet ];
+CZCreateNBModelBinaryVector[] := CZNBModelBinaryVector[ CZNBModelBinaryVectorNet ];
 
 
-Sample[ NBModelBinaryVector[ net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
+CZSample[ NBModelBinaryVector[ net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
    rndBinary /@ out ];
 
 
-Train[ NBModelBinaryVector[ net_ ], samples_ ] :=
-   NBModelBinaryVector[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
+CZTrain[ CZNBModelBinaryVector[ net_ ], samples_ ] :=
+   CZNBModelBinaryVector[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
 
 
-LogDensity[ NBModelBinaryVector[ net_ ], sample_ ] :=
+CZLogDensity[ CZNBModelBinaryVector[ net_ ], sample_ ] :=
    -net[ Association["Input" -> sample ] ]["Loss"];
 
 
-NBConditionalModelBinaryImageNet = NetGraph[{
+CZNBConditionalModelBinaryImageNet = NetGraph[{
    "log"->LogisticSigmoid,
    "crossentropy"->CrossEntropyLossLayer["Binary"]},{
    NetPort["Conditional"]->"log"->{NetPort[{"crossentropy","Input"}],NetPort["Output"]},
@@ -48,33 +48,33 @@ NBConditionalModelBinaryImageNet = NetGraph[{
 }];
 
 
-NBModelBinaryImageNet = NetGraph[{
-   "cond"->NBConditionalModelBinaryImageNet,
+CZNBModelBinaryImageNet = NetGraph[{
+   "cond"->CZNBConditionalModelBinaryImageNet,
    "array"->ConstantArrayLayer[{28,28}]},{
    "array"->NetPort[{"cond","Conditional"}],
    NetPort[{"cond","Loss"}]->NetPort["Loss"]
 }];
 
 
-SyntaxInformation[ NBModelBinaryImage ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZNBModelBinaryImage ]= {"ArgumentsPattern"->{_}};
 
 
-CreateNBModelBinaryImage[] := NBModelBinaryImage[ NBModelBinaryImageNet ];
+CZCreateNBModelBinaryImage[] := CZNBModelBinaryImage[ CZNBModelBinaryImageNet ];
 
 
-Sample[ NBModelBinaryImage[ net_ ] ] :=
+CZSample[ CZNBModelBinaryImage[ net_ ] ] :=
    Map[ rndBinary, net[ ConstantArray[0,{28,28}]]["Output"], {2} ];
 
 
-Train[ NBModelBinaryImage[ net_ ], samples_ ] :=
-   NBModelBinaryImage[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
+CZTrain[ CZNBModelBinaryImage[ net_ ], samples_ ] :=
+   CZNBModelBinaryImage[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss" ] ];
 
 
-LogDensity[ NBModelBinaryImage[ net_ ], sample_ ] :=
+CZLogDensity[ CZNBModelBinaryImage[ net_ ], sample_ ] :=
    -net[ Association["Input" -> sample ] ]["Loss"];
 
 
-NBConditionalModelDiscreteImageNet = NetGraph[{
+CZNBConditionalModelDiscreteImageNet = NetGraph[{
    "softmax"->{TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]},
    "crossentropyloss"->CrossEntropyLossLayer["Index"]
 },{
@@ -85,34 +85,34 @@ NBConditionalModelDiscreteImageNet = NetGraph[{
 }];
 
 
-NBModelDiscreteImageNet = NetGraph[{
+CZNBModelDiscreteImageNet = NetGraph[{
    "const"->ConstantArrayLayer[{10,28,28}],
-   "cond"->NBConditionalModelDiscreteImageNet
+   "cond"->CZNBConditionalModelDiscreteImageNet
 },{
    "const"->NetPort[{"cond","Conditional"}],
    NetPort["Input"]->NetPort[{"cond","Input"}]
 }];
 
 
-Discretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
+CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
 
 
-SyntaxInformation[ NBModelDiscreteImage ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZNBModelDiscreteImage ]= {"ArgumentsPattern"->{_}};
 
 
-CreateNBModelDiscreteImage[] := NBModelDiscreteImage[ NBModelDiscreteImageNet ];
+CZCreateNBModelDiscreteImage[] := CZNBModelDiscreteImage[ CZNBModelDiscreteImageNet ];
 
 
 rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
 
 
-Sample[ NBModelDiscreteImage[ net_ ] ] :=
+CZSample[ CZNBModelDiscreteImage[ net_ ] ] :=
    Map[ rndMult, net[ConstantArray[1,{28,28}]]["Output"], {2} ]/10.;
 
 
-Train[ NBModelDiscreteImage[ net_ ], samples_ ] :=
-   NBModelDiscreteImage[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
+CZTrain[ CZNBModelDiscreteImage[ net_ ], samples_ ] :=
+   CZNBModelDiscreteImage[ NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
 
 
-LogDensity[ NBModelDiscreteImage[ net_ ], sample_ ] :=
+CZLogDensity[ CZNBModelDiscreteImage[ net_ ], sample_ ] :=
    -net[ Association["Input" -> sample ] ]["Loss"];
