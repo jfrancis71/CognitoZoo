@@ -65,7 +65,7 @@ CZConditionalPixelCNNBinaryImage = NetGraph[Flatten@{
 SyntaxInformation[ CZPixelCNNBinaryImage ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreatePixelCNNBinaryImage[] := PixelCNNBinaryImage[ NetGraph[{
+CZCreatePixelCNNBinaryImage[] := CZPixelCNNBinaryImage[ NetGraph[{
    "global"->ConstantArrayLayer[{28,28}],
    "condpixelcnn"->CZConditionalPixelCNNBinaryImage},{
    NetPort["Image"]->NetPort[{"condpixelcnn","Image"}],
@@ -76,8 +76,8 @@ CZCreatePixelCNNBinaryImage[] := PixelCNNBinaryImage[ NetGraph[{
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-CZTrain[ PixelCNNBinaryImage[ pixelCNNNet_ ], samples_ ] :=
-   PixelCNNBinaryImage[ NetTrain[ pixelCNNNet, Association["Image"->#]&/@samples,
+CZTrain[ CZPixelCNNBinaryImage[ pixelCNNNet_ ], samples_ ] :=
+   CZPixelCNNBinaryImage[ NetTrain[ pixelCNNNet, Association["Image"->#]&/@samples,
       LearningRateMultipliers->
          Flatten[Table[
          {{"condpixelcnn","conv"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
@@ -86,16 +86,19 @@ CZTrain[ PixelCNNBinaryImage[ pixelCNNNet_ ], samples_ ] :=
 ];
 
 
-CZLogDensity[ PixelCNNBinaryImage[ pixelCNNNet_ ], sample_ ] :=
+CZLogDensity[ CZPixelCNNBinaryImage[ pixelCNNNet_ ], sample_ ] :=
    -pixelCNNNet[ sample ][ "Loss" ]*784/9
 
 
-CZSample[ PixelCNNBinaryImage[ pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{28,28}]},
+CZSample[ CZPixelCNNBinaryImage[ pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{28,28}]},
    For[k=1,k<=Length[pixels],k++,
       l = pixelCNNNet[s]["Output"<>ToString[k]];
       s = Map[rndBinary,l,{2}]*pixels[[k]]+s;t=s;
    ];
    s]
+
+
+SyntaxInformation[ CZPixelCNNDiscreteImage ]= {"ArgumentsPattern"->{_}};
 
 
 MaskLayerDiscrete[mask_]:=NetGraph[{
@@ -155,11 +158,11 @@ CZCreatePixelCNNDiscreteImage[] := CZPixelCNNDiscreteImage[ NetGraph[{
 }] ];
 
 
-CZOneHot[ image_ ] := Transpose[Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, CZDiscretize[ image ], {2} ] ,{2,3,1}];
+CZOneHot[ image_ ] := Transpose[Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {2} ] ,{2,3,1}];
 
 
 CZTrain[ CZPixelCNNDiscreteImage[ pixelCNNNet_ ], samples_ ] :=
-   CZPixelCNNDiscreteImage[ NetTrain[ pixelCNNNet, Association["Image"->#]&/@samples,
+   CZPixelCNNDiscreteImage[ NetTrain[ pixelCNNNet, Association["Image"->CZOneHot@#]&/@samples,
       LearningRateMultipliers->
          Flatten[Table[
          {{"condpixelcnn","conv"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
