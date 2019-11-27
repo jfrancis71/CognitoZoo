@@ -101,11 +101,6 @@ CZSample[ CZPixelCNNBinaryImage[ pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{
 SyntaxInformation[ CZPixelCNNDiscreteImage ]= {"ArgumentsPattern"->{_}};
 
 
-MaskLayerDiscrete[mask_]:=NetGraph[{
-   "mask"->ConstantArrayLayer["Array"->Table[mask,{10}]],
-   "thread"->ThreadingLayer[Times]},{
-   {NetPort["Input"],"mask"}->"thread"}]
-
 (* We're sticking with a 1 hot encoding. Not the most efficient, but can't see a way to mask out cross entropy loss
    any other way. Can't just multiply output by zero's in mask because CrossEntropyLoss produces only one Real for all
    the inputs. On the input side, it doesn't like the use of calculated numbers, indexes need to be bounded integers.
