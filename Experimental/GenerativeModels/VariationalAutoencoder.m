@@ -123,14 +123,17 @@ CZCreateDecoderDiscreteImage[ h1_:500, h2_:500 ] :=
       {h1,Ramp},
       {h2,Ramp},
       10*28*28,
-      ReshapeLayer[{28,28,10}],
-      SoftmaxLayer[]}];
+      ReshapeLayer[{10,28,28}],
+      SoftmaxLayer[1]}];
 
 
-Discretize[image_]:=Map[ReplacePart[ConstantArray[0,{10}],1+Floor[#*10]->1]&,ImageData[image],{2}]
+(* Discretize[image_]:=Map[ReplacePart[ConstantArray[0,{10}],1+Floor[#*10]->1]&,ImageData[image],{2}] *)
 
 
-CZCreateVaEDiscreteImage[ latentUnits_, h1_:500, h2_:500 ] := VaEDiscreteImage[
+SyntaxInformation[ CZVaEDiscreteImage ]= {"ArgumentsPattern"->{_,_}};
+
+
+CZCreateVaEDiscreteImage[ latentUnits_, h1_:500, h2_:500 ] := CZVaEDiscreteImage[
    latentUnits,
    NetGraph[{
       "r"->FlattenLayer[],
@@ -149,23 +152,27 @@ CZCreateVaEDiscreteImage[ latentUnits_, h1_:500, h2_:500 ] := VaEDiscreteImage[
       NetPort[{"mean_recon_loss","Loss"}]->"total_recon_loss"->NetPort["recon_loss"],
       NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"],
       "r"->"encoder"
-   },"Input"->{28,28,10}]
+   },"Input"->{10,28,28}]
 ];
 
 
 rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
 
 
-CZTrain[ VaEDiscreteImage[ latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
+CZTrain[ CZVaEDiscreteImage[ latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
    f[assoc_] := MapThread[
-      Association["Input"->(Discretize@#1),"RandomSample"->#2]&,
+      Association["Input"->(CZOneHot@#1),"RandomSample"->#2]&,
       {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];tmp=f;
    trained = NetTrain[ vaeNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128, MaxTrainingRounds->10000 ];
-   VaEDiscreteImage[ latentUnits, trained ]
+   CZVaEDiscreteImage[ latentUnits, trained ]
 ];
 
 
-CZSample[ VaEDiscreteImage[ latentUnits_, vaeNet_ ] ] := (
-   decoder=NetExtract[trained[[2]],"decoder"];
-   Image[(Map[rndMult,decoder[RandomVariate[MultinormalDistribution[ConstantArray[0,{8}],IdentityMatrix[8]]]],{2}]-1)/10.]
+CZSample[ CZVaEDiscreteImage[ latentUnits_, vaeNet_ ] ] := (
+   decoder=NetExtract[vaeNet,"decoder"];
+   l1=discreteSample@decoder[RandomVariate[MultinormalDistribution[ConstantArray[0,{8}],IdentityMatrix[8]]]];
+      Map[
+Position[#,1][[1,1]]/10.&,
+Transpose[l1,{3,1,2}],{2}]
+
 )
