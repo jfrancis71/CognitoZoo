@@ -118,7 +118,7 @@ MaskLossLayerDiscrete[mask_]:=NetGraph[{
 
 
 PredictLayerDiscrete[mask_]:=NetGraph[{
-   "mask"->MaskLayerDiscrete[mask],
+   "mask"->MaskLayer[ConstantArray[mask,{10}]],
    "cat"->CatenateLayer[1],
    "conv"->{ConvolutionLayer[16,{5,5},"PaddingSize"->2],Ramp,ConvolutionLayer[10,{1,1}]}},{
    NetPort["Image"]->"mask",
