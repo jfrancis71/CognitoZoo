@@ -6,20 +6,9 @@
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-CZCreateNBConditionalModel::method = "CZCreateNBConditionalModel method `1` should be one of BinaryVector, BinaryImage, DiscreteImage";
-
-
-CZCreateNBConditionalModel[ type_ ] := NetGraph[{
-   "out"->Switch[ type,
-      "BinaryVector", LogisticSigmoid,
-      "BinaryImage", LogisticSigmoid,
-      "DiscreteImage", {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]},
-      _, (Message[ CZCreateNBConditionalModel::method, OptionValue[ Method ] ]; Abort[] ) ],
-   "crossentropy"->Switch[ type,
-      "BinaryVector", CrossEntropyLossLayer["Binary"],
-      "BinaryImage", CrossEntropyLossLayer["Binary"],
-      "DiscreteImage", CrossEntropyLossLayer["Index"],
-      _, (Message[ CZCreateNBConditionalModel::method, OptionValue[ Method ] ]; Abort[] ) ]},{
+CZCreateNBConditionalModel[ outputLayerType_, lossType_ ] := NetGraph[{
+   "out"->outputLayerType,
+   "crossentropy"->lossType},{
    "out"->"crossentropy"->NetPort["Loss"],
    "out"->NetPort["Output"],
    NetPort["Input"]->NetPort[{"crossentropy","Target"}],
@@ -27,26 +16,18 @@ CZCreateNBConditionalModel[ type_ ] := NetGraph[{
 }];
 
 
-CZCreateNBModel::method = "CZCreateNBModel method `1` should be one of BinaryVector, BinaryImage, DiscreteImage";
-
-
-CZCreateNBModel[ type_ ] := NetGraph[{
-   "array"->Switch[ type,
-      "BinaryVector", ConstantArrayLayer[{784}],
-      "BinaryImage", ConstantArrayLayer[{28,28}],
-      "DiscreteImage", ConstantArrayLayer[{10,28,28}],
-      _, (Message[ CZCreateNBModel::method, OptionValue[ Method ] ]; Abort[] ) ],
-   "decoder"->CZCreateNBConditionalModel[ type ]},{
+CZCreateNBModel[ conditionalDims_, outputLayerType_, lossType_ ] := NetGraph[{
+   "array"->ConstantArrayLayer[conditionalDims],
+   "decoder"->CZCreateNBConditionalModel[ outputLayerType, lossType ]},{
    "array"->NetPort[{"decoder","Conditional"}],
    NetPort["Input"]->NetPort[{"decoder","Input"}]
 }];
 
 
-
 SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{}};
 
 
-CZCreateNBModelBinaryVector[] := CZNBModel[ CZBinaryVector, CZCreateNBModel[ "BinaryVector" ] ];
+CZCreateNBModelBinaryVector[] := CZNBModel[ CZBinaryVector, CZCreateNBModel[ {784}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
 CZSample[ CZNBModel[ CZBinaryVector, net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
@@ -56,14 +37,14 @@ CZSample[ CZNBModel[ CZBinaryVector, net_ ] ] := Module[{out=net[ConstantArray[0
 SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreateNBModelBinaryImage[] := CZNBModel[ CZBinaryImage, CZCreateNBModel[ "BinaryImage" ] ];
+CZCreateNBModelBinaryImage[] := CZNBModel[ CZBinaryImage, CZCreateNBModel[ {28,28}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
 CZSample[ CZNBModel[ CZBinaryImage, net_ ] ] :=
    Map[ rndBinary, net[ ConstantArray[0,{28,28}]]["Output"], {2} ];
 
 
-CZCreateNBModelDiscreteImage[] := CZNBModel[ CZDiscreteImage, CZCreateNBModel[ "DiscreteImage" ] ];
+CZCreateNBModelDiscreteImage[] := CZNBModel[ CZDiscreteImage, CZCreateNBModel[ {10,28,28}, {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
 
 
 rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
