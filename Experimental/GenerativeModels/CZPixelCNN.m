@@ -1,5 +1,8 @@
 (* ::Package:: *)
 
+<<"Experimental/GenerativeModels/CZDiscreteImage.m"
+
+
 (* ::Input:: *)
 (*(* Example implementation of PixelCNN.*)
 (**)*)
@@ -151,9 +154,6 @@ CZCreatePixelCNNDiscreteImage[] := CZPixelCNNDiscreteImage[ NetGraph[{
    NetPort["Image"]->NetPort[{"condpixelcnn","Image"}],
    "global"->NetPort[{"condpixelcnn","Conditional"}]
 }] ];
-
-
-CZOneHot[ image_ ] := Transpose[Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {2} ] ,{2,3,1}];
 
 
 CZTrain[ CZPixelCNNDiscreteImage[ pixelCNNNet_ ], samples_ ] :=

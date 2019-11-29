@@ -119,13 +119,13 @@ CZTrain[ CZPixelVaEDiscreteImage[ inputUnits_, latentUnits_, net_ ], examples_ ]
 ] );
 
 
-CZSample[ CZPixelVaEDiscreteImage[ _, _, net_ ] ] := Module[{s=ConstantArray[0,{10,28,28}],decoder=NetExtract[ net, "decoder" ],cond=NetExtract[ net, {"decoder","cond"}]},tmp=decoder;
+CZSample[ CZPixelVaEDiscreteImage[ _, _, net_ ] ] := Module[{s=ConstantArray[0,{10,28,28}],decoder=NetExtract[ net, "decoder" ],cond=NetExtract[ net, {"decoder","cond"}]},
    znet = NetTake[ decoder, "reshapecond" ];
    z = znet[ RandomVariate@MultinormalDistribution[ConstantArray[0,{8}],IdentityMatrix[8] ] ];c1=cond;
    For[k=1,k<=4,k++,
       l = cond[Association["Image"->s,"Conditional"->z]]["Output"<>ToString[k]];
-      s = discreteSample[l]*Table[pixels[[k,1]],{10}]+s;t=s;
-   ];f1=s;
+      s = discreteSample[l]*Table[pixels[[k]],{10}]+s;t=s;
+   ];
    Map[
 Position[#,1][[1,1]]/10.&,
 Transpose[s,{3,1,2}],{2}]

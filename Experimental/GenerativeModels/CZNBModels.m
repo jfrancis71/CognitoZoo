@@ -1,5 +1,8 @@
 (* ::Package:: *)
 
+<<"Experimental/GenerativeModels/CZDiscreteImage.m"
+
+
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
@@ -67,9 +70,6 @@ CZNBModelDiscreteImageNet = NetGraph[{
    "const"->NetPort[{"cond","Conditional"}],
    NetPort["Input"]->NetPort[{"cond","Input"}]
 }];
-
-
-CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
 
 
 SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
