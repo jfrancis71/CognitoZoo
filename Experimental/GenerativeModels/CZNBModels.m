@@ -6,76 +6,64 @@
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-CZNBConditionalModelBinaryNet = NetGraph[{
-   "log"->LogisticSigmoid,
-   "crossentropy"->CrossEntropyLossLayer["Binary"]},{
-   "log"->"crossentropy"->NetPort["Loss"],
-   "log"->NetPort["Output"],
+CZCreateNBConditionalModel::method = "CZCreateNBConditionalModel method `1` should be one of BinaryVector, BinaryImage, DiscreteImage";
+
+
+CZCreateNBConditionalModel[ type_ ] := NetGraph[{
+   "out"->Switch[ type,
+      "BinaryVector", LogisticSigmoid,
+      "BinaryImage", LogisticSigmoid,
+      "DiscreteImage", {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]},
+      _, (Message[ CZCreateNBConditionalModel::method, OptionValue[ Method ] ]; Abort[] ) ],
+   "crossentropy"->Switch[ type,
+      "BinaryVector", CrossEntropyLossLayer["Binary"],
+      "BinaryImage", CrossEntropyLossLayer["Binary"],
+      "DiscreteImage", CrossEntropyLossLayer["Index"],
+      _, (Message[ CZCreateNBConditionalModel::method, OptionValue[ Method ] ]; Abort[] ) ]},{
+   "out"->"crossentropy"->NetPort["Loss"],
+   "out"->NetPort["Output"],
    NetPort["Input"]->NetPort[{"crossentropy","Target"}],
-   NetPort["Conditional"]->"log"
+   NetPort["Conditional"]->"out"
 }];
 
 
-CZNBModelBinaryVectorNet = NetGraph[{
-   "array"->ConstantArrayLayer[{784}],
-   "decoder"->CZNBConditionalModelBinaryNet},{
+CZCreateNBModel::method = "CZCreateNBModel method `1` should be one of BinaryVector, BinaryImage, DiscreteImage";
+
+
+CZCreateNBModel[ type_ ] := NetGraph[{
+   "array"->Switch[ type,
+      "BinaryVector", ConstantArrayLayer[{784}],
+      "BinaryImage", ConstantArrayLayer[{28,28}],
+      "DiscreteImage", ConstantArrayLayer[{10,28,28}],
+      _, (Message[ CZCreateNBModel::method, OptionValue[ Method ] ]; Abort[] ) ],
+   "decoder"->CZCreateNBConditionalModel[ type ]},{
    "array"->NetPort[{"decoder","Conditional"}],
    NetPort["Input"]->NetPort[{"decoder","Input"}]
 }];
 
 
+
 SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{}};
 
 
-CZCreateNBModelBinaryVector[] := CZNBModel[ CZBinaryVector, CZNBModelBinaryVectorNet ];
+CZCreateNBModelBinaryVector[] := CZNBModel[ CZBinaryVector, CZCreateNBModel[ "BinaryVector" ] ];
 
 
 CZSample[ CZNBModel[ CZBinaryVector, net_ ] ] := Module[{out=net[ConstantArray[0,{784}]]["Output"]},
    rndBinary /@ out ];
 
 
-CZNBModelBinaryImageNet = NetGraph[{
-   "cond"->CZNBConditionalModelBinaryNet,
-   "array"->ConstantArrayLayer[{28,28}]},{
-   "array"->NetPort[{"cond","Conditional"}],
-   NetPort[{"cond","Loss"}]->NetPort["Loss"]
-}];
-
-
 SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreateNBModelBinaryImage[] := CZNBModel[ CZBinaryImage, CZNBModelBinaryImageNet ];
+CZCreateNBModelBinaryImage[] := CZNBModel[ CZBinaryImage, CZCreateNBModel[ "BinaryImage" ] ];
 
 
 CZSample[ CZNBModel[ CZBinaryImage, net_ ] ] :=
    Map[ rndBinary, net[ ConstantArray[0,{28,28}]]["Output"], {2} ];
 
 
-CZNBConditionalModelDiscreteImageNet = NetGraph[{
-   "softmax"->{TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]},
-   "crossentropyloss"->CrossEntropyLossLayer["Index"]
-},{
-   NetPort["Conditional"]->"softmax",
-   NetPort["Input"]->NetPort[{"crossentropyloss","Target"}],
-   NetPort[{"softmax","Output"}]->{NetPort[{"crossentropyloss","Input"}],NetPort["Output"]},
-   NetPort[{"crossentropyloss","Loss"}]->NetPort["Loss"]
-}];
-
-
-CZNBModelDiscreteImageNet = NetGraph[{
-   "const"->ConstantArrayLayer[{10,28,28}],
-   "cond"->CZNBConditionalModelDiscreteImageNet
-},{
-   "const"->NetPort[{"cond","Conditional"}],
-   NetPort["Input"]->NetPort[{"cond","Input"}]
-}];
-
-
-SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
-
-
-CZCreateNBModelDiscreteImage[] := CZNBModel[ CZDiscreteImage, CZNBModelDiscreteImageNet ];
+CZCreateNBModelDiscreteImage[] := CZNBModel[ CZDiscreteImage, CZCreateNBModel[ "DiscreteImage" ] ];
 
 
 rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
