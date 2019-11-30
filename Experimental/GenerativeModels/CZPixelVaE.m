@@ -21,12 +21,12 @@ CZCreatePixelVaEBinaryImageDecoder[ inputUnits_, h1_, h2_ ] := NetGraph[{
 SyntaxInformation[ CZPixelVaEBinaryImage ]= {"ArgumentsPattern"->{_,_,_}};
 
 
-CZCreatePixelVaEBinaryImage[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] := CZPixelVaEBinaryImage[
+CZCreatePixelVaEBinaryImage[ inputUnits_:784, latentUnits_:8, h1_:500, h2_:500 ] := CZPixelVaEBinaryImage[
    inputUnits,
    latentUnits,
    NetGraph[{
       "encoder"->CZCreateEncoder[ inputUnits, latentUnits, h1, h2 ],
-      "sampler"->CZCreateSampler[],
+      "sampler"->CZVaESamplerNet,
       "decoder"->CZCreatePixelVaEBinaryImageDecoder[ inputUnits, h1, h2 ],
       "kl_loss"->CZKLLoss
       },{
@@ -58,8 +58,8 @@ CZSample[ CZPixelVaEBinaryImage[ _, _, net_ ] ] := Module[{s=ConstantArray[0,{28
    znet = NetTake[ decoder, "reshapecond" ];
    z = znet[ RandomVariate@MultinormalDistribution[ConstantArray[0,{8}],IdentityMatrix[8] ] ];
    For[k=1,k<=Length[pixels],k++,
-      l = cond[Association["Image"->s,"Conditional"->z]]["Output"<>ToString[k]][[1]];
-      s = Map[rndBinary,l,{2}]*pixels[[k]][[1]]+s;t=s;
+      l = cond[Association["Image"->s,"Conditional"->z]]["Output"<>ToString[k]];
+      s = Map[rndBinary,l,{2}]*pixels[[k]]+s;t=s;
    ];
    s]
 
@@ -86,12 +86,12 @@ CZCreatePixelVaEDiscreteImageEncoder[ inputUnits_, latentUnits_, h1_, h2_ ] := N
 }];
 
 
-CZCreatePixelVaEDiscreteImage[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] := CZPixelVaEDiscreteImage[
+CZCreatePixelVaEDiscreteImage[ inputUnits_:784, latentUnits_:8, h1_:500, h2_:500 ] := CZPixelVaEDiscreteImage[
    inputUnits,
    latentUnits,
    NetGraph[{
       "encoder"->CZCreatePixelVaEDiscreteImageEncoder[ inputUnits, latentUnits, h1, h2 ],
-      "sampler"->CZCreateSampler[],
+      "sampler"->CZVaESamplerNet,
       "decoder"->CZCreatePixelVaEDiscreteImageDecoder[ inputUnits, h1, h2 ],
       "kl_loss"->CZKLLoss
       },{
