@@ -21,17 +21,17 @@ CZCreateEncoder[ inputUnits_, latentUnits_, h1_:500, h2_: 500 ] :=
       "Input"->{inputUnits}];
 
 
-CZCreateDecoder[ outputUnits_, h1_:500, h2_:500 ] :=
+CZCreateDecoder[ outputUnits_, outputModel_, h1_:500, h2_:500 ] :=
    NetGraph[{
       "h1"->{h1,Ramp},
       "h2"->{h2,Ramp},
       "o"->outputUnits,
-      "cond"->CZCreateNBConditionalModel[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]]},{
+      "cond"->outputModel},{
       NetPort["Conditional"]->"h1",
       "h1"->"h2"->"o"->NetPort[{"cond","Conditional"}],
       NetPort[{"cond","Output"}]->NetPort["Output"],
       NetPort[{"cond","Loss"}]->NetPort["Loss"]
-}      ];
+}];
 
 
 CZCreateSampler[] :=
@@ -57,11 +57,10 @@ CZKLLoss = NetGraph[{
 }];
 
 
-SyntaxInformation[ CZVariationalAutoencoder ]= {"ArgumentsPattern"->{_,_}};
+SyntaxInformation[ CZVaEBinaryVector ]= {"ArgumentsPattern"->{_,_}};
 
 
-CZCreateVaE[ latentUnits_, encoder_, decoder_ ] := CZVariationalAutoencoder[
-   latentUnits,
+CZCreateVaENet[ encoder_, decoder_ ] :=
    NetGraph[{
       "encoder"->encoder,
       "sampler"->CZCreateSampler[],
@@ -74,23 +73,22 @@ CZCreateVaE[ latentUnits_, encoder_, decoder_ ] := CZVariationalAutoencoder[
       NetPort[{"decoder","Output"}]->NetPort["Output"],
       NetPort[{"decoder","Loss"}]->NetPort["recon_loss"],
       NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
-   }]
-];
+}];
 
 
-CZCreateVaEBinaryVector[] := CZCreateVaE[ 8, CZCreateEncoder[ 784, 8 ], CZCreateDecoder[ 784 ] ];
+CZCreateVaEBinaryVector[] := CZVaEBinaryVector[ 8, CZCreateVaENet[ CZCreateEncoder[ 784, 8 ], CZCreateDecoder[ 784, CZCreateNBConditionalModel[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
 
 
-CZTrain[ CZVariationalAutoencoder[ latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
+CZTrain[ CZVaEBinaryVector[ latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
    f[assoc_] := MapThread[
       Association["Input"->#1,"RandomSample"->#2]&,
       {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
    trained = NetTrain[ vaeNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
-   CZVariationalAutoencoder[ latentUnits, trained ]
+   CZVaEBinaryVector[ latentUnits, trained ]
 ];
 
 
-CZLogDensity[ CZVariationalAutoencoder[ latentUnits_, vaeNet_ ], sample_ ] :=
+CZLogDensity[ CZVaEBinaryVector[ latentUnits_, vaeNet_ ], sample_ ] :=
    Module[{proc=vaeNet[ Association["Input"->sample, "RandomSample"->ConstantArray[0, latentUnits ] ] ]},
       -(proc["kl_loss"]+proc["recon_loss"])]
 
@@ -98,7 +96,7 @@ CZLogDensity[ CZVariationalAutoencoder[ latentUnits_, vaeNet_ ], sample_ ] :=
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-CZSample[ CZVariationalAutoencoder[ latentUnits_, vaeNet_ ] ] :=
+CZSample[ CZVaEBinaryVector[ latentUnits_, vaeNet_ ] ] :=
    Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },tmp=decoder;
    probMap = decoder[Association["Conditional"->
       RandomVariate@MultinormalDistribution[ ConstantArray[0, latentUnits ], IdentityMatrix[ latentUnits ] ],
@@ -107,49 +105,43 @@ CZSample[ CZVariationalAutoencoder[ latentUnits_, vaeNet_ ] ] :=
 ];
 
 
-SyntaxInformation[ CZVariationalAutoencoderImage ]= {"ArgumentsPattern"->{_,_}};
+SyntaxInformation[ CZVaEBinaryImage ]= {"ArgumentsPattern"->{_,_}};
 
 
-CZCreateVaEImage[ latentUnits_, h1_:500, h2_:500 ] :=
-   ReplacePart[ CZCreateVaEBinaryVector[], 0->CZVariationalAutoencoderImage ]
+CZCreateVaEBinaryImage[ latentUnits_:8, h1_:500, h2_:500 ] :=
+   CZVaEBinaryImage[ 8, CZCreateVaENet[ CZCreateEncoder[ 784, latentUnits ], CZCreateDecoder[ 784, CZCreateNBConditionalModel[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
 
 
-CZTrain[ CZVariationalAutoencoderImage[ latentUnits_, vaeNet_ ], samples_ ] :=
-   ReplacePart[ CZTrain[ CZVariationalAutoencoder[ latentUnits, vaeNet ], Flatten/@samples ], 0->CZVariationalAutoencoderImage ];
+CZTrain[ CZVaEBinaryImage[ latentUnits_, vaeNet_ ], samples_ ] :=
+   ReplacePart[ CZTrain[ CZVaEBinaryVector[ latentUnits, vaeNet ], Flatten/@samples ], 0->CZVaEBinaryImage ];
 
 
-CZLogDensity[ CZVariationalAutoencoderImage[ latentUnits_, vaeNet_ ], sample_ ] :=
-   CZLogDensity[ CZVariationalAutoencoder[ latentUnits, vaeNet ], Flatten@sample ] 
+CZLogDensity[ CZVaEBinaryImage[ latentUnits_, vaeNet_ ], sample_ ] :=
+   CZLogDensity[ CZVaEBinaryVector[ latentUnits, vaeNet ], Flatten@sample ] 
 
 
-CZSample[ CZVariationalAutoencoderImage[ latentUnits_, vaeNet_ ] ] :=
-   Partition[ CZSample[ CZVariationalAutoencoder[ latentUnits, vaeNet ] ], 28];
+CZSample[ CZVaEBinaryImage[ latentUnits_, vaeNet_ ] ] :=
+   Partition[ CZSample[ CZVaEBinaryVector[ latentUnits, vaeNet ] ], 28];
 
 
 CZCreateEncoderDiscreteImage[ h1_:500, h2_:500 ] :=
    NetChain[{FlattenLayer[],CZCreateEncoder[784*10, 8]}]
 
 
-CZCreateDecoderDiscreteImage[ h1_:500, h2_:500 ] :=
-   NetGraph[{
-      {h1,Ramp},
-      {h2,Ramp},
-      10*28*28,
-      ReshapeLayer[{10,28,28}],
-      SoftmaxLayer[1],
-      CrossEntropyLossLayer["Probabilities"]},{
-      NetPort["Conditional"]->1->2->3->4->5->NetPort[{6,"Input"}],
-      NetPort["Input"]->NetPort[{6,"Target"}],
-      NetPort[{6,"Loss"}]->NetPort["Loss"],
-      5->NetPort["Output"]
-}];
+CZCreateOutputDiscreteImage = NetGraph[{
+   ReshapeLayer[{10,28,28}],
+   SoftmaxLayer[1],
+   CrossEntropyLossLayer["Probabilities"]},{
+   NetPort["Conditional"]->1->2,
+   NetPort["Input"]->NetPort[{3,"Target"}],
+   2->{NetPort["Output"],NetPort[{3,"Input"}]}}];
 
 
 SyntaxInformation[ CZVaEDiscreteImage ]= {"ArgumentsPattern"->{_,_}};
 
 
 CZCreateVaEDiscreteImage[ latentUnits_, h1_:500, h2_:500 ] :=
-   ReplacePart[ CZCreateVaE[ 8, CZCreateEncoderDiscreteImage[], CZCreateDecoderDiscreteImage[] ], 0->CZVaEDiscreteImage ];
+   CZVaEDiscreteImage[ 8, CZCreateVaENet[ CZCreateEncoderDiscreteImage[], CZCreateDecoder[ 784*10, CZCreateOutputDiscreteImage ] ] ];
 
 
 rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
