@@ -166,12 +166,6 @@ CZTrain[ CZPixelCNNDiscreteImage[ pixelCNNNet_ ], samples_ ] :=
 ];
 
 
-discreteSample1[ v_ ] := ReplacePart[ConstantArray[0,{10}],RandomChoice[ v -> Range[1,10] ]->1]
-
-
-discreteSample[ image_ ] := Transpose[ Map[ discreteSample1, Transpose[ image, {3,1,2} ], {2}], {2,3,1}]
-
-
 CZSample[ CZPixelCNNDiscreteImage[ pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,{10,28,28}]},
    For[k=1,k<=Length[pixels],k++,
       l = pixelCNNNet[s]["Output"<>ToString[k]];
