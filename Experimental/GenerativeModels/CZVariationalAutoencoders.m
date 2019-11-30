@@ -60,28 +60,6 @@ CZKLLoss = NetGraph[{
 SyntaxInformation[ CZVariationalAutoencoder ]= {"ArgumentsPattern"->{_,_}};
 
 
-CZCreateVaE[ inputUnits_, latentUnits_, h1_:500, h2_:500 ] := VariationalAutoencoder[
-   inputUnits,
-   latentUnits,
-   NetGraph[{
-      "encoder"->CZCreateEncoder[ inputUnits, latentUnits, h1, h2 ],
-      "sampler"->CZCreateSampler[],
-      "decoder"->CZCreateDecoder[ inputUnits, h1, h2 ],
-      "kl_loss"->CZKLLoss,
-      "mean_recon_loss"->CrossEntropyLossLayer["Binary"],
-      "total_recon_loss"->ElementwiseLayer[#*inputUnits&]
-      },{
-      NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}],NetPort["Mean"]},
-      NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}],NetPort["LogVar"]},
-      NetPort[{"sampler","Output"}]->NetPort[{"decoder","Input"}],
-      NetPort[{"decoder","Output"}]->{NetPort["Output"],NetPort[{"mean_recon_loss","Input"}]},
-      NetPort["Input"]->NetPort[{"mean_recon_loss","Target"}],
-      NetPort[{"mean_recon_loss","Loss"}]->"total_recon_loss"->NetPort["recon_loss"],
-      NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
-   }]
-];
-
-
 CZCreateVaE[ latentUnits_, encoder_, decoder_ ] := CZVariationalAutoencoder[
    latentUnits,
    NetGraph[{
