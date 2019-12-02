@@ -122,11 +122,5 @@ CZTrain[ CZPixelVaEDiscreteImage[ imageDims_, latentUnits_, net_ ], examples_ ] 
 CZSample[ CZPixelVaEDiscreteImage[ imageDims_, latentUnits_, net_ ] ] := Module[{s=ConstantArray[0,Prepend[imageDims,10]],decoder=NetExtract[ net, "decoder" ],cond=NetExtract[ net, {"decoder","cond"}]},
    znet = NetTake[ decoder, "reshapecond" ]; pixelOrdering=PixelCNNOrdering[ imageDims ];
    z = znet[ RandomVariate@MultinormalDistribution[ConstantArray[0,{latentUnits}],IdentityMatrix[latentUnits] ] ];c1=cond;
-   For[k=1,k<=4,k++,
-      l = cond[Association["Image"->s,"Conditional"->z]]["Output"<>ToString[k]];
-      s = discreteSample[l]*Table[pixelOrdering[[k]],{10}]+s;t=s;
-   ];
-   Map[
-Position[#,1][[1,1]]/10.&,
-Transpose[s,{3,1,2}],{2}]
+   CZSampleConditionalPixelCNNDiscreteImage[ cond, imageDims, z ]
 ]
