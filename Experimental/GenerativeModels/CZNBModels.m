@@ -27,38 +27,38 @@ CZCreateNBModel[ conditionalDims_, outputLayerType_, lossType_ ] := NetGraph[{
 }];
 
 
-SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{_,_,_}};
+SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{_,_}};
 
 
-SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{}};
+SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreateNBModelBinaryVector[ inputUnits_:784 ] := CZNBModel[ CZBinaryVector, inputUnits, CZCreateNBModel[ {inputUnits}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
+CZCreateNBModelBinaryVector[ inputUnits_:784 ] := CZNBModel[ CZBinaryVector[ inputUnits ], CZCreateNBModel[ {inputUnits}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
-CZSample[ CZNBModel[ CZBinaryVector, inputUnits_, net_ ] ] := CZSampleBinaryVector@net[ConstantArray[0,{inputUnits}]]["Output"];
+CZSample[ CZNBModel[ CZBinaryVector[ inputUnits_ ], net_ ] ] := CZSampleBinaryVector@net[ConstantArray[0,{inputUnits}]]["Output"];
 
 
 SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreateNBModelBinaryImage[ imageDims_:{28,28} ] := CZNBModel[ CZBinaryImage, imageDims, CZCreateNBModel[ imageDims, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
+CZCreateNBModelBinaryImage[ imageDims_:{28,28} ] := CZNBModel[ CZBinaryImage[ imageDims ], CZCreateNBModel[ imageDims, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
-CZSample[ CZNBModel[ CZBinaryImage, imageDims_, net_ ] ] := CZSampleBinaryImage@net[ ConstantArray[0,imageDims]]["Output"];
+CZSample[ CZNBModel[ CZBinaryImage[ imageDims_ ], net_ ] ] := CZSampleBinaryImage@net[ ConstantArray[0,imageDims]]["Output"];
 
 
 SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
 
 
-CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZNBModel[ CZDiscreteImage, imageDims, CZCreateNBModel[ Prepend[imageDims, 10], {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
+CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZNBModel[ CZDiscreteImage[ imageDims ], CZCreateNBModel[ Prepend[imageDims, 10], {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
 
 
-CZSample[ CZNBModel[ CZDiscreteImage, imageDims_, net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
+CZSample[ CZNBModel[ CZDiscreteImage[ imageDims_ ], net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
 
 
-CZTrain[ CZNBModel[ modelType_, dims_, net_ ], samples_ ] :=
-   CZNBModel[ modelType, dims, NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
+CZTrain[ CZNBModel[ modelType_[ dims_ ], net_ ], samples_ ] :=
+   CZNBModel[ modelType[ dims ], NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
 
 
 CZLogDensity[ CZNBModel[ _, net_ ], sample_ ] :=
