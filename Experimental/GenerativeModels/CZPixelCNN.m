@@ -110,7 +110,7 @@ SyntaxInformation[ CZPixelCNNDiscreteImage ]= {"ArgumentsPattern"->{_,_}};
    the inputs. On the input side, it doesn't like the use of calculated numbers, indexes need to be bounded integers.
 *)
 MaskLossLayerDiscrete[mask_] := NetGraph[{
-   "mask"->ConstantArrayLayer["Array"->Table[mask,{10}]],
+   "mask"->ConstantArrayLayer["Array"->Transpose[Table[mask,{10}],{3,1,2}]],
    "th1"->ThreadingLayer[Times],
    "th2"->ThreadingLayer[Times],
    "meancrossentropy"->CrossEntropyLossLayer["Probabilities"],
@@ -122,8 +122,8 @@ MaskLossLayerDiscrete[mask_] := NetGraph[{
 
 
 PredictLayerDiscrete[mask_] := NetGraph[{
-   "mask"->MaskLayer[ConstantArray[mask,{10}]],
-   "cat"->CatenateLayer[1],
+   "mask"->{TransposeLayer[{1<->3,2<->3}],MaskLayer[ConstantArray[mask,{10}]]},
+   "cat"->CatenateLayer[],
    "conv"->{ConvolutionLayer[16,{5,5},"PaddingSize"->2],Ramp,ConvolutionLayer[10,{1,1}]}},{
    NetPort["Image"]->"mask",
    {"mask",NetPort["Glob"]}->"cat"->"conv"},
@@ -132,11 +132,11 @@ PredictLayerDiscrete[mask_] := NetGraph[{
 
 CZConditionalPixelCNNDiscreteImage[ imageDims_ ] :=  Module[{ pixels = PixelCNNOrdering[ imageDims ] }, masks = InformationMasking[ pixels ];tpix=pixels;
    NetGraph[Flatten@{
-   "reshapeInput"->ReshapeLayer[Prepend[ imageDims, 10 ]],
+   "reshapeInput"->ReshapeLayer[Append[ imageDims, 10 ]],
    "reshapeConditional"->ReshapeLayer[Prepend[ imageDims, 1 ]],
    Table[{
-      "conv"<>ToString[k]->PredictLayerDiscrete[masks[[k]]],
-      "softmax"<>ToString[k]->SoftmaxLayer[1],
+      "conv"<>ToString[k]->{PredictLayerDiscrete[masks[[k]]],TransposeLayer[{3<->1,1<->2}]},
+      "softmax"<>ToString[k]->SoftmaxLayer[],
       "loss"<>ToString[k]->MaskLossLayerDiscrete[pixels[[k]]]},
       {k,1,Length[pixels]}],
    "loss"->TotalLayer[]
@@ -144,11 +144,11 @@ CZConditionalPixelCNNDiscreteImage[ imageDims_ ] :=  Module[{ pixels = PixelCNNO
    NetPort["Image"]->"reshapeInput",
    NetPort["Conditional"]->"reshapeConditional",
    Table[{
-      "reshapeInput"->"conv"<>ToString[k]->"softmax"<>ToString[k]->"loss"<>ToString[k], "reshapeConditional"->NetPort[{"conv"<>ToString[k],"Glob"}], "reshapeInput"->NetPort[{"loss"<>ToString[k],"Target"}],"softmax"<>ToString[k]->NetPort["Output"<>ToString[k]]},{k,1,Length[pixels]}],
-   Table["loss"<>ToString[k],{k,1,Length[pixels]}]->"loss"->NetPort["Loss"]
-},
-   "Image"->Prepend[imageDims,10]]
-];
+      "reshapeInput"->"conv"<>ToString[k]->"softmax"<>ToString[k]->"loss"<>ToString[k], "reshapeConditional"->NetPort[{"conv"<>ToString[k],"Glob"}],
+       NetPort["Image"]->NetPort[{"loss"<>ToString[k],"Target"}],"softmax"<>ToString[k]->NetPort["Output"<>ToString[k]]},{k,1,Length[pixels]}],
+  Table["loss"<>ToString[k],{k,1,Length[pixels]}]->"loss"->NetPort["Loss"]
+}]](*,
+   "Image"\[Rule]Append[imageDims,10]]*)
 
 
 CZCreatePixelCNNDiscreteImage[ imageDims_:{28,28} ] := CZPixelCNNDiscreteImage[ imageDims, NetGraph[{
@@ -163,21 +163,19 @@ CZTrain[ CZPixelCNNDiscreteImage[ imageDims_, pixelCNNNet_ ], samples_ ] :=
    CZPixelCNNDiscreteImage[ imageDims, NetTrain[ pixelCNNNet, Association["Image"->CZOneHot@#]&/@samples,
       LearningRateMultipliers->
          Flatten[Table[
-         {{"condpixelcnn","conv"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
+         {{"condpixelcnn","conv"<>ToString[k],1,"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
       ,
       MaxTrainingRounds->10000,LossFunction->"Loss" ]
 ];
 
 
-CZSampleConditionalPixelCNNDiscreteImage[ condPixelCNN_, imageDims_, cond_ ] := Module[{s=ConstantArray[0,Prepend[imageDims,10]]},
+CZSampleConditionalPixelCNNDiscreteImage[ condPixelCNN_, imageDims_, cond_ ] := Module[{s=ConstantArray[1,imageDims]},
    pixels = PixelCNNOrdering[ imageDims ];
-   For[k=1,k<=4,k++,
-      l = Normal@condPixelCNN[Association["Image"->s,"Conditional"->cond]]["Output"<>ToString[k]];
-      s = discreteSample[l]*Table[pixels[[k]],{10}]+s;t=s;
+   For[k=1,k<=1,k++,
+      l = Normal@condPixelCNN[Association["Image"->CZOneHot[s],"Conditional"->cond]]["Output"<>ToString[k]];
+      s = CZSampleDiscreteImage[l]*pixels[[k]]+s;t=s;
    ];
-   Map[
-Position[#,1][[1,1]]/10.&,
-Transpose[s,{3,1,2}],{2}]
+   s/10
 ];
 
 

@@ -3,7 +3,10 @@
 <<"Experimental/GenerativeModels/CZDiscreteImage.m"
 
 
-rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
+CZSampleBinaryVector[ betas_ ] := RandomChoice[{1-#,#}->{0,1}]& /@ betas;
+
+
+CZSampleBinaryImage[ betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, betas, {2}];
 
 
 CZGenerativeOutputLayer[ outputLayerType_, lossType_ ] := NetGraph[{
@@ -33,8 +36,7 @@ SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{}};
 CZCreateNBModelBinaryVector[ inputUnits_:784 ] := CZNBModel[ CZBinaryVector, inputUnits, CZCreateNBModel[ {inputUnits}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
-CZSample[ CZNBModel[ CZBinaryVector, inputUnits_, net_ ] ] := Module[{out=net[ConstantArray[0,{inputUnits}]]["Output"]},
-   rndBinary /@ out ];
+CZSample[ CZNBModel[ CZBinaryVector, inputUnits_, net_ ] ] := CZSampleBinaryVector@net[ConstantArray[0,{inputUnits}]]["Output"];
 
 
 SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
@@ -43,8 +45,7 @@ SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
 CZCreateNBModelBinaryImage[ imageDims_:{28,28} ] := CZNBModel[ CZBinaryImage, imageDims, CZCreateNBModel[ imageDims, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
-CZSample[ CZNBModel[ CZBinaryImage, imageDims_, net_ ] ] :=
-   Map[ rndBinary, net[ ConstantArray[0,imageDims]]["Output"], {2} ];
+CZSample[ CZNBModel[ CZBinaryImage, imageDims_, net_ ] ] := CZSampleBinaryImage@net[ ConstantArray[0,imageDims]]["Output"];
 
 
 SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
@@ -53,11 +54,7 @@ SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
 CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZNBModel[ CZDiscreteImage, imageDims, CZCreateNBModel[ Prepend[imageDims, 10], {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
 
 
-rndMult[probs_]:=RandomChoice[probs->Range[1,10]]
-
-
-CZSample[ CZNBModel[ CZDiscreteImage, imageDims_, net_ ] ] :=
-   Map[ rndMult, net[ConstantArray[1,imageDims]]["Output"], {2} ]/10.;
+CZSample[ CZNBModel[ CZDiscreteImage, imageDims_, net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
 
 
 CZTrain[ CZNBModel[ modelType_, dims_, net_ ], samples_ ] :=
