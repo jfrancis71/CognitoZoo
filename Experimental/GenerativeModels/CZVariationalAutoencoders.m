@@ -74,23 +74,13 @@ CZCreateVaENet[ encoder_, decoder_ ] := NetGraph[{
 CZSampleVaELatent[ latentUnits_ ] := RandomVariate@MultinormalDistribution[ ConstantArray[0,{latentUnits}], IdentityMatrix[latentUnits] ];
 
 
+SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_,_,_}};
+
+
 CZCreateVaEBinaryVector[ inputUnits_:784, latentUnits_:8 ] :=
    CZVaE[ CZBinaryVector[ inputUnits ], latentUnits, CZCreateVaENet[
       CZCreateEncoder[ inputUnits, latentUnits ],
       CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
-
-
-CZTrain[ CZVaE[ CZBinaryVector[ inputUnits_ ], latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
-   f[assoc_] := MapThread[
-      Association["Input"->#1,"RandomSample"->#2]&,
-      {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
-   trained = NetTrain[ vaeNet, f, LossFunction->"Loss", "BatchSize"->128 ];
-   CZVaE[ CZBinaryVector[ inputUnits ], latentUnits, trained ]
-];
-
-
-CZLogDensity[ CZVaE[ CZBinaryVector[ _ ], latentUnits_, vaeNet_ ], sample_ ] :=
-   -vaeNet[ Association["Input"->sample, "RandomSample"->ConstantArray[0, latentUnits ] ] ][ "Loss" ]
 
 
 CZSample[ CZVaE[ CZBinaryVector[ inputUnits_ ], latentUnits_, vaeNet_ ] ] :=
@@ -103,14 +93,6 @@ CZSample[ CZVaE[ CZBinaryVector[ inputUnits_ ], latentUnits_, vaeNet_ ] ] :=
 
 CZCreateVaEBinaryImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
    CZVaE[ CZBinaryImage[ imageDims ], latentUnits, CZCreateVaENet[ CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ], CZCreateDecoder[ imageDims[[1]]*imageDims[[2]], CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
-
-
-CZTrain[ CZVaE[ CZBinaryImage[ imageDims_ ], latentUnits_, vaeNet_ ], samples_ ] :=
-   ReplacePart[ CZTrain[ CZVaE[ CZBinaryVector[ imageDims ], latentUnits, vaeNet ], Flatten/@samples ], 1->CZBinaryImage[ imageDims ] ];
-
-
-CZLogDensity[ CZVaE[ CZBinaryImage[ imageDims_ ], latentUnits_, vaeNet_ ], sample_ ] :=
-   CZLogDensity[ CZVaE[ CZBinaryVector[ imageDims[[1]]*imageDims[[2]] ], latentUnits, vaeNet ], Flatten@sample ] 
 
 
 CZSample[ CZVaE[ CZBinaryImage[ imageDims_ ], latentUnits_, vaeNet_ ] ] :=
@@ -134,19 +116,28 @@ CZCreateVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ]
    CZVaE[ CZDiscreteImage[ imageDims ], latentUnits, CZCreateVaENet[ CZCreateEncoderDiscreteImage[ imageDims ], CZCreateDecoder[ imageDims[[1]]*imageDims[[2]]*10, CZCreateOutputDiscreteImage[ imageDims ] ] ] ];
 
 
-CZTrain[ CZVaE[ CZDiscreteImage[ imageDims_ ], latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
-   f[assoc_] := MapThread[
-      Association["Input"->(CZOneHot@#1),"RandomSample"->#2]&,
-      {RandomSample[samples,assoc["BatchSize"]],Table[CZSampleVaELatent[ latentUnits ], assoc["BatchSize"] ]}];tmp=f;
-   trained = NetTrain[ vaeNet, f, LossFunction->"Loss", "BatchSize"->128, MaxTrainingRounds->10000 ];
-   CZVaE[ CZDiscreteImage[ imageDims ], latentUnits, trained ]
-];
-
-
 CZSample[ CZVaE[ CZDiscreteImage[ imageDims_ ], latentUnits_, vaeNet_ ] ] :=
    CZSampleDiscreteImage@NetExtract[vaeNet,"decoder"][
       Association[ "Conditional"->CZSampleVaELatent[ latentUnits ], "Input"->ConstantArray[0,Append[imageDims,10]] ] ]["Output"]/10;
 
 
-CZLogDensity[ CZVaE[ CZDiscreteImage[ imageDims_ ], latentUnits_, vaeNet_ ], sample_ ] :=
-   -vaeNet[ Association[ "Input"->CZOneHot@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]
+CZEncoder[ CZBinaryVector[ inputUnits_ ], input_ ] := input
+
+
+CZEncoder[ CZBinaryImage[ imageDims_ ], input_ ] := Flatten[input]
+
+
+CZEncoder[ CZDiscreteImage[ imageDims_ ], input_ ] := CZOneHot@input
+
+
+CZTrain[ CZVaE[ inputType_, latentUnits_, vaeNet_ ], samples_ ] := Module[{trained, lossNet, f},
+   f[assoc_] := MapThread[
+      Association["Input"->CZEncoder[ inputType, #1],"RandomSample"->#2]&,
+      {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
+   trained = NetTrain[ vaeNet, f, LossFunction->"Loss", "BatchSize"->128 ];
+   CZVaE[ inputType, latentUnits, trained ]
+];
+
+
+CZLogDensity[ CZVaE[ inputType_, latentUnits_, vaeNet_ ], sample_ ] :=
+   -vaeNet[ Association[ "Input"->CZEncoder[inputType, sample], "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]
