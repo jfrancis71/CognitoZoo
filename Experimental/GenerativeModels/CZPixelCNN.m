@@ -66,10 +66,10 @@ CZConditionalPixelCNNBinaryImage[ imageDims_:{28,28} ] := Module[{ pixels = Pixe
 ];
 
 
-SyntaxInformation[ CZPixelCNNBinaryImage ]= {"ArgumentsPattern"->{_,_}};
+SyntaxInformation[ CZPixelCNN ]= {"ArgumentsPattern"->{_,_}};
 
 
-CZCreatePixelCNNBinaryImage[ imageDims_:{28,28} ] := CZPixelCNNBinaryImage[ imageDims, NetGraph[{
+CZCreatePixelCNNBinaryImage[ imageDims_:{28,28} ] := CZPixelCNN[ CZBinaryImage[ imageDims ], NetGraph[{
    "global"->ConstantArrayLayer[imageDims],
    "condpixelcnn"->CZConditionalPixelCNNBinaryImage[ imageDims ]},{
    NetPort["Image"]->NetPort[{"condpixelcnn","Image"}],
@@ -80,29 +80,26 @@ CZCreatePixelCNNBinaryImage[ imageDims_:{28,28} ] := CZPixelCNNBinaryImage[ imag
 rndBinary[beta_]:=RandomChoice[{1-beta,beta}->{0,1}];
 
 
-CZTrain[ CZPixelCNNBinaryImage[ imageDims_, pixelCNNNet_ ], samples_ ] :=
-   CZPixelCNNBinaryImage[ imageDims, NetTrain[ pixelCNNNet, Association["Image"->#]&/@samples,
+CZTrain[ CZPixelCNN[ CZBinaryImage[ imageDims_ ], pixelCNNNet_ ], samples_ ] := Module[{pixels=PixelCNNOrdering[ imageDims ]},
+   CZPixelCNN[ CZBinaryImage[ imageDims ], NetTrain[ pixelCNNNet, Association["Image"->#]&/@samples,
       LearningRateMultipliers->
          Flatten[Table[
          {{"condpixelcnn","conv"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
       ,
       MaxTrainingRounds->10000,LossFunction->"Loss" ]
-];
+]];
 
 
-CZLogDensity[ CZPixelCNNBinaryImage[ imageDims_, pixelCNNNet_ ], sample_ ] :=
+CZLogDensity[ CZPixelCNN[ CZBinaryImage[ imageDims_ ], pixelCNNNet_ ], sample_ ] :=
    -pixelCNNNet[ sample ][ "Loss" ]*784/9
 
 
-CZSample[ CZPixelCNNBinaryImage[ imageDims_, pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,imageDims]},
+CZSample[ CZPixelCNN[ CZBinaryImage[ imageDims_ ], pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,imageDims]},
    For[k=1,k<=Length[pixels],k++,
       l = pixelCNNNet[s]["Output"<>ToString[k]];
       s = Map[rndBinary,l,{2}]*pixels[[k]]+s;t=s;
    ];
    s]
-
-
-SyntaxInformation[ CZPixelCNNDiscreteImage ]= {"ArgumentsPattern"->{_,_}};
 
 
 (* We're sticking with a 1 hot encoding. Not the most efficient, but can't see a way to mask out cross entropy loss
@@ -151,7 +148,7 @@ CZConditionalPixelCNNDiscreteImage[ imageDims_ ] :=  Module[{ pixels = PixelCNNO
    "Image"\[Rule]Append[imageDims,10]]*)
 
 
-CZCreatePixelCNNDiscreteImage[ imageDims_:{28,28} ] := CZPixelCNNDiscreteImage[ imageDims, NetGraph[{
+CZCreatePixelCNNDiscreteImage[ imageDims_:{28,28} ] := CZPixelCNN[ CZDiscreteImage[ imageDims ], NetGraph[{
    "global"->ConstantArrayLayer[imageDims],
    "condpixelcnn"->CZConditionalPixelCNNDiscreteImage[ imageDims ]},{
    NetPort["Image"]->NetPort[{"condpixelcnn","Image"}],
@@ -159,8 +156,8 @@ CZCreatePixelCNNDiscreteImage[ imageDims_:{28,28} ] := CZPixelCNNDiscreteImage[ 
 }] ];
 
 
-CZTrain[ CZPixelCNNDiscreteImage[ imageDims_, pixelCNNNet_ ], samples_ ] :=
-   CZPixelCNNDiscreteImage[ imageDims, NetTrain[ pixelCNNNet, Association["Image"->CZOneHot@#]&/@samples,
+CZTrain[ CZPixelCNN[ CZDiscreteImage[ imageDims_ ], pixelCNNNet_ ], samples_ ] :=
+   CZPixelCNN[ CZDiscreteImage[ imageDims ], NetTrain[ pixelCNNNet, Association["Image"->CZOneHot@#]&/@samples,
       LearningRateMultipliers->
          Flatten[Table[
          {{"condpixelcnn","conv"<>ToString[k],1,"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,1,Length[pixels]}],1]
@@ -179,7 +176,11 @@ CZSampleConditionalPixelCNNDiscreteImage[ condPixelCNN_, imageDims_, cond_ ] := 
 ];
 
 
-CZSample[ CZPixelCNNDiscreteImage[ imageDims_, pixelCNNNet_ ] ] := CZSampleConditionalPixelCNNDiscreteImage[
+CZSample[ CZPixelCNN[ CZDiscreteImage[ imageDims_ ], pixelCNNNet_ ] ] := CZSampleConditionalPixelCNNDiscreteImage[
    NetExtract[ pixelCNNNet, "condpixelcnn" ], imageDims,
    NetExtract[ pixelCNNNet, {"global","Array"} ]
 ];
+
+
+CZLogDensity[ CZPixelCNN[ CZDiscreteImage[ imageDims_ ], pixelCNNNet_ ], sample_ ] :=
+   -pixelCNNNet[ CZOneHot@sample ][ "Loss" ]*784/9
