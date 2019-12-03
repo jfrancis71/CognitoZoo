@@ -101,9 +101,6 @@ CZSample[ CZVaE[ CZBinaryVector[ inputUnits_ ], latentUnits_, vaeNet_ ] ] :=
 ];
 
 
-SyntaxInformation[ CZVaEBinaryImage ]= {"ArgumentsPattern"->{_,_,_}};
-
-
 CZCreateVaEBinaryImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
    CZVaE[ CZBinaryImage[ imageDims ], latentUnits, CZCreateVaENet[ CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ], CZCreateDecoder[ imageDims[[1]]*imageDims[[2]], CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
 
