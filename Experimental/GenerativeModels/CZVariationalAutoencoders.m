@@ -56,19 +56,18 @@ CZKLLoss = NetGraph[{
 }];
 
 
-CZCreateVaENet[ encoder_, decoder_ ] :=
-   NetGraph[{
-      "encoder"->encoder,
-      "sampler"->CZVaESamplerNet,
-      "decoder"->decoder,
-      "kl_loss"->CZKLLoss
-      },{
-      NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}],NetPort["Mean"]},
-      NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}],NetPort["LogVar"]},
-      NetPort[{"sampler","Output"}]->NetPort[{"decoder","Conditional"}],
-      NetPort[{"decoder","Output"}]->NetPort["Output"],
-      NetPort[{"decoder","Loss"}]->NetPort["recon_loss"],
-      NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
+CZCreateVaENet[ encoder_, decoder_ ] := NetGraph[{
+   "encoder"->encoder,
+   "sampler"->CZVaESamplerNet,
+   "decoder"->decoder,
+   "kl_loss"->CZKLLoss,
+   "total_loss"->TotalLayer[]
+   },{
+   NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}],NetPort["Mean"]},
+   NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}],NetPort["LogVar"]},
+   NetPort[{"sampler","Output"}]->NetPort[{"decoder","Conditional"}],
+   NetPort[{"decoder","Output"}]->NetPort["Output"],
+   {NetPort[{"decoder","Loss"}],NetPort[{"kl_loss","Loss"}]}->"total_loss"->NetPort["Loss"]
 }];
 
 
@@ -78,7 +77,7 @@ CZSampleVaELatent[ latentUnits_ ] := RandomVariate@MultinormalDistribution[ Cons
 SyntaxInformation[ CZVaEBinaryVector ]= {"ArgumentsPattern"->{_,_,_}};
 
 
-CZCreateVaEBinaryVector[ inputUnits_, latentUnits_:8 ] :=
+CZCreateVaEBinaryVector[ inputUnits_:784, latentUnits_:8 ] :=
    CZVaEBinaryVector[ inputUnits, latentUnits, CZCreateVaENet[
       CZCreateEncoder[ inputUnits, latentUnits ],
       CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
@@ -88,14 +87,13 @@ CZTrain[ CZVaEBinaryVector[ inputUnits_, latentUnits_, vaeNet_ ], samples_ ] := 
    f[assoc_] := MapThread[
       Association["Input"->#1,"RandomSample"->#2]&,
       {RandomSample[samples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
-   trained = NetTrain[ vaeNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128 ];
+   trained = NetTrain[ vaeNet, f, LossFunction->"Loss", "BatchSize"->128 ];
    CZVaEBinaryVector[ inputUnits, latentUnits, trained ]
 ];
 
 
 CZLogDensity[ CZVaEBinaryVector[ _, latentUnits_, vaeNet_ ], sample_ ] :=
-   Module[{proc=vaeNet[ Association["Input"->sample, "RandomSample"->ConstantArray[0, latentUnits ] ] ]},
-      -(proc["kl_loss"]+proc["recon_loss"])]
+   -vaeNet[ Association["Input"->sample, "RandomSample"->ConstantArray[0, latentUnits ] ] ][ "Loss" ]
 
 
 CZSample[ CZVaEBinaryVector[ inputUnits_, latentUnits_, vaeNet_ ] ] :=
@@ -149,7 +147,7 @@ CZTrain[ CZVaEDiscreteImage[ imageDims_, latentUnits_, vaeNet_ ], samples_ ] := 
    f[assoc_] := MapThread[
       Association["Input"->(CZOneHot@#1),"RandomSample"->#2]&,
       {RandomSample[samples,assoc["BatchSize"]],Table[CZSampleVaELatent[ latentUnits ], assoc["BatchSize"] ]}];tmp=f;
-   trained = NetTrain[ vaeNet, f, LossFunction->{"kl_loss", "recon_loss"}, "BatchSize"->128, MaxTrainingRounds->10000 ];
+   trained = NetTrain[ vaeNet, f, LossFunction->"Loss", "BatchSize"->128, MaxTrainingRounds->10000 ];
    CZVaEDiscreteImage[ imageDims, latentUnits, trained ]
 ];
 
@@ -159,7 +157,5 @@ CZSample[ CZVaEDiscreteImage[ imageDims_, latentUnits_, vaeNet_ ] ] :=
       Association[ "Conditional"->CZSampleVaELatent[ latentUnits ], "Input"->ConstantArray[0,Append[imageDims,10]] ] ]["Output"]/10;
 
 
-CZLogDensity[ CZVaEDiscreteImage[ imageDims_, latentUnits_, vaeNet_ ], sample_ ] := (
-   r=vaeNet[ Association[ "Input"->CZOneHot@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ];
-   r["kl_loss"]+r["recon_loss"]
-);
+CZLogDensity[ CZVaEDiscreteImage[ imageDims_, latentUnits_, vaeNet_ ], sample_ ] :=
+   -vaeNet[ Association[ "Input"->CZOneHot@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]

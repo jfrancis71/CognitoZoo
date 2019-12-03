@@ -1,5 +1,14 @@
 (* ::Package:: *)
 
+(*
+   Generative models all have an Input port, an Output port and a Loss port.
+   Conditional Generative models are considered to be generative models, but have
+   an additional Conditional port.
+   The input for discrete images in the net is eg 28x28x10
+   Note this isn't always convenient for within the net, so they may reformat (to 10x28x28).
+*)
+
+
 <<"Experimental/GenerativeModels/CZDiscreteImage.m"
 
 
@@ -12,10 +21,9 @@ CZSampleBinaryImage[ betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, betas, {2}]
 CZGenerativeOutputLayer[ outputLayerType_, lossType_ ] := NetGraph[{
    "out"->outputLayerType,
    "crossentropy"->lossType},{
-   "out"->"crossentropy"->NetPort["Loss"],
+   NetPort["Conditional"]->"out"->"crossentropy"->NetPort["Loss"],
    "out"->NetPort["Output"],
-   NetPort["Input"]->NetPort[{"crossentropy","Target"}],
-   NetPort["Conditional"]->"out"
+   NetPort["Input"]->NetPort[{"crossentropy","Target"}]
 }];
 
 
