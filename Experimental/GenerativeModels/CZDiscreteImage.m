@@ -7,3 +7,15 @@ CZOneHot[ image_ ] := Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image
 
 
 CZSampleDiscreteImage[ probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, probs, {2} ];
+
+
+SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_,_}};
+
+
+SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{_}};
+
+
+SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
+
+
+SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};

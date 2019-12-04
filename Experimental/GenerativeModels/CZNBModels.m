@@ -6,6 +6,7 @@
    an additional Conditional port.
    The input for discrete images in the net is eg 28x28x10
    Note this isn't always convenient for within the net, so they may reformat (to 10x28x28).
+   Models are in format: CZGenerativeModel[ modelType, inputType, encoder, net ]
 *)
 
 
@@ -35,39 +36,30 @@ CZCreateNBModel[ conditionalDims_, outputLayerType_, lossType_ ] := NetGraph[{
 }];
 
 
-SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{_,_}};
+SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{}};
 
 
-SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{_}};
+CZCreateNBModelBinaryVector[ inputUnits_:784 ] := CZGenerativeModel[ CZNBModel, CZBinaryVector[ inputUnits ], Identity, CZCreateNBModel[ {inputUnits}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
-CZCreateNBModelBinaryVector[ inputUnits_:784 ] := CZNBModel[ CZBinaryVector[ inputUnits ], CZCreateNBModel[ {inputUnits}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
+CZSample[ CZGenerativeModel[ CZNBModel, CZBinaryVector[ inputUnits_ ], _, net_ ] ] := CZSampleBinaryVector@net[ConstantArray[0,{inputUnits}]]["Output"];
 
 
-CZSample[ CZNBModel[ CZBinaryVector[ inputUnits_ ], net_ ] ] := CZSampleBinaryVector@net[ConstantArray[0,{inputUnits}]]["Output"];
+CZCreateNBModelBinaryImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBModel, CZBinaryImage[ imageDims ], Identity, CZCreateNBModel[ imageDims, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
 
 
-SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
+CZSample[ CZGenerativeModel[ CZNBModel, CZBinaryImage[ imageDims_ ], _, net_ ] ] := CZSampleBinaryImage@net[ ConstantArray[0,imageDims]]["Output"];
 
 
-CZCreateNBModelBinaryImage[ imageDims_:{28,28} ] := CZNBModel[ CZBinaryImage[ imageDims ], CZCreateNBModel[ imageDims, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
+CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims ], Identity, CZCreateNBModel[ Prepend[imageDims, 10], {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
 
 
-CZSample[ CZNBModel[ CZBinaryImage[ imageDims_ ], net_ ] ] := CZSampleBinaryImage@net[ ConstantArray[0,imageDims]]["Output"];
+CZSample[ CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims_ ], _, net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
 
 
-SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
+CZTrain[ CZGenerativeModel[ CZNBModel, modelInput_[ dims_ ], encoder_, net_ ], samples_ ] :=
+   CZGenerativeModel[ CZNBModel,  modelInput[ dims ], encoder, NetTrain[ net, Association[ "Input"->encoder[#]]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
 
 
-CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZNBModel[ CZDiscreteImage[ imageDims ], CZCreateNBModel[ Prepend[imageDims, 10], {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
-
-
-CZSample[ CZNBModel[ CZDiscreteImage[ imageDims_ ], net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
-
-
-CZTrain[ CZNBModel[ modelType_[ dims_ ], net_ ], samples_ ] :=
-   CZNBModel[ modelType[ dims ], NetTrain[ net, Association[ "Input"->#]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
-
-
-CZLogDensity[ CZNBModel[ _, net_ ], sample_ ] :=
-   -net[ Association["Input" -> sample ] ]["Loss"];
+CZLogDensity[ CZGenerativeModel[ CZNBModel_, _, encoder_, net_ ], sample_ ] :=
+   -net[ Association["Input" -> encoder@sample ] ]["Loss"];
