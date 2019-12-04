@@ -1,126 +1,76 @@
 (* ::Package:: *)
 
+<<"Experimental/GenerativeModels/CZVariationalAutoencoders.m"
 <<"Experimental/GenerativeModels/CZPixelCNN.m"
 
 
-<<"Experimental/GenerativeModels/CZVariationalAutoencoders.m"
+PixelVaEEncoderBinaryImage[ imageDims_, latentUnits_ ] := NetChain[{
+   FlattenLayer[],
+   CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ]}];
 
 
-CZCreatePixelVaEBinaryImageDecoder[ imageDims_, h1_, h2_ ] := NetGraph[{
-      "h1"->{h1,Ramp},
-      "h2"->{h2,Ramp},
-      "o"->imageDims[[1]]*imageDims[[2]],
-      "reshapecond"->ReshapeLayer[imageDims],
-      "reshapeinput"->ReshapeLayer[imageDims],
-      "cond"->CZConditionalPixelCNNBinaryImage[ imageDims ]},{
-      NetPort["Conditional"]->"h1"->"h2"->"o"->"reshapecond"->NetPort[{"cond","Conditional"}],
-      NetPort["Input"]->"reshapeinput"->NetPort[{"cond","Image"}]
-}]
+PixelVaEEncoderDiscreteImage[ imageDims_, latentUnits_ ] := NetChain[{
+   FlattenLayer[],
+   CZCreateEncoder[ imageDims[[1]]*imageDims[[2]]*10, latentUnits ]}];
 
 
-SyntaxInformation[ CZPixelVaEBinaryImage ]= {"ArgumentsPattern"->{_,_,_}};
+CZPixelVaEDecoder[ crossEntropyType_, imageDims_ ] := NetGraph[{
+   {500,Ramp},
+   {500,Ramp},
+   {784},
+   ReshapeLayer[imageDims],
+   CZCreatePixelCNNConditionalNet[ crossEntropyType, PixelCNNOrdering[ imageDims ] ]},{
+   NetPort["Conditional"]->1->2->3->4->NetPort[{5,"Conditional"}],
+   NetPort["Input"]->NetPort[{5,"Image"}]}];
 
 
-CZCreatePixelVaEBinaryImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] := CZPixelVaEBinaryImage[
-   imageDims,
-   latentUnits,
-   NetGraph[{
-      "encoder"->CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits, h1, h2 ],
-      "sampler"->CZVaESamplerNet,
-      "decoder"->CZCreatePixelVaEBinaryImageDecoder[ imageDims, h1, h2 ],
-      "kl_loss"->CZKLLoss
-      },{
-      NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}],NetPort["Mean"]},
-      NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}],NetPort["LogVar"]},
-      NetPort[{"sampler","Output"}]->NetPort[{"decoder","Conditional"}],
-      NetPort["Input"]->NetPort[{"decoder"},"Input"],
-      NetPort[{"decoder","Loss"}]->NetPort["recon_loss"],
-      NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
-   }]
+CZCreatePixelVaEBinaryImage[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[
+   CZPixelVaE[ latentUnits ], 
+   CZBinaryImage[imageDims],
+   Identity,
+   CZCreateVaENet[ PixelVaEEncoderBinaryImage[ imageDims, latentUnits ], CZPixelVaEDecoder[ "Binary", imageDims ] ]];
+
+
+CZCreatePixelVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[
+   CZPixelVaE[ latentUnits ], 
+   CZDiscreteImage[imageDims],
+   CZOneHot,
+   CZCreateVaENet[ PixelVaEEncoderDiscreteImage[ imageDims, latentUnits ], CZPixelVaEDecoder[ "Probabilities", imageDims ] ]];
+
+
+SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};
+
+
+CZTrain[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, encoder_, net_ ], samples_ ] := Module[{trained, lossNet, f},
+   f[assoc_] := MapThread[
+      Association["Input"->encoder@#1,"RandomSample"->#2]&,
+      {RandomSample[samples,assoc["BatchSize"]],Table[ CZSampleVaELatent[ latentUnits ], {assoc["BatchSize"]} ]}];
+   trained = NetTrain[ net, f, LossFunction->"Loss", "BatchSize"->128,
+      LearningRateMultipliers->
+         Flatten[Table[
+         {{"decoder",5,"predict"<>ToString[k],"mask"}->0,{"decoder",5,"loss"<>ToString[k],"mask"}->0},{k,1,4}],1]
+ ];
+   CZGenerativeModel[ CZPixelVaE[ latentUnits ], inputType, encoder, trained ]
 ];
 
 
-CZTrain[ CZPixelVaEBinaryImage[ imageDims_, latentUnits_, net_ ], examples_ ] := (
-   f[assoc_] := MapThread[
-      Association["Input"->Flatten[#1],"RandomSample"->#2]&,
-      {RandomSample[examples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
-
-   CZPixelVaEBinaryImage[ imageDims, latentUnits, NetTrain[ net, f,
-      LearningRateMultipliers->
-         Flatten[Table[
-         {{"decoder","cond","conv"<>ToString[k],"mask"}->0,{"decoder","cond","loss"<>ToString[k],"mask"}->0},{k,1,4}],1]
-      ,
-      MaxTrainingRounds->10000,LossFunction->{"kl_loss","recon_loss"},"BatchSize"->128 ]
-] );
+CZLogDensity[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], modelInput_, encoder_, net_ ], sample_ ] :=
+   net[ Association[ "Input"->encoder@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]
 
 
-CZSample[ CZPixelVaEBinaryImage[ imageDims_, latentUnits_, net_ ] ] := Module[{s=ConstantArray[0,imageDims],decoder=NetExtract[ net, "decoder" ],cond=NetExtract[ net, {"decoder","cond"}]},tmp=decoder;
-   znet = NetTake[ decoder, "reshapecond" ]; pixelOrdering=PixelCNNOrdering[ imageDims ];
-   z = znet[ RandomVariate@MultinormalDistribution[ConstantArray[0,{latentUnits}],IdentityMatrix[latentUnits] ] ];
-   For[k=1,k<=Length[pixelOrdering],k++,
-      l = cond[Association["Image"->s,"Conditional"->z]]["Output"<>ToString[k]];
-      s = Map[rndBinary,l,{2}]*pixelOrdering[[k]]+s;t=s;
+CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], CZBinaryImage[ imageDims_ ], encoder_, pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,imageDims], pixels=PixelCNNOrdering[ imageDims ]},
+   z = CZSampleVaELatent[ latentUnits ];
+   For[k=1,k<=4,k++,
+      l = pixelCNNNet[Association["Input"->s, "RandomSample"->z]]["Output"];
+      s = CZSampleBinaryImage[l]*pixels[[k]]+s;t=s;
    ];
    s]
 
 
-CZCreatePixelVaEDiscreteImageDecoder[ imageDims_, h1_, h2_ ] := NetGraph[{
-      "h1"->{h1,Ramp},
-      "h2"->{h2,Ramp},
-      "o"->imageDims[[1]]*imageDims[[2]],
-      "reshapecond"->ReshapeLayer[Prepend[imageDims,1]],
-      "reshapeinput"->ReshapeLayer[Prepend[imageDims,10]],
-      "cond"->CZConditionalPixelCNNDiscreteImage[ imageDims ]},{
-      NetPort["Conditional"]->"h1"->"h2"->"o"->"reshapecond"->NetPort[{"cond","Conditional"}],
-      NetPort["Input"]->"reshapeinput"->NetPort[{"cond","Image"}]
-}]
-
-
-SyntaxInformation[ CZPixelVaEDiscreteImage ]= {"ArgumentsPattern"->{_,_,_}};
-
-
-CZCreatePixelVaEDiscreteImageEncoder[ imageDims_, latentUnits_, h1_, h2_ ] := NetGraph[{
-   "fl"->FlattenLayer[],
-   "enc"->CZCreateEncoder[ imageDims[[1]]*imageDims[[2]]*10, latentUnits, h1, h2 ]},{
-   "fl"->"enc"
-}];
-
-
-CZCreatePixelVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] := CZPixelVaEDiscreteImage[
-   imageDims,
-   latentUnits,
-   NetGraph[{
-      "encoder"->CZCreatePixelVaEDiscreteImageEncoder[ imageDims, latentUnits, h1, h2 ],
-      "sampler"->CZVaESamplerNet,
-      "decoder"->CZCreatePixelVaEDiscreteImageDecoder[ imageDims, h1, h2 ],
-      "kl_loss"->CZKLLoss
-      },{
-      NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}],NetPort["Mean"]},
-      NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}],NetPort["LogVar"]},
-      NetPort[{"sampler","Output"}]->NetPort[{"decoder","Conditional"}],
-      NetPort["Input"]->NetPort[{"decoder"},"Input"],
-      NetPort[{"decoder","Loss"}]->NetPort["recon_loss"],
-      NetPort[{"kl_loss","Loss"}]->NetPort["kl_loss"]
-   },"Input"->Prepend[imageDims,10]]
-];
-
-
-CZTrain[ CZPixelVaEDiscreteImage[ imageDims_, latentUnits_, net_ ], examples_ ] := (
-   f[assoc_] := MapThread[
-      Association["Input"->CZOneHot@#,"RandomSample"->#2]&,
-      {RandomSample[examples,assoc["BatchSize"]],Partition[RandomVariate[NormalDistribution[0,1],latentUnits*assoc["BatchSize"]],latentUnits]}];
-
-   CZPixelVaEDiscreteImage[ imageDims, latentUnits, NetTrain[ net, f,
-      LearningRateMultipliers->
-         Flatten[Table[
-         {{"decoder","cond","conv"<>ToString[k],"mask"}->0,{"decoder","cond","loss"<>ToString[k],"mask"}->0},{k,1,4}],1]
-      ,
-      MaxTrainingRounds->10000,LossFunction->{"kl_loss","recon_loss"},"BatchSize"->128 ]
-] );
-
-
-CZSample[ CZPixelVaEDiscreteImage[ imageDims_, latentUnits_, net_ ] ] := Module[{s=ConstantArray[0,Prepend[imageDims,10]],decoder=NetExtract[ net, "decoder" ],cond=NetExtract[ net, {"decoder","cond"}]},
-   znet = NetTake[ decoder, "reshapecond" ]; pixelOrdering=PixelCNNOrdering[ imageDims ];
-   z = znet[ RandomVariate@MultinormalDistribution[ConstantArray[0,{latentUnits}],IdentityMatrix[latentUnits] ] ];c1=cond;
-   CZSampleConditionalPixelCNNDiscreteImage[ cond, imageDims, z ]
-]
+CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], CZDiscreteImage[ imageDims_ ], encoder_, pixelCNNNet_ ] ] := Module[{s=ConstantArray[1,imageDims], pixels=PixelCNNOrdering[ imageDims ]},
+   z = CZSampleVaELatent[ latentUnits ];
+   For[k=1,k<=4,k++,
+      l = pixelCNNNet[Association["Input"->encoder@s, "RandomSample"->z]]["Output"];
+      s = CZSampleDiscreteImage[l]*pixels[[k]]+s;t=s;
+   ];
+   s/10]

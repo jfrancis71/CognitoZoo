@@ -57,10 +57,13 @@ PredictLayer[mask_, crossEntropyType_ ]:=NetGraph[{
 CZCreatePixelCNNConditionalNet[ crossEntropyType_, pixels_ ] := Module[{masks=InformationMasking[ pixels ]},NetGraph[Flatten@{
    Table[ "predict"<>ToString[k]->PredictLayer[ masks[[k]], crossEntropyType ],{k,1,4}],
    Table[ "loss"<>ToString[k]->MaskCrossEntropyLossLayer[ If[crossEntropyType=="Binary",pixels[[k]],Transpose[Table[pixels[[k]],{10}],{3,1,2}]], crossEntropyType ], {k,1,4} ],
+   Table[ "maskoutput"<>ToString[k]->MaskLayer[ If[crossEntropyType=="Binary",pixels[[k]],Transpose[Table[pixels[[k]],{10}],{3,1,2}]] ], {k,1,4}],
+   "total_output"->TotalLayer[],
    "total_loss"->TotalLayer[]
    },
    {
-   Table[NetPort[{"predict"<>ToString[k],"Output"}]->{NetPort["Output"<>ToString[k]],NetPort[{"loss"<>ToString[k],"Input"}]},{k,1,4}],
+   Table[NetPort[{"predict"<>ToString[k],"Output"}]->{"maskoutput"<>ToString[k],NetPort[{"loss"<>ToString[k],"Input"}]},{k,1,4}],
+   Table["maskoutput"<>ToString[k]->"total_output",{k,1,4}],
    Table[NetPort["Image"]->NetPort[{"loss"<>ToString[k],"Target"}],{k,1,4}],
    Table["loss"<>ToString[k]->"total_loss",{k,1,4}],
    "total_loss"->NetPort["Loss"]
