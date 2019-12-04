@@ -13,12 +13,6 @@
 <<"Experimental/GenerativeModels/CZDiscreteImage.m"
 
 
-CZSampleBinaryVector[ betas_ ] := RandomChoice[{1-#,#}->{0,1}]& /@ betas;
-
-
-CZSampleBinaryImage[ betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, betas, {2}];
-
-
 CZGenerativeOutputLayer[ outputLayerType_, lossType_ ] := NetGraph[{
    "out"->outputLayerType,
    "crossentropy"->lossType},{

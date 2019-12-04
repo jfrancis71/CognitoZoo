@@ -88,3 +88,30 @@ Image@CZSample[ vaetrain3 ]
 
 
 CZLogDensity[ vaetrain3, images[[1]] ]
+
+
+<<"Experimental/GenerativeModels/CZPixelCNN1.m"
+
+
+cnnmodel2 = CZCreatePixelCNNBinaryImage[];
+
+
+cnntrain2 = CZTrain[ cnnmodel2, binImages ];
+
+
+Image@CZSample[ cnntrain2 ]
+
+
+CZLogDensity[ cnntrain2, binImages[[1]] ]
+
+
+cnnmodel3 = CZCreatePixelCNNDiscreteImage[];
+
+
+cnntrain3 = CZTrain[ cnnmodel3, images ];
+
+
+Image@CZSample[ cnntrain3 ]
+
+
+CZLogDensity[ cnntrain3, images[[1]] ]
