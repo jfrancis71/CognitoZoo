@@ -58,10 +58,10 @@ CZLogDensity[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], modelInput_, encode
    net[ Association[ "Input"->encoder@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]
 
 
-CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_[ imageDims_ ], encoder_, pixelCNNNet_ ] ] := Module[{s=ConstantArray[0,imageDims], pixels=PixelCNNOrdering[ imageDims ]},
+CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_[ imageDims_ ], encoder_, pixelCNNNet_ ] ] := Module[{s=ConstantArray[1,imageDims], pixels=PixelCNNOrdering[ imageDims ]},
    z = CZSampleVaELatent[ latentUnits ];
    For[k=1,k<=4,k++,
-      l = pixelCNNNet[Association["Input"->s, "RandomSample"->z]]["Output"];
-      s = If[inputType==="CZBinaryImage",CZSampleBinaryImage,CZSampleDiscreteImage][l]*pixels[[k]]+s;t=s;
+      l = pixelCNNNet[Association["Input"->encoder@s, "RandomSample"->z]]["Output"];
+      s = If[inputType===CZBinaryImage,CZSampleBinaryImage,CZSampleDiscreteImage][l]*pixels[[k]]+s;t=s;
    ];
    s/If[inputType==="CZBinaryImage",1,10]]
