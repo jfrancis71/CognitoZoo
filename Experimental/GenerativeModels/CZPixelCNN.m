@@ -101,9 +101,13 @@ CZTrain[ CZGenerativeModel[ CZPixelCNN, inputType_[ imageDims_ ], encoder_, pixe
 ]];
 
 
-CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_[ imageDims_ ], encoder_, pixelCNNNet_ ] ] := Module[{s=ConstantArray[1,imageDims], pixels=PixelCNNOrdering[ imageDims ]},
+CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], encoder_, conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
    For[k=1,k<=Length[pixels],k++,
-      l = pixelCNNNet[encoder@s]["Output"];
+      l = conditionalPixelCNNNet[Association["Image"->encoder@s,"Conditional"->conditional]]["Output"];
       s = If[inputType===CZBinaryImage,CZSampleBinaryImage,CZSampleDiscreteImage][l]*pixels[[k]]+s;t=s;
    ];
-   s/If[inputType==="CZBinaryImage",1,10]]
+   s/If[inputType===CZBinaryImage,1,10]]
+
+
+CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_, encoder_, pixelCNNNet_ ] ] :=
+   CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, "condpixelcnn" ], inputType, encoder, NetExtract[ pixelCNNNet, "global" ][] ]
