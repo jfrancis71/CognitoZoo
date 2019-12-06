@@ -41,10 +41,6 @@ CZCreatePixelVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerat
 SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};
 
 
-CZLogDensity[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], modelInput_, encoder_, net_ ], sample_ ] :=
-   net[ Association[ "Input"->encoder@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]
-
-
 CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, encoder_, pixelCNNNet_ ] ] := (
    z = CZSampleVaELatent[ latentUnits ];
    cond = NetTake[ NetExtract[ pixelCNNNet, "decoder" ],{1,4} ][ z ];

@@ -119,7 +119,3 @@ CZCreateVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ]
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZDiscreteImage[ imageDims_ ], encoder_, vaeNet_ ] ] :=
    CZSampleDiscreteImage@NetExtract[vaeNet,"decoder"][
       Association[ "Conditional"->CZSampleVaELatent[ latentUnits ], "Input"->ConstantArray[0,Append[imageDims,10]] ] ]["Output"]/10;
-
-
-CZLogDensity[ CZGenerativeModel[ CZVaE[ latentUnits_ ], modelInput_, encoder_, net_ ], sample_ ] :=
-   net[ Association[ "Input"->encoder@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]

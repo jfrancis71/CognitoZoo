@@ -49,7 +49,3 @@ CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBMod
 
 
 CZSample[ CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims_ ], _, net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
-
-
-CZLogDensity[ CZGenerativeModel[ CZNBModel_, _, encoder_, net_ ], sample_ ] :=
-   -net[ Association["Input" -> encoder@sample ] ]["Loss"];

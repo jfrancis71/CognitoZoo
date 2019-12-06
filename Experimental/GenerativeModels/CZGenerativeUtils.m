@@ -41,3 +41,7 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_ ] := 
          CZVaE[_],{}] ];
    CZGenerativeModel[ model,  inputType, encoder, trained ]
 ];
+
+
+CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, encoder_, net_ ], sample_ ] :=
+   net[ Append[ Association[ If[modelType===CZPixelCNN, "Image", "Input" ] ->encoder@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ][ "Loss" ]
