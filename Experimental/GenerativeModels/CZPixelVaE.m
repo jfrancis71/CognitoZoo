@@ -17,7 +17,7 @@ PixelVaEEncoderDiscreteImage[ imageDims_, latentUnits_ ] := NetChain[{
 CZPixelVaEDecoder[ crossEntropyType_, imageDims_ ] := NetGraph[{
    {500,Ramp},
    {500,Ramp},
-   {784},
+   {imageDims[[1]]*imageDims[[2]]},
    ReshapeLayer[imageDims],
    CZCreatePixelCNNConditionalNet[ crossEntropyType, PixelCNNOrdering[ imageDims ] ]},{
    NetPort["Conditional"]->1->2->3->4->NetPort[{5,"Conditional"}],
