@@ -39,7 +39,7 @@ PredictLayer[mask_, crossEntropyType_ ]:=NetGraph[{
    "reshapeConditional"->ReshapeLayer[Prepend[mask//Dimensions,1]],
    "mask"->If[
       crossEntropyType=="Binary",
-      {ReshapeLayer[{1,28,28}], MaskLayer[{mask}]},
+      {ReshapeLayer[Prepend[mask//Dimensions,1]], MaskLayer[{mask}]},
       {TransposeLayer[{1<->3,2<->3}],MaskLayer[ConstantArray[mask,{10}]]}],
    "cat"->CatenateLayer[],
    "conv"->{ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[16,{1,1},"PaddingSize"->0],Tanh,ConvolutionLayer[
