@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-<<"Experimental/GenerativeModels/CZDiscreteImage.m"
+<<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
 PixelCNNOrdering[ imageDims_ ] := Module[{pixels=ConstantArray[0,Prepend[imageDims,4]]},{

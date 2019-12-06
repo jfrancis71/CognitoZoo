@@ -10,7 +10,7 @@
 *)
 
 
-<<"Experimental/GenerativeModels/CZDiscreteImage.m"
+<<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
 CZGenerativeOutputLayer[ outputLayerType_, lossType_ ] := NetGraph[{
