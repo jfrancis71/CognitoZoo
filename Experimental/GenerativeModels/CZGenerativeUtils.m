@@ -28,10 +28,14 @@ SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
 
 
 CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_ ] := Module[{trained, lossNet, f},
-   f[assoc_] :=
-      Table[ Append[ Association[ If[model===CZPixelCNN, "Image", "Input" ] ->encoder[RandomChoice[samples]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
-   trained = NetTrain[ net, f, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->10000,
-      tmp=LearningRateMultipliers->Switch[
+   rnd=RandomSample[ samples ];len=Round[Length[rnd]*.9];
+   {trainingSet,validationSet}={rnd[[;;len]],rnd[[len+1;;]]};
+   trainBatch[assoc_] :=
+      Table[ Append[ Association[ If[model===CZPixelCNN, "Image", "Input" ] ->encoder[RandomChoice[trainingSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
+   validBatch[assoc_] :=
+      Table[ Append[ Association[ If[model===CZPixelCNN, "Image", "Input" ] ->encoder[RandomChoice[validationSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
+   trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->10000,
+      LearningRateMultipliers->Switch[
          model,
          CZPixelVaE[_], Flatten[Table[
             {{"decoder",5,"predict"<>ToString[k],"mask"}->0,{"decoder",5,"loss"<>ToString[k],"mask"}->0},{k,4}],1],
