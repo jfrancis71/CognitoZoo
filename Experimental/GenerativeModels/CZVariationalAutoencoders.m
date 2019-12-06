@@ -121,14 +121,5 @@ CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZDiscreteImage[ imageDims_ 
       Association[ "Conditional"->CZSampleVaELatent[ latentUnits ], "Input"->ConstantArray[0,Append[imageDims,10]] ] ]["Output"]/10;
 
 
-CZTrain[ CZGenerativeModel[ CZVaE[ latentUnits_ ], inputType_, encoder_, net_ ], samples_ ] := Module[{trained, lossNet, f},
-   f[assoc_] := MapThread[
-      Association["Input"->encoder@#1,"RandomSample"->#2]&,
-      {RandomSample[samples,assoc["BatchSize"]],Table[ CZSampleVaELatent[ latentUnits ], {assoc["BatchSize"]} ]}];
-   trained = NetTrain[ net, f, LossFunction->"Loss", "BatchSize"->128 ];
-   CZGenerativeModel[ CZVaE[ latentUnits ], inputType, encoder, trained ]
-];
-
-
 CZLogDensity[ CZGenerativeModel[ CZVaE[ latentUnits_ ], modelInput_, encoder_, net_ ], sample_ ] :=
    net[ Association[ "Input"->encoder@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]

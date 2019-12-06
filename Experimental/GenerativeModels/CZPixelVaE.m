@@ -41,19 +41,6 @@ CZCreatePixelVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerat
 SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};
 
 
-CZTrain[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, encoder_, net_ ], samples_ ] := Module[{trained, lossNet, f},
-   f[assoc_] := MapThread[
-      Association["Input"->encoder@#1,"RandomSample"->#2]&,
-      {RandomSample[samples,assoc["BatchSize"]],Table[ CZSampleVaELatent[ latentUnits ], {assoc["BatchSize"]} ]}];
-   trained = NetTrain[ net, f, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->10000,
-      LearningRateMultipliers->
-         Flatten[Table[
-         {{"decoder",5,"predict"<>ToString[k],"mask"}->0,{"decoder",5,"loss"<>ToString[k],"mask"}->0},{k,1,4}],1]
- ];
-   CZGenerativeModel[ CZPixelVaE[ latentUnits ], inputType, encoder, trained ]
-];
-
-
 CZLogDensity[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], modelInput_, encoder_, net_ ], sample_ ] :=
    net[ Association[ "Input"->encoder@sample, "RandomSample"->ConstantArray[0,{latentUnits}] ] ][ "Loss" ]
 

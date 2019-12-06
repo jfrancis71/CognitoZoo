@@ -51,9 +51,5 @@ CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBMod
 CZSample[ CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims_ ], _, net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
 
 
-CZTrain[ CZGenerativeModel[ CZNBModel, modelInput_[ dims_ ], encoder_, net_ ], samples_ ] :=
-   CZGenerativeModel[ CZNBModel,  modelInput[ dims ], encoder, NetTrain[ net, Association[ "Input"->encoder[#]]&/@samples, LossFunction->"Loss", MaxTrainingRounds->1000 ] ];
-
-
 CZLogDensity[ CZGenerativeModel[ CZNBModel_, _, encoder_, net_ ], sample_ ] :=
    -net[ Association["Input" -> encoder@sample ] ]["Loss"];

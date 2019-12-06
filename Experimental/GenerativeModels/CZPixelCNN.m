@@ -91,16 +91,6 @@ CZCreatePixelCNNDiscreteImage[ imageDims_:{28,28} ] :=
 CZLogDensity[ CZGenerativeModel[ CZPixelCNN, _, encoder_, net_ ], sample_ ] := net[ Association["Image"->encoder@sample ] ]["Loss"];
 
 
-CZTrain[ CZGenerativeModel[ CZPixelCNN, inputType_[ imageDims_ ], encoder_, pixelCNNNet_ ], samples_ ] := Module[{pixels=PixelCNNOrdering[ imageDims ]},
-   CZGenerativeModel[ CZPixelCNN, inputType[ imageDims ], encoder, NetTrain[ pixelCNNNet, Association["Image"->encoder@#]&/@samples,
-      LearningRateMultipliers->
-         Flatten[Table[
-         {{"condpixelcnn","predict"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,Length[pixels]}],1]
-      ,
-      MaxTrainingRounds->10000,LossFunction->"Loss" ]
-]];
-
-
 CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], encoder_, conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
    For[k=1,k<=Length[pixels],k++,
       l = conditionalPixelCNNNet[Association["Image"->encoder@s,"Conditional"->conditional]]["Output"];
