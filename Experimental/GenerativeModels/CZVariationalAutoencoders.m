@@ -119,3 +119,15 @@ CZCreateVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ]
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZDiscreteImage[ imageDims_ ], encoder_, vaeNet_ ] ] :=
    CZSampleDiscreteImage@NetExtract[vaeNet,"decoder"][
       Association[ "Conditional"->CZSampleVaELatent[ latentUnits ], "Input"->ConstantArray[0,Append[imageDims,10]] ] ]["Output"]/10;
+
+
+CZGetLatent[ CZGenerativeModel[ CZVaE[ _ ], _, encoder_, vaeNet_ ], sample_ ] :=
+ NetExtract[ vaeNet, "encoder"][ sample ]["Mean"];  
+
+
+CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ _ ], CZBinaryVector[ inputUnits_ ], encoder_, vaeNet_ ], latent_ ] :=
+   Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },tmp=decoder;
+      probMap = decoder[Association["Conditional"->latent,
+      "Input"->ConstantArray[0,{inputUnits}] ] ]["Output"];
+   CZSampleBinaryVector@probMap
+];
