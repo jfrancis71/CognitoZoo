@@ -91,6 +91,20 @@ CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZBinaryVector[ inputUnits_ 
 ];
 
 
+CZCreateVaERealVector[ inputUnits_:784, latentUnits_:8 ] :=
+   CZGenerativeModel[ CZVaE[ latentUnits ], CZRealVector[ inputUnits ], Identity, CZCreateVaENet[
+      CZCreateEncoder[ inputUnits, latentUnits ],
+      CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ Identity, MeanSquaredLossLayer[] ] ] ] ];
+
+
+CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealVector[ inputUnits_ ], encoder_, vaeNet_ ] ] :=
+   Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },tmp=decoder;
+   probMap = decoder[Association["Conditional"->CZSampleVaELatent[ latentUnits ],
+      "Input"->ConstantArray[0,{inputUnits}] ] ]["Output"];
+   CZSampleRealVector@probMap
+];
+
+
 CZCreateVaEBinaryImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
    CZGenerativeModel[ CZVaE[ latentUnits ] , CZBinaryImage[ imageDims ], Flatten, CZCreateVaENet[ CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ], CZCreateDecoder[ imageDims[[1]]*imageDims[[2]], CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
 

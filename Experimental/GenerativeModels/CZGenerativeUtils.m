@@ -9,6 +9,11 @@ CZOneHot[ image_ ] := Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image
 CZSampleBinaryVector[ betas_ ] := RandomChoice[{1-#,#}->{0,1}]& /@ betas;
 
 
+(* Note we've fixed variance here, may be more sophisticated choice
+*)
+CZSampleRealVector[ betas_ ] := Map[ RandomVariate[NormalDistribution[#,1]]&, betas, {2}];
+
+
 CZSampleBinaryImage[ betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, betas, {2}];
 
 
@@ -19,6 +24,9 @@ SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_,_}};
 
 
 SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{_}};
+
+
+SyntaxInformation[ CZRealVector ]= {"ArgumentsPattern"->{_}};
 
 
 SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
