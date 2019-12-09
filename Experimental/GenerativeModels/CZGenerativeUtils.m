@@ -50,7 +50,8 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_ ] := 
          CZPixelCNN, Flatten[Table[
          {{"condpixelcnn","predict"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,4}],1],
          CZNBModel,{},
-         CZVaE[_],{}] ];
+         CZVaE[_],{},
+         CZNade[], {} ] ];
    CZGenerativeModel[ model,  inputType, encoder, trained ]
 ];
 
