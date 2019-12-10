@@ -39,9 +39,9 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_ ] := 
    rnd=RandomSample[ samples ];len=Round[Length[rnd]*.9];
    {trainingSet,validationSet}={rnd[[;;len]],rnd[[len+1;;]]};
    trainBatch[assoc_] :=
-      Table[ Append[ Association[ If[model===CZPixelCNN, "Image", "Input" ] ->encoder[RandomChoice[trainingSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
+      Table[ Append[ Association[ If[model===CZPixelCNN, "Image", "Input" ] ->encoder[RandomChoice[trainingSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE||Head@model===CZNadeVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
    validBatch[assoc_] :=
-      Table[ Append[ Association[ If[model===CZPixelCNN, "Image", "Input" ] ->encoder[RandomChoice[validationSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
+      Table[ Append[ Association[ If[model===CZPixelCNN, "Image", "Input" ] ->encoder[RandomChoice[validationSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE||Head@model===CZNadeVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
    trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->10000,
       LearningRateMultipliers->Switch[
          model,
@@ -51,10 +51,11 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_ ] := 
          {{"condpixelcnn","predict"<>ToString[k],"mask"}->0,{"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,4}],1],
          CZNBModel,{},
          CZVaE[_],{},
-         CZNade[], {} ] ];
+         CZNade[], {},
+         CZNadeVaE[_], {} ] ];
    CZGenerativeModel[ model,  inputType, encoder, trained ]
 ];
 
 
 CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, encoder_, net_ ], sample_ ] :=
-   net[ Append[ Association[ If[modelType===CZPixelCNN, "Image", "Input" ] ->encoder@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ][ "Loss" ]
+   net[ Append[ Association[ If[modelType===CZPixelCNN, "Image", "Input" ] ->encoder@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE||Head@modelType===CZNadeVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ][ "Loss" ]

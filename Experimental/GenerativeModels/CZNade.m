@@ -35,12 +35,32 @@ SyntaxInformation[ CZNade ]= {"ArgumentsPattern"->{}};
 CZCreateNade[ inputUnits_: 8] := CZGenerativeModel[ CZNade[], CZBinaryVector[ inputUnits ], Identity, createNadeNet[ inputUnits ] ]
 
 
-CZSample[ CZGenerativeModel[ CZNade[], CZBinaryVector[ inputUnits_ ], id_, net_ ] ] := ( 
+CZSampleCondNade[ net_, cond_, inputUnits_ ] := (
    inp=ConstantArray[0,{inputUnits}];
-   out=net[ inp ];
+   out=net[ Association[ "Input"->inp, "Conditional"->cond ] ];
    For[k=1,k<=inputUnits,k++,
-   out=CZSampleBinaryVector@net[inp]["Output"];
+   out=CZSampleBinaryVector@net[Association[ "Input"->inp, "Conditional"->cond ]]["Output"];
    inp[[k]]=out[[k]]
    ];
    inp
 )
+
+
+CZSample[ CZGenerativeModel[ CZNade[], CZBinaryVector[ inputUnits_ ], id_, net_ ] ] :=
+   CZSampleCondNade[ NetExtract[ net, "condNadeNet" ], NetExtract[ net, "constant" ][], inputUnits ]
+
+
+<<"Experimental/GenerativeModels/CZVariationalAutoencoders.m"
+
+
+SyntaxInformation[ CZNadeVaE ]= {"ArgumentsPattern"->{_}};
+
+
+CZCreateNadeVaE[ inputUnits_:8, latentUnits_:1 ] :=
+   CZGenerativeModel[ CZNadeVaE[ latentUnits ], CZBinaryVector[ inputUnits ], Identity, CZCreateVaENet[
+      CZCreateEncoder[ inputUnits, latentUnits ],
+      CZCreateDecoder[ inputUnits, createCondNadeNet[ inputUnits ] ] ] ];
+
+
+CZSample[ CZGenerativeModel[ CZNadeVaE[ latentUnits_ ], CZBinaryVector[ inputUnits_ ], id_, net_ ] ] :=
+   CZSampleCondNade[ NetExtract[ net, {"decoder","cond"} ], NetTake[ NetExtract[ net, "decoder" ], {"h1","o"} ][ CZSampleVaELatent[ latentUnits ] ], inputUnits ]
