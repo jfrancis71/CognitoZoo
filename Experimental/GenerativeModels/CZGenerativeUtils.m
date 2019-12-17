@@ -52,10 +52,11 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_ ] := 
          CZNBModel,{},
          CZVaE[_],{},
          CZNade[], {},
+         CZNormFlowModel,{},
          CZNadeVaE[_], {} ] ];
    CZGenerativeModel[ model,  inputType, encoder, trained ]
 ];
 
 
 CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, encoder_, net_ ], sample_ ] :=
-   net[ Append[ Association[ If[modelType===CZPixelCNN, "Image", "Input" ] ->encoder@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE||Head@modelType===CZNadeVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ][ "Loss" ]
+   -net[ Append[ Association[ If[modelType===CZPixelCNN, "Image", "Input" ] ->encoder@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE||Head@modelType===CZNadeVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ][ "Loss" ]
