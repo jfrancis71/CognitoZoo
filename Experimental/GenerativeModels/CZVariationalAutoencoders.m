@@ -80,7 +80,7 @@ SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
 CZCreateVaEBinaryVector[ inputUnits_:784, latentUnits_:8 ] :=
    CZGenerativeModel[ CZVaE[ latentUnits ], CZBinaryVector[ inputUnits ], Identity, CZCreateVaENet[
       CZCreateEncoder[ inputUnits, latentUnits ],
-      CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
+      CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"], {inputUnits} ] ] ] ];
 
 
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZBinaryVector[ inputUnits_ ], encoder_, vaeNet_ ] ] :=
@@ -94,7 +94,7 @@ CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZBinaryVector[ inputUnits_ 
 CZCreateVaERealVector[ inputUnits_:784, latentUnits_:8 ] :=
    CZGenerativeModel[ CZVaE[ latentUnits ], CZRealVector[ inputUnits ], Identity, CZCreateVaENet[
       CZCreateEncoder[ inputUnits, latentUnits ],
-      CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ Identity, MeanSquaredLossLayer[] ] ] ] ];
+      CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ Identity, MeanSquaredLossLayer[], {inputUnits} ] ] ] ];
 
 
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealVector[ inputUnits_ ], encoder_, vaeNet_ ] ] :=
@@ -106,7 +106,7 @@ CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealVector[ inputUnits_ ],
 
 
 CZCreateVaEBinaryImage[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
-   CZGenerativeModel[ CZVaE[ latentUnits ] , CZBinaryImage[ imageDims ], Flatten, CZCreateVaENet[ CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ], CZCreateDecoder[ imageDims[[1]]*imageDims[[2]], CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"]] ] ] ];
+   CZGenerativeModel[ CZVaE[ latentUnits ] , CZBinaryImage[ imageDims ], Flatten, CZCreateVaENet[ CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ], CZCreateDecoder[ imageDims[[1]]*imageDims[[2]], CZGenerativeOutputLayer[ LogisticSigmoid, CrossEntropyLossLayer["Binary"], imageDims ] ] ] ];
 
 
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZBinaryImage[ imageDims_ ], encoder_, vaeNet_ ] ] :=

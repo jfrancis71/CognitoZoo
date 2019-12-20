@@ -13,9 +13,12 @@
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
-CZGenerativeOutputLayer[ outputLayerType_, lossType_ ] := NetGraph[{
+(*
+   Note CrossEntropyLossLayer computes everything in nats
+*)
+CZGenerativeOutputLayer[ outputLayerType_, lossType_, dims_ ] := NetGraph[{
    "out"->outputLayerType,
-   "crossentropy"->lossType},{
+   "crossentropy"->{lossType,ElementwiseLayer[#*Apply[Times,dims]&]}},{
    NetPort["Conditional"]->"out"->"crossentropy"->NetPort["Loss"],
    "out"->NetPort["Output"],
    NetPort["Input"]->NetPort[{"crossentropy","Target"}]
@@ -24,7 +27,7 @@ CZGenerativeOutputLayer[ outputLayerType_, lossType_ ] := NetGraph[{
 
 CZCreateNBModel[ conditionalDims_, outputLayerType_, lossType_ ] := NetGraph[{
    "array"->ConstantArrayLayer[conditionalDims],
-   "decoder"->CZGenerativeOutputLayer[ outputLayerType, lossType ]},{
+   "decoder"->CZGenerativeOutputLayer[ outputLayerType, lossType, conditionalDims ]},{
    "array"->NetPort[{"decoder","Conditional"}],
    NetPort["Input"]->NetPort[{"decoder","Input"}]
 }];
