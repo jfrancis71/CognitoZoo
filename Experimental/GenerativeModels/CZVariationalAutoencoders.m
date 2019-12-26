@@ -91,10 +91,42 @@ CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZBinaryVector[ inputUnits_ 
 ];
 
 
+meanSquaredLossLayer = NetGraph[{
+   "negtarget"->ElementwiseLayer[-#&],
+   "diff"->ThreadingLayer[Plus],
+   "sq"->ElementwiseLayer[#^2&]},{
+   NetPort["Target"]->"negtarget",
+   {NetPort["Input"],"negtarget"}->"diff"->"sq"->NetPort["Loss"]
+}];
+
+
+(*
+   Note CrossEntropyLossLayer computes everything in nats
+*)
+CZGenerativeRealOutputLayer[ inputUnits_ ] := NetGraph[{
+   "mu"->inputUnits,
+   "logvar"->inputUnits,
+   "meansqerror"->meanSquaredLossLayer,
+   "scale"->ElementwiseLayer[.5 * 1/Exp[#]&],
+   "loss2"->ThreadingLayer[Times],
+   "lognorm"->ElementwiseLayer[-Log[1/(Sqrt[Exp[#]]*Sqrt[2*Pi])]&],
+   "sum_loss"->ThreadingLayer[Plus],
+   "total_loss"->SummationLayer[]},{ 
+   NetPort["Input"]->NetPort[{"meansqerror","Input"}],
+   NetPort["Conditional"]->{"mu","logvar"},
+   "mu"->NetPort[{"meansqerror","Target"}],
+   "logvar"->"scale",
+   {NetPort[{"meansqerror","Loss"}],"scale"}->"loss2",
+   "logvar"->"lognorm",
+   {"lognorm","loss2"}->"sum_loss"->"total_loss"->NetPort["Loss"],
+   "mu"->NetPort["Output"] (*This is not ideal for sampling*)
+},"Conditional"->inputUnits];
+
+
 CZCreateVaERealVector[ inputUnits_:784, latentUnits_:8 ] :=
    CZGenerativeModel[ CZVaE[ latentUnits ], CZRealVector[ inputUnits ], Identity, CZCreateVaENet[
       CZCreateEncoder[ inputUnits, latentUnits ],
-      CZCreateDecoder[ inputUnits, CZGenerativeOutputLayer[ Identity, MeanSquaredLossLayer[], {inputUnits} ] ] ] ];
+      CZCreateDecoder[ inputUnits, CZGenerativeRealOutputLayer[ inputUnits ] ] ] ];
 
 
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealVector[ inputUnits_ ], encoder_, vaeNet_ ] ] :=
