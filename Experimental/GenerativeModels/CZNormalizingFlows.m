@@ -25,30 +25,33 @@ scalinguprime = NetGraph[{
 
 
 planar1[inp_] := NetGraph[{
-   "scalingw"->{ConstantArrayLayer[{1}](*,ElementwiseLayer[Exp]*)},
-   "scalingu"->{ConstantArrayLayer[{1}](*,ElementwiseLayer[Exp]*)},
+   "parameters"->ConstantArrayLayer[{3}],
+   "scalingw"->PartLayer[1;;1],
+   "scalingu"->PartLayer[2;;2],
+   "bias"->PartLayer[3;;3],
+   
    "scalinguprime"->scalinguprime,
-   "bias"->ConstantArrayLayer[{1}],
    "t1"->ThreadingLayer[Times],
    "p1"->ThreadingLayer[Plus],
    "tanh"->ElementwiseLayer[Tanh],
    "t2"->ThreadingLayer[Times],
    "p2"->ThreadingLayer[Plus],
-   "gauss"->inp,
+   "next"->inp,
    "sech"->sechlayer,
    "sq"->ElementwiseLayer[#^2&],
    "t3"->ThreadingLayer[Times],
    "p3"->ElementwiseLayer[(1+#)&],
-   "t4"->ThreadingLayer[Times]}(*Invert?*),{
+   "t4"->ThreadingLayer[Times]},{
+   "parameters"->{"scalingw","scalingu","bias"},
    {"scalingw",NetPort["Input"]}->"t1",
    {"bias","t1"}->"p1"->"tanh",
    "scalingw"->NetPort[{"scalinguprime","Scalingw"}],
    "scalingu"->NetPort[{"scalinguprime","Scalingu"}],
    {"scalinguprime","tanh"}->"t2",
-   {"t2",NetPort["Input"]}->"p2"->"gauss",
+   {"t2",NetPort["Input"]}->"p2"->"next",
    "p1"->"sech"->"sq",
    {"sq","scalinguprime","scalingw"}->"t3"->"p3",
-   {"gauss","p3"}->"t4"
+   {"next","p3"}->"t4"
 }];
 
 
@@ -65,8 +68,8 @@ l1 = NetGraph[{
 
 
 l2init = NetReplacePart[NetInitialize@l1,
-   {{"planar","scalingw",1,"Array"}->Random[],
-   {"planar","gauss","scalingw",1,"Array"}->Random[]}];
+   {{"planar","parameters","Array"}->RandomReal[{3}],
+   {"planar","next","parameters","Array"}->RandomReal[{3}]}];
 
 
 SyntaxInformation[ CZNormFlowModel ]= {"ArgumentsPattern"->{}};
