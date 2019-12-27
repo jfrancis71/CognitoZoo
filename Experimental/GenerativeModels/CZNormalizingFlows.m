@@ -24,8 +24,9 @@ scalinguprime = NetGraph[{
    {"m","inv"}->"t2"}];
 
 
-planar1[inp_] := NetGraph[{
-   "parameters"->ConstantArrayLayer[{3}],
+planar[ next_, nextConditional_:False ] := NetGraph[{
+   "parameters"->PartLayer[1;;3],
+   If[ nextConditional, "nextParameters"->PartLayer[4;;], Nothing ],
    "scalingw"->PartLayer[1;;1],
    "scalingu"->PartLayer[2;;2],
    "bias"->PartLayer[3;;3],
@@ -36,13 +37,14 @@ planar1[inp_] := NetGraph[{
    "tanh"->ElementwiseLayer[Tanh],
    "t2"->ThreadingLayer[Times],
    "p2"->ThreadingLayer[Plus],
-   "next"->inp,
+   "next"->next,
    "sech"->sechlayer,
    "sq"->ElementwiseLayer[#^2&],
    "t3"->ThreadingLayer[Times],
    "p3"->ElementwiseLayer[(1+#)&],
    "t4"->ThreadingLayer[Times]},{
-   "parameters"->{"scalingw","scalingu","bias"},
+   NetPort["Conditional"]->"parameters"->{"scalingw","scalingu","bias"},
+   If[ nextConditional, NetPort["Conditional"]->"nextParameters"->NetPort[ {"next","Conditional"} ], Nothing ],
    {"scalingw",NetPort["Input"]}->"t1",
    {"bias","t1"}->"p1"->"tanh",
    "scalingw"->NetPort[{"scalinguprime","Scalingw"}],
@@ -56,8 +58,10 @@ planar1[inp_] := NetGraph[{
 
 
 l1 = NetGraph[{
-   "planar"->planar1@planar1[gauss],
+   "conditional"->ConstantArrayLayer[{6}],
+   "planar"->planar[ planar[gauss, False], True ],
    "loss"->ElementwiseLayer[-Log[#]&]},{
+   "conditional"->NetPort[{"planar","Conditional"}],
    "planar"->"loss",
    "loss"->NetPort["Loss"],
    "loss"->NetPort["Dummy"]},"Input"->"Scalar","Loss"->"Scalar"];
@@ -68,8 +72,7 @@ l1 = NetGraph[{
 
 
 l2init = NetReplacePart[NetInitialize@l1,
-   {{"planar","parameters","Array"}->RandomReal[{3}],
-   {"planar","next","parameters","Array"}->RandomReal[{3}]}];
+   {"conditional","Array"}->Join[Append[RandomReal[{0,1}-.5,2],0.],Append[RandomReal[{0,1}-.5,2],0.]] ];
 
 
 SyntaxInformation[ CZNormFlowModel ]= {"ArgumentsPattern"->{}};
