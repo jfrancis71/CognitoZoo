@@ -80,3 +80,41 @@ SyntaxInformation[ CZRealVariable ]= {"ArgumentsPattern"->{}};
 
 
 CZCreateNormFlowRealVariable[] := CZGenerativeModel[ CZNormFlowModel, CZRealVariable[], Identity, l2init ];
+
+
+l12D = NetGraph[{
+   "p1"->PartLayer[1;;1],
+   "p2"->PartLayer[2;;2],
+   "conditional1"->ConstantArrayLayer[{6}],
+   "conditional2"->{8,Tanh,8,Tanh,8,Tanh,6},
+   "planar1"->planar[ planar[gauss, False], True ],
+   "planar2"->planar[ planar[gauss, False], True ],
+   "loss1"->ElementwiseLayer[-Log[#+10^-8]&],
+   "loss2"->ElementwiseLayer[-Log[#+10^-8]&],
+   "loss"->TotalLayer[]},{
+   "p1"->NetPort["planar1","Input"],
+   "p2"->NetPort["planar2","Input"],
+   "conditional1"->NetPort[{"planar1","Conditional"}],
+   "p1"->"conditional2"->NetPort[{"planar2","Conditional"}],
+   "planar1"->"loss1",
+   "planar2"->"loss2",
+   {"loss1","loss2"}->"loss",
+   "loss"->NetPort["Loss"],
+   "loss1"->NetPort["Dummy"]},"Input"->{2},"Loss"->"Scalar"];
+(* Our dummy port is in their because other parts of this framework will pass in "Input" and ask for "Loss"
+   but if there is only one output port, it is confused as to the meaning of port "Loss". So I just want a second
+   output port.
+*)
+
+
+l22Dinit = NetReplacePart[NetInitialize@l12D,
+   {"conditional1","Array"}->Join[Append[RandomReal[{0,1}-.5,2],0.],Append[RandomReal[{0,1}-.5,2],0.]] ];
+
+
+(*
+   Method\[Rule]{"ADAM","GradientClipping"\[Rule].1}
+   Training is not hugely stable, have used above NetTrain option with some modest success.
+*)
+
+
+CZCreateNormFlowReal2DVariable[] := CZGenerativeModel[ CZNormFlowModel, CZRealVector[2], Identity, l22Dinit ];
