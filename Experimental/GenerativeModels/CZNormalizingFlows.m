@@ -3,7 +3,7 @@
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
-gauss = NetChain[{ElementwiseLayer[Exp[-0.5*#^2]/Sqrt[2*Pi]&]},"Input"->"Scalar"];
+gauss = NetChain[{ElementwiseLayer[-0.5*#^2 - Log[Sqrt[2*Pi]]&]},"Input"->"Scalar"];
 
 
 sechlayer = NetGraph[{
@@ -33,34 +33,36 @@ planar[ next_, nextConditional_:False ] := NetGraph[{
    
    "scalinguprime"->scalinguprime,
    "t1"->ThreadingLayer[Times],
-   "p1"->ThreadingLayer[Plus],
+   "expr1"->ThreadingLayer[Plus], (* w x + b *)
    "tanh"->ElementwiseLayer[Tanh],
    "t2"->ThreadingLayer[Times],
-   "p2"->ThreadingLayer[Plus],
+   "expr2"->ThreadingLayer[Plus], (* x + u tanh( w x + b ) *)
    "next"->next,
    "sech"->sechlayer,
    "sq"->ElementwiseLayer[#^2&],
    "t3"->ThreadingLayer[Times],
-   "p3"->ElementwiseLayer[(1+#)&],
-   "t4"->ThreadingLayer[Times]},{
+   "expr3"->ElementwiseLayer[(1+#)&], (* 1 + u w Sech[ w x + b ]^2 *)
+   "logderiv"->ElementwiseLayer[Log[#+10^-3]&],
+   "t4"->ThreadingLayer[Plus]},{
    NetPort["Conditional"]->"parameters"->{"scalingw","scalingu","bias"},
    If[ nextConditional, NetPort["Conditional"]->"nextParameters"->NetPort[ {"next","Conditional"} ], Nothing ],
    {"scalingw",NetPort["Input"]}->"t1",
-   {"bias","t1"}->"p1"->"tanh",
+   {"bias","t1"}->"expr1"->"tanh",
    "scalingw"->NetPort[{"scalinguprime","Scalingw"}],
    "scalingu"->NetPort[{"scalinguprime","Scalingu"}],
    {"scalinguprime","tanh"}->"t2",
-   {"t2",NetPort["Input"]}->"p2"->"next",
-   "p1"->"sech"->"sq",
-   {"sq","scalinguprime","scalingw"}->"t3"->"p3",
-   {"next","p3"}->"t4"
+   {"t2",NetPort["Input"]}->"expr2"->"next",
+   "expr1"->"sech"->"sq",
+   {"sq","scalinguprime","scalingw"}->"t3"->"expr3"->"logderiv",
+   {"next","logderiv"}->"t4"
 }];
 
 
 l1 = NetGraph[{
    "conditional"->ConstantArrayLayer[{6}],
    "planar"->planar[ planar[gauss, False], True ],
-   "loss"->ElementwiseLayer[-Log[#]&]},{
+   (*"planar"->planar[ gauss, False ],*)
+   "loss"->ElementwiseLayer[-#&]},{
    "conditional"->NetPort[{"planar","Conditional"}],
    "planar"->"loss",
    "loss"->NetPort["Loss"],
@@ -75,6 +77,10 @@ l2init = NetReplacePart[NetInitialize@l1,
    {"conditional","Array"}->Join[Append[RandomReal[{0,1}-.5,2],0.],Append[RandomReal[{0,1}-.5,2],0.]] ];
 
 
+l2init = NetReplacePart[NetInitialize@l1,
+   {"conditional","Array"}->Join[Append[RandomReal[{0,1}-.5,2],0.]] ];
+
+
 SyntaxInformation[ CZNormFlowModel ]= {"ArgumentsPattern"->{}};
 SyntaxInformation[ CZRealVariable ]= {"ArgumentsPattern"->{}};
 
@@ -86,11 +92,11 @@ l12D = NetGraph[{
    "p1"->PartLayer[1;;1],
    "p2"->PartLayer[2;;2],
    "conditional1"->ConstantArrayLayer[{6}],
-   "conditional2"->{8,Tanh,8,Tanh,8,Tanh,6},
+   "conditional2"->{8,Ramp,8,Ramp,6},
    "planar1"->planar[ planar[gauss, False], True ],
    "planar2"->planar[ planar[gauss, False], True ],
-   "loss1"->ElementwiseLayer[-Log[#+10^-8]&],
-   "loss2"->ElementwiseLayer[-Log[#+10^-8]&],
+   "loss1"->ElementwiseLayer[-#&],
+   "loss2"->ElementwiseLayer[-#&],
    "loss"->TotalLayer[]},{
    "p1"->NetPort["planar1","Input"],
    "p2"->NetPort["planar2","Input"],
