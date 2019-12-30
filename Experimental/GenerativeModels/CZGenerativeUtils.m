@@ -53,6 +53,7 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_ ] := 
          CZVaE[_],{},
          CZNade[], {},
          CZNormFlowModel,{},
+         CZRealNVP,{},
          CZNadeVaE[_], {} ] ];
    CZGenerativeModel[ model,  inputType, encoder, trained ]
 ];
