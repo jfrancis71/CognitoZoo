@@ -1,5 +1,9 @@
 (* ::Package:: *)
 
+(* Note, in practice it can sort of work but prone to numerical instability, especially the
+   2D model
+*)
+
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
