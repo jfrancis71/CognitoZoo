@@ -19,22 +19,25 @@ RealNVPCouplingLayer[ next_ ] := NetGraph[{
    "p1"->PartLayer[1;;1],
    "p2"->PartLayer[2;;2],
    "mu"->{16,Tanh,16,Tanh,16,Tanh,1},
-   "scale"->{16,Tanh,16,Tanh,16,Tanh,1,ElementwiseLayer[Exp]},
-   "logscale"->{ElementwiseLayer[-Log[#]&],PartLayer[1]},
+   "logscale"->{16,Tanh,16,Tanh,16,Tanh,1},
+   "scalarlogscale"->{PartLayer[1],ElementwiseLayer[-#&]},
+   "scale"->ElementwiseLayer[Exp],
    "invmu"->ElementwiseLayer[-#&],
    "invscale"->ElementwiseLayer[1/#&],
    "inv1"->ThreadingLayer[Plus],
    "inv2"->ThreadingLayer[Times],
    "cat"->CatenateLayer[],
    "gauss"->next,
-   "res"->ThreadingLayer[Plus]},{
-   "p1"->{"mu","scale"},
+   "res"->ThreadingLayer[Plus](**)},{
+   "p1"->{"mu","logscale"},
    "mu"->"invmu",
-   "scale"->{"invscale","logscale"},
+   "scale"->"invscale",
+   "logscale"->"scale",
    {"p2","invmu"}->"inv1",
    {"inv1","invscale"}->"inv2",
    {"p1","inv2"}->"cat"->"gauss",
-   {"gauss","logscale"}->"res"
+   "logscale"->"scalarlogscale",
+   {"gauss","scalarlogscale"}->"res"(**)
    },
    "Input"->{2}]
 
