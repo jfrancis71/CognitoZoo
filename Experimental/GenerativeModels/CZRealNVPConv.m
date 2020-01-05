@@ -57,8 +57,11 @@ back = NetChain[{
    CouplingLayer[CouplingLayer[gauss,channelmask],1-channelmask]}];
 
 
+back
+
+
 RealNVP = NetGraph[{
-   back,
+   CouplingLayer[ back, checkerboard ],
    ElementwiseLayer[-#&]},{1->2->NetPort["Loss"]}];
 
 
@@ -68,13 +71,13 @@ images = ResourceData["MNIST","TrainingData"][[5924;;12665,1]];
 resize = ImageResize[#,{8,8}]&/@images;
 
 
-data = {ImageData[#]}&/@resize;data//Dimensions
+data = {ImageData[#]}&/@resize;data//Dimensions;
 
 
 data1 = data+Table[RandomReal[]/10,{6742},{1},{8},{8}];
 
 
-train = NetTrain[ RealNVP1, Association["Input"->#]&/@data1,LearningRateMultipliers->{
+train = NetTrain[ RealNVP, Association["Input"->#]&/@data1,LearningRateMultipliers->{
    {1,2,"passDirect","mask"}->0,
    {1,2,"change","mask"}->0,
    {1,2,"changed","mask"}->0,
@@ -97,9 +100,10 @@ reverse[net_,z_,mask_]:=(
 
 
 sampleFromGaussian[ z_ ] := (
-   z1 = reverse[ NetExtract[ train, {1,2,"next"} ], z, channelmask ];
-   z0 = reverse[ NetExtract[ train, {1,2} ], z1, 1-channelmask ];
-   rz0 = ReshapeLayer[{1,8,8}][z0]
+   z2 = reverse[ NetExtract[ train, {1,"next",2,"next"} ], z, channelmask ];
+   z1 = reverse[ NetExtract[ train, {1,"next",2} ], z2, 1-channelmask ];
+   rz1 = ReshapeLayer[{1,8,8}][z1];
+   z0 = reverse[ NetExtract[ train, {1} ], rz1, checkerboard ]
 )
 
 
