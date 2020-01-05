@@ -19,7 +19,7 @@ checkerboard[[1,2;;8;;2,2;;8;;2]] = 1;
 StableScaleNet = NetGraph[{"nonlinearity"->Tanh,"c1"->ConstantArrayLayer[{1}],"c2"->ConstantArrayLayer[{1}],"times"->ThreadingLayer[Times],"plus"->ThreadingLayer[Plus]},{{"nonlinearity","c1"}->"times",{"times","c2"}->"plus"}];
 
 
-CouplingLayer[ next_, passThrough_ ] := NetGraph[{
+CouplingLayer[ passThrough_ ] := NetGraph[{
    "passDirect"->MaskLayer[passThrough],
    "change"->MaskLayer[1-passThrough],
    "mu"->{ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[Length[passThrough],{3,3},"PaddingSize"->1]},
@@ -31,20 +31,17 @@ CouplingLayer[ next_, passThrough_ ] := NetGraph[{
    "inv2"->ThreadingLayer[Times],
    "changed"->MaskLayer[1-passThrough],
    "new"->ThreadingLayer[Plus],
-   "next"->next,
    "jacobian1"->ElementwiseLayer[-#&],
    "jacobian2"->MaskLayer[1-passThrough],
-   "jacobian3"->SummationLayer[],
-   "logdensity"->ThreadingLayer[Plus]
+   "jacobian3"->SummationLayer[]
 },{
    "passDirect"->{"mu","logscale"},
    "logscale"->"scale"->"invscale",
    "mu"->"invmu",
    {"change","invmu"}->"inv1",
    {"inv1","invscale"}->"inv2"->"changed",
-   {"changed","passDirect"}->"new"->"next",
-   "logscale"->"jacobian1"->"jacobian2"->"jacobian3",
-   {"jacobian3","next"}->"logdensity"
+   {"changed","passDirect"}->"new"->NetPort["Transformed"],
+   "logscale"->"jacobian1"->"jacobian2"->"jacobian3"->NetPort["Jacobian"]
 }]
 
 
@@ -52,14 +49,24 @@ channelmask = ConstantArray[0,{64,1,1}];
 channelmask[[1;;32,1,1]] = 1;
 
 
-back = NetChain[{
-   ReshapeLayer[{64,1,1}],
-   CouplingLayer[CouplingLayer[gauss,channelmask],1-channelmask]}];
-
-
 RealNVP = NetGraph[{
-   CouplingLayer[ CouplingLayer[ back, 1 - checkerboard ], checkerboard ],
-   ElementwiseLayer[-#&]},{1->2->NetPort["Loss"]}];
+   CouplingLayer[ checkerboard ],
+   CouplingLayer[ 1 - checkerboard ],
+   ReshapeLayer[{64,1,1}],
+   CouplingLayer[ channelmask ],
+   CouplingLayer[ 1 - channelmask ],
+   gauss,
+   ThreadingLayer[Plus],
+   ElementwiseLayer[ -#& ]
+},{
+   NetPort[{1,"Transformed"}]->2,
+   NetPort[{2,"Transformed"}]->3,
+   3->4,
+   NetPort[{4,"Transformed"}]->5,
+   NetPort[{5,"Transformed"}]->6,
+   {NetPort[{1,"Jacobian"}],NetPort[{2,"Jacobian"}],NetPort[{4,"Jacobian"}],NetPort[{5,"Jacobian"}],6}
+      ->7->8->NetPort["Loss"]
+},"Input"->{1,8,8}];
 
 
 images = ResourceData["MNIST","TrainingData"][[5924;;12665,1]];
@@ -75,29 +82,30 @@ data1 = data+Table[RandomReal[]/10,{6742},{1},{8},{8}];
 
 
 train = NetTrain[ RealNVP, Association["Input"->#]&/@data1,LearningRateMultipliers->{
- {1,"passDirect","mask"}->0,
+
+   {1,"passDirect","mask"}->0,
    {1,"change","mask"}->0,
    {1,"changed","mask"}->0,
    {1,"jacobian2","mask"}->0,
+   
+   {2,"passDirect","mask"}->0,
+   {2,"change","mask"}->0,
+   {2,"changed","mask"}->0,
+   {2,"jacobian2","mask"}->0,
+   
+   {4,"passDirect","mask"}->0,
+   {4,"change","mask"}->0,
+   {4,"changed","mask"}->0,
+   {4,"jacobian2","mask"}->0,
+   
+   {5,"passDirect","mask"}->0,
+   {5,"change","mask"}->0,
+   {5,"changed","mask"}->0,
+   {5,"jacobian2","mask"}->0
 
- {1,"next","passDirect","mask"}->0,
-   {1,"next","change","mask"}->0,
-   {1,"next","changed","mask"}->0,
-   {1,"next","jacobian2","mask"}->0,
-
-
-   {1,"next","next",2,"passDirect","mask"}->0,
-   {1,"next","next",2,"change","mask"}->0,
-   {1,"next","next",2,"changed","mask"}->0,
-   {1,"next","next",2,"jacobian2","mask"}->0,
-
-   {1,"next","next",2,"next","passDirect","mask"}->0,
-   {1,"next","next",2,"next","change","mask"}->0,
-   {1,"next","next",2,"next","changed","mask"}->0,
-   {1,"next","next",2,"next","jacobian2","mask"}->0
 
 },LossFunction->"Loss"
-]
+];
 
 
 reverse[net_,z_,mask_]:=(
@@ -108,10 +116,10 @@ reverse[net_,z_,mask_]:=(
 
 
 sampleFromGaussian[ z_ ] := (
-   z3 = reverse[ NetExtract[ train, {1,"next","next",2,"next"} ], z, channelmask ];
-   z2 = reverse[ NetExtract[ train, {1,"next","next",2} ], z3, 1-channelmask ];
+   z3 = reverse[ NetExtract[ train, {5} ], z, 1-channelmask ];
+   z2 = reverse[ NetExtract[ train, {4} ], z3, channelmask ];
    rz2 = ReshapeLayer[{1,8,8}][z2];
-   z1 = reverse[ NetExtract[ train, {1,"next"} ], rz2, 1-checkerboard ];
+   z1 = reverse[ NetExtract[ train, {2} ], rz2, 1-checkerboard ];
    z0 = reverse[ NetExtract[ train, {1} ], z1, checkerboard ]
 )
 
