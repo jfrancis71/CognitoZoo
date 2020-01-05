@@ -57,11 +57,8 @@ back = NetChain[{
    CouplingLayer[CouplingLayer[gauss,channelmask],1-channelmask]}];
 
 
-back
-
-
 RealNVP = NetGraph[{
-   CouplingLayer[ back, checkerboard ],
+   CouplingLayer[ CouplingLayer[ back, 1 - checkerboard ], checkerboard ],
    ElementwiseLayer[-#&]},{1->2->NetPort["Loss"]}];
 
 
@@ -78,15 +75,26 @@ data1 = data+Table[RandomReal[]/10,{6742},{1},{8},{8}];
 
 
 train = NetTrain[ RealNVP, Association["Input"->#]&/@data1,LearningRateMultipliers->{
-   {1,2,"passDirect","mask"}->0,
-   {1,2,"change","mask"}->0,
-   {1,2,"changed","mask"}->0,
-   {1,2,"jacobian2","mask"}->0,
+ {1,"passDirect","mask"}->0,
+   {1,"change","mask"}->0,
+   {1,"changed","mask"}->0,
+   {1,"jacobian2","mask"}->0,
 
-   {1,2,"next","passDirect","mask"}->0,
-   {1,2,"next","change","mask"}->0,
-   {1,2,"next","changed","mask"}->0,
-   {1,2,"next","jacobian2","mask"}->0
+ {1,"next","passDirect","mask"}->0,
+   {1,"next","change","mask"}->0,
+   {1,"next","changed","mask"}->0,
+   {1,"next","jacobian2","mask"}->0,
+
+
+   {1,"next","next",2,"passDirect","mask"}->0,
+   {1,"next","next",2,"change","mask"}->0,
+   {1,"next","next",2,"changed","mask"}->0,
+   {1,"next","next",2,"jacobian2","mask"}->0,
+
+   {1,"next","next",2,"next","passDirect","mask"}->0,
+   {1,"next","next",2,"next","change","mask"}->0,
+   {1,"next","next",2,"next","changed","mask"}->0,
+   {1,"next","next",2,"next","jacobian2","mask"}->0
 
 },LossFunction->"Loss"
 ]
@@ -100,10 +108,11 @@ reverse[net_,z_,mask_]:=(
 
 
 sampleFromGaussian[ z_ ] := (
-   z2 = reverse[ NetExtract[ train, {1,"next",2,"next"} ], z, channelmask ];
-   z1 = reverse[ NetExtract[ train, {1,"next",2} ], z2, 1-channelmask ];
-   rz1 = ReshapeLayer[{1,8,8}][z1];
-   z0 = reverse[ NetExtract[ train, {1} ], rz1, checkerboard ]
+   z3 = reverse[ NetExtract[ train, {1,"next","next",2,"next"} ], z, channelmask ];
+   z2 = reverse[ NetExtract[ train, {1,"next","next",2} ], z3, 1-channelmask ];
+   rz2 = ReshapeLayer[{1,8,8}][z2];
+   z1 = reverse[ NetExtract[ train, {1,"next"} ], rz2, 1-checkerboard ];
+   z0 = reverse[ NetExtract[ train, {1} ], z1, checkerboard ]
 )
 
 
