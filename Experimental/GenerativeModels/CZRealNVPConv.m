@@ -11,9 +11,9 @@ MaskLayer[ mask_ ] := NetGraph[{
    {NetPort["Input"],"mask"}->"thread"}]
 
 
-checkerboard8x8 = ConstantArray[0,{1,8,8}];
-checkerboard8x8[[1,1;;8;;2,1;;8;;2]] = 1;
-checkerboard8x8[[1,2;;8;;2,2;;8;;2]] = 1;
+checkerboard1x8x8 = ConstantArray[0,{1,8,8}];
+checkerboard1x8x8[[1,1;;8;;2,1;;8;;2]] = 1;
+checkerboard1x8x8[[1,2;;8;;2,2;;8;;2]] = 1;
 
 
 StableScaleNet = NetGraph[{"nonlinearity"->Tanh,"c1"->ConstantArrayLayer[{1}],"c2"->ConstantArrayLayer[{1}],"times"->ThreadingLayer[Times],"plus"->ThreadingLayer[Plus]},{{"nonlinearity","c1"}->"times",{"times","c2"}->"plus"}];
@@ -45,15 +45,15 @@ CouplingLayer[ passThrough_ ] := NetGraph[{
 }]
 
 
-channelmask2 = ConstantArray[0,{4,4,4}];
-channelmask2[[1;;2,All,All]] = 1;
+channelmask4x4x4 = ConstantArray[0,{4,4,4}];
+channelmask4x4x4[[1;;2,All,All]] = 1;
 
 
-channelmask64 = ConstantArray[0,{64,1,1}];
-channelmask64[[1;;32,1,1]] = 1;
+channelmask64x1x1 = ConstantArray[0,{64,1,1}];
+channelmask64x1x1[[1;;32,1,1]] = 1;
 
 
-mysqueeze[inChannels_]:=NetGraph[{
+SqueezeLayer2x2[ inChannels_ ] := NetGraph[{
    "s1"->ConvolutionLayer[inChannels,{2,2},"Stride"->2,"Biases"->ConstantArray[0,{inChannels}],"Weights"->Table[
       If[o==i,{{1,0},{0,0}},{{0,0},{0,0}}],{o,inChannels},{i,inChannels}]],
    "s2"->ConvolutionLayer[inChannels,{2,2},"Stride"->2,"Biases"->ConstantArray[0,{inChannels}],"Weights"->Table[
@@ -69,11 +69,11 @@ mysqueeze[inChannels_]:=NetGraph[{
 
 
 RealNVPBlock = NetGraph[{
-   "c1"->CouplingLayer[ checkerboard8x8 ],
-   "c2"->CouplingLayer[ 1 - checkerboard8x8 ],
+   "c1"->CouplingLayer[ checkerboard1x8x8 ],
+   "c2"->CouplingLayer[ 1 - checkerboard1x8x8 ],
    "s1"->mysqueeze[ 1 ],
-   "c3"->CouplingLayer[ channelmask2 ],
-   "c4"->CouplingLayer[ 1 - channelmask2 ],
+   "c3"->CouplingLayer[ channelmask4x4x4 ],
+   "c4"->CouplingLayer[ 1 - channelmask4x4x4 ],
    "jacobian"->ThreadingLayer[Plus]},{
    NetPort[{"c1","Transformed"}]->"c2",
    NetPort[{"c2","Transformed"}]->"s1",
@@ -88,8 +88,8 @@ RealNVPBlock = NetGraph[{
 RealNVP = NetGraph[{
    "block"->RealNVPBlock,   
    "reshape"->ReshapeLayer[{64,1,1}],
-   "c1"->CouplingLayer[ channelmask ],
-   "c2"->CouplingLayer[ 1 - channelmask ],
+   "c1"->CouplingLayer[ channelmask64x1x1 ],
+   "c2"->CouplingLayer[ 1 - channelmask64x1x1 ],
    "g"->gauss,
    "th"->ThreadingLayer[Plus],
    "loss"->ElementwiseLayer[ -#& ]
@@ -156,25 +156,22 @@ train = NetTrain[ RealNVP, Association["Input"->#]&/@data1,LearningRateMultiplie
 ];
 
 
-reverse[net_,z_,mask_]:=(
+ReverseCouplingLayer[net_,z_,mask_]:=(
    mu=NetTake[net,"mu"][z];
    scale=NetTake[net,"scale"][z];
    ch=z*scale+mu;
    tot=ch*(1-mask)+z*mask)
 
 
-sampleFromGaussian[ z_ ] := (
-   oc2i = reverse[ NetExtract[ train, {"c2"} ], z, 1-channelmask ];
-   oc1i = reverse[ NetExtract[ train, {"c1"} ], oc2i, channelmask ];
+ReverseRealNVP[ z_ ] := (
+   oc2i = ReverseCouplingLayer[ NetExtract[ train, {"c2"} ], z, 1-channelmask64x1x1 ];
+   oc1i = ReverseCouplingLayer[ NetExtract[ train, {"c1"} ], oc2i, channelmask64x1x1 ];
    reshape = ReshapeLayer[{4,4,4}][oc1i];
-   (*
-   rz2 = ReshapeLayer[{1,8,8}][z2];
-   z1 = reverse[ NetExtract[ train, {2} ], rz2, 1-checkerboard ];
-   z0 = reverse[ NetExtract[ train, {1} ], z1, checkerboard ]*)
+   ReverseRealNVPBlock[ reshape ]
 )
 
 
-desqueeze[ inp_ ] := (
+ReverseSqueezeLayer[ inp_ ] := (
    tmp = ConstantArray[0,{1,8,8}];
    tmp[[1,1;;8;;2,1;;8;;2]] = inp[[1]];
    tmp[[1,1;;8;;2,2;;8;;2]] = inp[[2]];
@@ -184,22 +181,16 @@ desqueeze[ inp_ ] := (
 );
 
 
-sampleBlock[ z_ ] := (
-   c4i = reverse[ NetExtract[ train, {"block","c4"} ], z, 1 - channelmask2 ];
-   c3i = reverse[ NetExtract[ train, {"block","c3"} ], c4i, channelmask2 ];
-   desq = desqueeze[ c3i ];
-   c2i = reverse[ NetExtract[ train, {"block","c2"} ], desq, 1 - checkerboard8x8 ];
-   c1i = reverse[ NetExtract[ train, {"block","c1"} ], c2i, checkerboard8x8 ];
+ReverseRealNVPBlock[ z_ ] := (
+   c4i = ReverseCouplingLayer[ NetExtract[ train, {"block","c4"} ], z, 1 - channelmask4x4x4 ];
+   c3i = ReverseCouplingLayer[ NetExtract[ train, {"block","c3"} ], c4i, channelmask4x4x4 ];
+   desq = ReverseSqueezeLayer[ c3i ];
+   c2i = ReverseCouplingLayer[ NetExtract[ train, {"block","c2"} ], desq, 1 - checkerboard1x8x8 ];
+   c1i = ReverseCouplingLayer[ NetExtract[ train, {"block","c1"} ], c2i, checkerboard1x8x8 ]
 )
 
 
 gaussiansample[] := Table[RandomVariate@NormalDistribution[0,1],{64},{1},{1}]
 
 
-z=gaussiansample[];
-
-
-sampleFromGaussian[ z ];
-
-
-sampleBlock[ reshape ];
+sample[] := ReverseRealNVP[ gaussiansample[] ];
