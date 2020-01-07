@@ -44,6 +44,13 @@ CouplingLayer[ passThrough_ ] := NetGraph[{
 }]
 
 
+CouplingLayerLRM = {
+   {"passDirect","mask"}->0,
+   {"change","mask"}->0,
+   {"changed","mask"}->0,
+   {"jacobian2","mask"}->0 };
+
+
 ChannelMask[ { channels_, row_, col_ } ] :=
    ReplacePart[ ConstantArray[ 0,{channels,row,col} ], {channel_/;channel<=channels/2,_,_}->1]
 
@@ -63,21 +70,41 @@ SqueezeLayer2x2[ inChannels_ ] := NetGraph[{
 }];
 
 
+SqueezeLayerLRM = {
+   {"s1"}->0,
+   {"s2"}->0,
+   {"s3"}->0,
+   {"s4"}->0 };
+
+
 RealNVPBlock[ checkerboard_, channelmask_, inSqueezeChannels_ ] := NetGraph[{
    "c1"->CouplingLayer[ checkerboard ],
    "c2"->CouplingLayer[ 1 - checkerboard ],
-   "s1"->SqueezeLayer2x2[ inSqueezeChannels ],
+   "sq1"->SqueezeLayer2x2[ inSqueezeChannels ],
    "c3"->CouplingLayer[ channelmask ],
    "c4"->CouplingLayer[ 1 - channelmask ],
    "jacobian"->ThreadingLayer[Plus]},{
    NetPort[{"c1","Transformed"}]->"c2",
-   NetPort[{"c2","Transformed"}]->"s1",
-   "s1"->"c3",
+   NetPort[{"c2","Transformed"}]->"sq1",
+   "sq1"->"c3",
    NetPort[{"c3","Transformed"}]->"c4",
    NetPort[{"c4","Transformed"}]->NetPort["Transformed"],
    {NetPort["c1","Jacobian"],NetPort["c2","Jacobian"],NetPort["c3","Jacobian"],NetPort["c4","Jacobian"]}->
       "jacobian"->NetPort["Jacobian"]
    }];
+
+
+PrependLRM[ lrms_, layerName_ ] :=
+   Map[ Prepend[ #[[1]], layerName ]->0 &, lrms ]
+
+
+RealNVPBlockLRM = Join[
+   PrependLRM[ CouplingLayerLRM, "c1" ],
+   PrependLRM[ CouplingLayerLRM, "c2" ],
+   PrependLRM[ SqueezeLayerLRM, "sq1" ],
+   PrependLRM[ CouplingLayerLRM, "c3" ],
+   PrependLRM[ CouplingLayerLRM, "c4" ]
+];
 
 
 RealNVP = NetGraph[{
@@ -98,6 +125,14 @@ RealNVP = NetGraph[{
 },"Input"->{1,16,16}];
 
 
+RealNVPLRM = Join[
+   PrependLRM[ RealNVPBlockLRM, "block1" ],
+   PrependLRM[ RealNVPBlockLRM, "block2" ],
+   PrependLRM[ CouplingLayerLRM, "c1" ],
+   PrependLRM[ CouplingLayerLRM, "c2" ]
+];
+
+
 images = ResourceData["MNIST","TrainingData"][[5924;;12665,1]];
 
 
@@ -110,73 +145,10 @@ data = {ImageData[#]}&/@resize;data//Dimensions;
 data1 = data+Table[RandomReal[]/10,{6742},{1},{16},{16}];
 
 
-train = NetTrain[ RealNVP, Association["Input"->#]&/@data1,LearningRateMultipliers->{
-   {"block1","s1","s1"}->0,
-   {"block1","s1","s2"}->0,
-   {"block1","s1","s3"}->0,
-   {"block1","s1","s4"}->0,
-
-
-   {"block1","c1","passDirect","mask"}->0,
-   {"block1","c1","change","mask"}->0,
-   {"block1","c1","changed","mask"}->0,
-   {"block1","c1","jacobian2","mask"}->0,
-
-   {"block1","c2","passDirect","mask"}->0,
-   {"block1","c2","change","mask"}->0,
-   {"block1","c2","changed","mask"}->0,
-   {"block1","c2","jacobian2","mask"}->0,
-   
-   {"block1","c3","passDirect","mask"}->0,
-   {"block1","c3","change","mask"}->0,
-   {"block1","c3","changed","mask"}->0,
-   {"block1","c3","jacobian2","mask"}->0,
-   
-   {"block1","c4","passDirect","mask"}->0,
-   {"block1","c4","change","mask"}->0,
-   {"block1","c4","changed","mask"}->0,
-   {"block1","c4","jacobian2","mask"}->0,
-
-   {"block2","s1","s1"}->0,
-   {"block2","s1","s2"}->0,
-   {"block2","s1","s3"}->0,
-   {"block2","s1","s4"}->0,
-
-
-   {"block2","c1","passDirect","mask"}->0,
-   {"block2","c1","change","mask"}->0,
-   {"block2","c1","changed","mask"}->0,
-   {"block2","c1","jacobian2","mask"}->0,
-
-   {"block2","c2","passDirect","mask"}->0,
-   {"block2","c2","change","mask"}->0,
-   {"block2","c2","changed","mask"}->0,
-   {"block2","c2","jacobian2","mask"}->0,
-   
-   {"block2","c3","passDirect","mask"}->0,
-   {"block2","c3","change","mask"}->0,
-   {"block2","c3","changed","mask"}->0,
-   {"block2","c3","jacobian2","mask"}->0,
-   
-   {"block2","c4","passDirect","mask"}->0,
-   {"block2","c4","change","mask"}->0,
-   {"block2","c4","changed","mask"}->0,
-   {"block2","c4","jacobian2","mask"}->0,
-
-
-   {"c1","passDirect","mask"}->0,
-   {"c1","change","mask"}->0,
-   {"c1","changed","mask"}->0,
-   {"c1","jacobian2","mask"}->0,
-
-   {"c2","passDirect","mask"}->0,
-   {"c2","change","mask"}->0,
-   {"c2","changed","mask"}->0,
-   {"c2","jacobian2","mask"}->0
-
-
-
-},LossFunction->"Loss"
+train = NetTrain[ RealNVP, 
+   Association["Input"->#]&/@data1,
+   LearningRateMultipliers->RealNVPLRM,
+   LossFunction->"Loss"
 ];
 
 
