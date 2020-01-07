@@ -11,19 +11,8 @@ MaskLayer[ mask_ ] := NetGraph[{
    {NetPort["Input"],"mask"}->"thread"}]
 
 
-checkerboard1x8x8 = ConstantArray[0,{1,8,8}];
-checkerboard1x8x8[[1,1;;8;;2,1;;8;;2]] = 1;
-checkerboard1x8x8[[1,2;;8;;2,2;;8;;2]] = 1;
-
-
-checkerboard4x8x8 = ConstantArray[0,{4,8,8}];
-checkerboard4x8x8[[All,1;;8;;2,1;;8;;2]] = 1;
-checkerboard4x8x8[[All,2;;8;;2,2;;8;;2]] = 1;
-
-
-checkerboard1x16x16 = ConstantArray[0,{1,16,16}];
-checkerboard1x16x16[[1,1;;16;;2,1;;16;;2]] = 1;
-checkerboard1x16x16[[1,2;;16;;2,2;;16;;2]] = 1;
+CheckerboardMask[ {channels_, row_, col_ } ] :=
+   ReplacePart[ ConstantArray[ 0, {channels, row, col} ], {ch_, r_, c_}?(Function[v,If[OddQ[v[[2]]],OddQ[v[[3]]],EvenQ[v[[3]]]]])->1 ]
 
 
 StableScaleNet = NetGraph[{"nonlinearity"->Tanh,"c1"->ConstantArrayLayer[{1}],"c2"->ConstantArrayLayer[{1}],"times"->ThreadingLayer[Times],"plus"->ThreadingLayer[Plus]},{{"nonlinearity","c1"}->"times",{"times","c2"}->"plus"}];
@@ -55,24 +44,8 @@ CouplingLayer[ passThrough_ ] := NetGraph[{
 }]
 
 
-channelmask4x4x4 = ConstantArray[0,{4,4,4}];
-channelmask4x4x4[[1;;2,All,All]] = 1;
-
-
-channelmask16x4x4 = ConstantArray[0,{16,4,4}];
-channelmask16x4x4[[1;;8,All,All]] = 1;
-
-
-channelmask4x8x8 = ConstantArray[0,{4,8,8}];
-channelmask4x8x8[[1;;2,All,All]] = 1;
-
-
-channelmask64x1x1 = ConstantArray[0,{64,1,1}];
-channelmask64x1x1[[1;;32,1,1]] = 1;
-
-
-channelmask256x1x1 = ConstantArray[0,{256,1,1}];
-channelmask256x1x1[[1;;64,1,1]] = 1;
+ChannelMask[ { channels_, row_, col_ } ] :=
+   ReplacePart[ ConstantArray[ 0,{channels,row,col} ], {channel_/;channel<=channels/2,_,_}->1]
 
 
 SqueezeLayer2x2[ inChannels_ ] := NetGraph[{
@@ -90,29 +63,12 @@ SqueezeLayer2x2[ inChannels_ ] := NetGraph[{
 }];
 
 
-RealNVPBlock1 = NetGraph[{
-   "c1"->CouplingLayer[ checkerboard1x16x16 ],
-   "c2"->CouplingLayer[ 1 - checkerboard1x16x16 ],
-   "s1"->SqueezeLayer2x2[ 1 ],
-   "c3"->CouplingLayer[ channelmask4x8x8 ],
-   "c4"->CouplingLayer[ 1 - channelmask4x8x8 ],
-   "jacobian"->ThreadingLayer[Plus]},{
-   NetPort[{"c1","Transformed"}]->"c2",
-   NetPort[{"c2","Transformed"}]->"s1",
-   "s1"->"c3",
-   NetPort[{"c3","Transformed"}]->"c4",
-   NetPort[{"c4","Transformed"}]->NetPort["Transformed"],
-   {NetPort["c1","Jacobian"],NetPort["c2","Jacobian"],NetPort["c3","Jacobian"],NetPort["c4","Jacobian"]}->
-      "jacobian"->NetPort["Jacobian"]
-   }];
-
-
-RealNVPBlock2 = NetGraph[{
-   "c1"->CouplingLayer[ checkerboard4x8x8 ],
-   "c2"->CouplingLayer[ 1 - checkerboard4x8x8 ],
-   "s1"->SqueezeLayer2x2[ 4 ],
-   "c3"->CouplingLayer[ channelmask16x4x4 ],
-   "c4"->CouplingLayer[ 1 - channelmask16x4x4 ],
+RealNVPBlock[ checkerboard_, channelmask_, inSqueezeChannels_ ] := NetGraph[{
+   "c1"->CouplingLayer[ checkerboard ],
+   "c2"->CouplingLayer[ 1 - checkerboard ],
+   "s1"->SqueezeLayer2x2[ inSqueezeChannels ],
+   "c3"->CouplingLayer[ channelmask ],
+   "c4"->CouplingLayer[ 1 - channelmask ],
    "jacobian"->ThreadingLayer[Plus]},{
    NetPort[{"c1","Transformed"}]->"c2",
    NetPort[{"c2","Transformed"}]->"s1",
@@ -125,11 +81,11 @@ RealNVPBlock2 = NetGraph[{
 
 
 RealNVP = NetGraph[{
-   "block1"->RealNVPBlock1,
-   "block2"->RealNVPBlock2,
+   "block1"->RealNVPBlock[ CheckerboardMask[{1,16,16}], ChannelMask[{4,8,8}], 1],
+   "block2"->RealNVPBlock[ CheckerboardMask[{4,8,8}], ChannelMask[{16,4,4}], 4],
    "reshape"->ReshapeLayer[{256,1,1}],
-   "c1"->CouplingLayer[ channelmask256x1x1 ],
-   "c2"->CouplingLayer[ 1 - channelmask256x1x1 ],
+   "c1"->CouplingLayer[ ChannelMask[{256,1,1}] ],
+   "c2"->CouplingLayer[ 1 - ChannelMask[{256,1,1}] ],
    "g"->gauss,
    "th"->ThreadingLayer[Plus],
    "loss"->ElementwiseLayer[ -#& ]
@@ -232,49 +188,33 @@ ReverseCouplingLayer[net_,z_,mask_]:=(
 
 
 ReverseRealNVP[ z_ ] := (
-   oc2i = ReverseCouplingLayer[ NetExtract[ train, {"c2"} ], z, 1-channelmask256x1x1 ];
-   oc1i = ReverseCouplingLayer[ NetExtract[ train, {"c1"} ], oc2i, channelmask256x1x1 ];
+   oc2i = ReverseCouplingLayer[ NetExtract[ train, {"c2"} ], z, 1-ChannelMask[{256,1,1}] ];
+   oc1i = ReverseCouplingLayer[ NetExtract[ train, {"c1"} ], oc2i, ChannelMask[{256,1,1}] ];
    reshape = ReshapeLayer[{16,4,4}][oc1i];
-   revblock2 = ReverseRealNVPBlock2[ reshape ];
-   revblock1 = ReverseRealNVPBlock1[ revblock2 ]
+   revblock2 = ReverseRealNVPBlock[ "block2", { 4, 8, 8 }, reshape ];
+   revblock1 = ReverseRealNVPBlock[ "block1", { 1, 16, 16 }, revblock2 ]
 )
 
 
-ReverseSqueezeLayer1[ inp_ ] := (ky=inp;
-   tmp = ConstantArray[0,{1,16,16}];
-   tmp[[1,1;;16;;2,1;;16;;2]] = inp[[1]];
-   tmp[[1,1;;16;;2,2;;16;;2]] = inp[[2]];
-   tmp[[1,2;;16;;2,1;;16;;2]] = inp[[3]];
-   tmp[[1,2;;16;;2,2;;16;;2]] = inp[[4]];
+(* Note dims is dims of the input to the squeeze operation *)
+ReverseSqueezeLayer[ inp_, dims_ ] := Module[{tmp = ConstantArray[0,dims]},
+   tmp[[All,1;;dims[[2]];;2,1;;dims[[3]];;2]] = inp[[;;dims[[1]]]];
+   tmp[[All,1;;dims[[2]];;2,2;;dims[[3]];;2]] = inp[[dims[[1]]+1;;dims[[1]]*2]];
+   tmp[[All,2;;dims[[2]];;2,1;;dims[[3]];;2]] = inp[[dims[[1]]*2+1;;dims[[1]]*3]];
+   tmp[[All,2;;dims[[2]];;2,2;;dims[[3]];;2]] = inp[[dims[[1]]*3+1;;]];
    tmp
-);
+];
 
 
-ReverseSqueezeLayer2[ inp_ ] := (
-   tmp = ConstantArray[0,{4,8,8}];
-   tmp[[All,1;;8;;2,1;;8;;2]] = inp[[1;;4]];
-   tmp[[All,1;;8;;2,2;;8;;2]] = inp[[5;;8]];
-   tmp[[All,2;;8;;2,1;;8;;2]] = inp[[9;;12]];
-   tmp[[All,2;;8;;2,2;;8;;2]] = inp[[13;;16]];
-   tmp
-);
-
-
-ReverseRealNVPBlock1[ z_ ] := (
-   c4i = ReverseCouplingLayer[ NetExtract[ train, {"block1","c4"} ], z, 1 - channelmask4x8x8 ];
-   c3i = ReverseCouplingLayer[ NetExtract[ train, {"block1","c3"} ], c4i, channelmask4x8x8 ];tp6=c3i;
-   desq1 = ReverseSqueezeLayer1[ c3i ];
-   c2i1 = ReverseCouplingLayer[ NetExtract[ train, {"block1","c2"} ], desq1, 1 - checkerboard1x16x16 ];
-   c1i2 = ReverseCouplingLayer[ NetExtract[ train, {"block1","c1"} ], c2i1, checkerboard1x16x16 ]
-)
-
-
-ReverseRealNVPBlock2[ z_ ] := (
-   c4i = ReverseCouplingLayer[ NetExtract[ train, {"block2","c4"} ], z, 1 - channelmask16x4x4 ];
-   c3i = ReverseCouplingLayer[ NetExtract[ train, {"block2","c3"} ], c4i, channelmask16x4x4 ];
-   desq = ReverseSqueezeLayer2[ c3i ];
-   c2i = ReverseCouplingLayer[ NetExtract[ train, {"block2","c2"} ], desq, 1 - checkerboard4x8x8 ];mytmp1=c2i;
-   c1i = ReverseCouplingLayer[ NetExtract[ train, {"block2","c1"} ], c2i, checkerboard4x8x8 ]
+(*
+   Note dims is the dimensions of the input to the block
+*)
+ReverseRealNVPBlock[ blockName_, dims_, z_ ] := (
+   c4i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c4"} ], z, 1 - ChannelMask[{dims[[1]]*4,dims[[2]]/2,dims[[3]]/2}] ];
+   c3i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c3"} ], c4i, ChannelMask[{dims[[1]]*4,dims[[2]]/2,dims[[3]]/2}] ];
+   desq = ReverseSqueezeLayer[ c3i, dims ];
+   c2i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c2"} ], desq, 1 - CheckerboardMask[dims] ];
+   c1i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c1"} ], c2i, CheckerboardMask[dims] ]
 )
 
 
