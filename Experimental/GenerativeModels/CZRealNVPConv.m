@@ -108,26 +108,29 @@ RealNVPBlockLRM = Join[
 
 
 RealNVP = NetGraph[{
-   "block1"->RealNVPBlock[ CheckerboardMask[{1,16,16}], ChannelMask[{4,8,8}], 1],
-   "block2"->RealNVPBlock[ CheckerboardMask[{4,8,8}], ChannelMask[{16,4,4}], 4],
-   "reshape"->ReshapeLayer[{256,1,1}],
-   "c1"->CouplingLayer[ ChannelMask[{256,1,1}] ],
-   "c2"->CouplingLayer[ 1 - ChannelMask[{256,1,1}] ],
+   "block1"->RealNVPBlock[ CheckerboardMask[{1,32,32}], ChannelMask[{4,16,16}], 1],
+   "block2"->RealNVPBlock[ CheckerboardMask[{4,16,16}], ChannelMask[{16,8,8}], 4],
+   "block3"->RealNVPBlock[ CheckerboardMask[{16,8,8}], ChannelMask[{64,4,4}], 16],
+   "reshape"->ReshapeLayer[{1024,1,1}],
+   "c1"->CouplingLayer[ ChannelMask[{1024,1,1}] ],
+   "c2"->CouplingLayer[ 1 - ChannelMask[{1024,1,1}] ],
    "g"->gauss,
    "th"->ThreadingLayer[Plus],
    "loss"->ElementwiseLayer[ -#& ]
 },{
    NetPort[{"block1","Transformed"}]->"block2",
-   NetPort[{"block2","Transformed"}]->"reshape"->"c1",
+   NetPort[{"block2","Transformed"}]->"block3",
+   NetPort[{"block3","Transformed"}]->"reshape"->"c1",
    NetPort[{"c1","Transformed"}]->"c2",
    NetPort[{"c2","Transformed"}]->"g",
-   {NetPort[{"block1","Jacobian"}],NetPort[{"block2","Jacobian"}],"g",NetPort[{"c1","Jacobian"}],NetPort[{"c2","Jacobian"}]}->"th"->"loss"->NetPort["Loss"]
-},"Input"->{1,16,16}];
+   {NetPort[{"block1","Jacobian"}],NetPort[{"block2","Jacobian"}],NetPort[{"block3","Jacobian"}],"g",NetPort[{"c1","Jacobian"}],NetPort[{"c2","Jacobian"}]}->"th"->"loss"->NetPort["Loss"]
+},"Input"->{1,32,32}];
 
 
 RealNVPLRM = Join[
    PrependLRM[ RealNVPBlockLRM, "block1" ],
    PrependLRM[ RealNVPBlockLRM, "block2" ],
+   PrependLRM[ RealNVPBlockLRM, "block3" ],
    PrependLRM[ CouplingLayerLRM, "c1" ],
    PrependLRM[ CouplingLayerLRM, "c2" ]
 ];
@@ -136,13 +139,13 @@ RealNVPLRM = Join[
 images = ResourceData["MNIST","TrainingData"][[5924;;12665,1]];
 
 
-resize = ImageResize[#,{16,16}]&/@images;
+resize = ImageResize[#,{32,32}]&/@images;
 
 
 data = {ImageData[#]}&/@resize;data//Dimensions;
 
 
-data1 = data+Table[RandomReal[]/10,{6742},{1},{16},{16}];
+data1 = data+Table[RandomReal[]/10,{6742},{1},{32},{32}];
 
 
 train = NetTrain[ RealNVP, 
@@ -160,11 +163,12 @@ ReverseCouplingLayer[net_,z_,mask_]:=(
 
 
 ReverseRealNVP[ z_ ] := (
-   oc2i = ReverseCouplingLayer[ NetExtract[ train, {"c2"} ], z, 1-ChannelMask[{256,1,1}] ];
-   oc1i = ReverseCouplingLayer[ NetExtract[ train, {"c1"} ], oc2i, ChannelMask[{256,1,1}] ];
-   reshape = ReshapeLayer[{16,4,4}][oc1i];
-   revblock2 = ReverseRealNVPBlock[ "block2", { 4, 8, 8 }, reshape ];
-   revblock1 = ReverseRealNVPBlock[ "block1", { 1, 16, 16 }, revblock2 ]
+   oc2i = ReverseCouplingLayer[ NetExtract[ train, {"c2"} ], z, 1-ChannelMask[{1024,1,1}] ];
+   oc1i = ReverseCouplingLayer[ NetExtract[ train, {"c1"} ], oc2i, ChannelMask[{1024,1,1}] ];
+   reshape = ReshapeLayer[{64,4,4}][oc1i];
+   revblock3 = ReverseRealNVPBlock[ "block3", { 16, 8, 8 }, reshape ];
+   revblock2 = ReverseRealNVPBlock[ "block2", { 4, 16, 16 }, revblock3 ];
+   revblock1 = ReverseRealNVPBlock[ "block1", { 1, 32, 32 }, revblock2 ]
 )
 
 
@@ -190,7 +194,7 @@ ReverseRealNVPBlock[ blockName_, dims_, z_ ] := (
 )
 
 
-gaussiansample[] := Table[RandomVariate@NormalDistribution[0,1],{256},{1},{1}]
+gaussiansample[] := Table[RandomVariate@NormalDistribution[0,1],{1024},{1},{1}]
 
 
 sample[] := ReverseRealNVP[ gaussiansample[] ];
