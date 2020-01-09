@@ -136,7 +136,7 @@ RealNVPLRM = Join[
 ];
 
 
-images = ResourceData["MNIST","TrainingData"][[5924;;12665,1]];
+images = ResourceData["MNIST","TrainingData"];
 
 
 resize = ImageResize[#,{32,32}]&/@images;
@@ -145,7 +145,7 @@ resize = ImageResize[#,{32,32}]&/@images;
 data = {ImageData[#]}&/@resize;data//Dimensions;
 
 
-data1 = data+Table[RandomReal[]/10,{6742},{1},{32},{32}];
+data1 = data+Table[RandomReal[]/10,{60000},{1},{32},{32}];
 
 
 train = NetTrain[ RealNVP, 
