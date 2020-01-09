@@ -136,7 +136,7 @@ RealNVPLRM = Join[
 ];
 
 
-images = ResourceData["MNIST","TrainingData"];
+images = ResourceData["MNIST","TrainingData"][[All,1]];
 
 
 resize = ImageResize[#,{32,32}]&/@images;
