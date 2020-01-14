@@ -6,82 +6,79 @@
 mnist=ResourceData["MNIST","TrainingData"][[;;500,1]];
 
 
-binVectors = Flatten/@ImageData/@Binarize/@mnist;
-
-
 binImages = ImageData/@Binarize/@mnist;
 
 
 images = CZDiscretize/@mnist;
 
 
-nbmodel1 = CZCreateNBModelBinaryVector[];
+nbmodel1 = CZCreateNBModelBinary[];
 
 
-nbtrain1 = CZTrain[ nbmodel1, binVectors ];
+nbtrain1 = CZTrain[ nbmodel1, binImages ];
 
 
-Image@Partition[ CZSample[ nbtrain1 ], 28 ]
+CZLogDensity[ nbtrain1, binImages[[1]] ]
 
 
-CZLogDensity[ nbtrain1, binVectors[[1]] ]
+Image@CZSample[ nbtrain1 ]
 
 
-nbmodel2 = CZCreateNBModelBinaryImage[];
+nbmodel2 = CZCreateNBModelDiscrete[];
 
 
-nbtrain2 = CZTrain[ nbmodel2, binImages ];
+nbtrain2 = CZTrain[ nbmodel2, images ];
+
+
+CZLogDensity[ nbtrain2, images[[1]] ]
 
 
 Image@CZSample[ nbtrain2 ]
 
 
-CZLogDensity[ nbtrain2, binImages[[1]] ]
+nbmodel3 = CZCreateNBModelRealGauss[];
 
 
-nbmodel3 = CZCreateNBModelDiscreteImage[];
+nbtrain3 = CZTrain[ nbmodel3, ImageData/@mnist ];
 
 
-nbtrain3 = CZTrain[ nbmodel3, images ];
+CZLogDensity[ nbtrain3, ImageData@mnist[[1]] ]
 
 
 Image@CZSample[ nbtrain3 ]
 
 
-CZLogDensity[ nbtrain3, images[[1]] ]
-
-
 <<"Experimental/GenerativeModels/CZVariationalAutoencoders.m"
 
 
-vaemodel1 = CZCreateVaEBinaryVector[];
+vaemodel1 = CZCreateVaEBinary[];
 
 
-vaetrain1 = CZTrain[ vaemodel1, binVectors ];
+vaetrain1 = CZTrain[ vaemodel1, binImages ];
 
 
-Image@Partition[ CZSample[ vaetrain1 ], 28 ]
+CZLogDensity[ vaetrain1, binImages[[1]] ]
 
 
-CZLogDensity[ vaetrain1, binVectors[[1]] ]
+Image@CZSample[ vaetrain1 ]
 
 
-vaemodel2 = CZCreateVaEBinaryImage[];
+vaemodel2 = CZCreateVaEDiscrete[];
 
 
-vaetrain2 = CZTrain[ vaemodel2, binImages ];
+vaetrain2 = CZTrain[ vaemodel2, images ];
+
+
+CZLogDensity[ vaetrain2, images[[1]] ]
 
 
 Image@CZSample[ vaetrain2 ]
 
 
-CZLogDensity[ vaetrain2, binImages[[1]] ]
+vaemodel3 = CZCreateVaERealGauss[];
 
 
-vaemodel3 = CZCreateVaEDiscreteImage[];
-
-
-vaetrain3 = CZTrain[ vaemodel3, images ];
+vaetrain3 = CZTrain[ vaemodel3, ImageData/@mnist ];
 
 
 Image@CZSample[ vaetrain3 ]

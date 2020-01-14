@@ -13,42 +13,52 @@
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
-(*
-   Note CrossEntropyLossLayer computes everything in nats
-*)
-CZGenerativeOutputLayer[ outputLayerType_, lossType_, dims_ ] := NetGraph[{
-   "out"->outputLayerType,
-   "crossentropy"->{lossType,ElementwiseLayer[#*Apply[Times,dims]&]}},{
-   NetPort["Conditional"]->"out"->"crossentropy"->NetPort["Loss"],
-   "out"->NetPort["Output"],
-   NetPort["Input"]->NetPort[{"crossentropy","Target"}]
-}];
-
-
-CZCreateNBModel[ conditionalDims_, outputLayerType_, lossType_ ] := NetGraph[{
-   "array"->ConstantArrayLayer[conditionalDims],
-   "decoder"->CZGenerativeOutputLayer[ outputLayerType, lossType, conditionalDims ]},{
-   "array"->NetPort[{"decoder","Conditional"}],
-   NetPort["Input"]->NetPort[{"decoder","Input"}]
-}];
+CZCreateNBModel[ dims_, outputType_ ] := Module[{probabilityParameters},
+   probabilityParameters = Switch[
+      Head[outputType],
+      CZBinary,1,
+      CZRealGauss,2,
+      CZDiscrete,10,
+      _,$Failed];
+   NetGraph[{
+      "array"->ConstantArrayLayer[Prepend[ dims, probabilityParameters ]],
+      "loss"->CZLossLayerWithTransfer[ outputType ]},{
+      "array"->NetPort[{"loss","Input"}],
+      NetPort["Input"]->NetPort[{"loss","Target"}]
+}]];
 
 
 SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{}};
 
 
-CZCreateNBModelBinaryVector[ inputUnits_:784 ] := CZGenerativeModel[ CZNBModel, CZBinaryVector[ inputUnits ], Identity, CZCreateNBModel[ {inputUnits}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
+CZCreateNBModelBinary[ dims_:{28,28} ] := CZGenerativeModel[ 
+   CZNBModel,
+   CZBinary[ dims ], Identity,
+   CZCreateNBModel[ dims, CZBinary[ dims ] ]
+];
 
 
-CZSample[ CZGenerativeModel[ CZNBModel, CZBinaryVector[ inputUnits_ ], _, net_ ] ] := CZSampleBinaryVector@net[ConstantArray[0,{inputUnits}]]["Output"];
+CZSample[ CZGenerativeModel[ CZNBModel, CZBinary[ dims_ ], _, net_ ] ] := CZSampleBinary@NetTake[NetFlatten[net],{"array","loss/out/2"}][];
 
 
-CZCreateNBModelBinaryImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBModel, CZBinaryImage[ imageDims ], Identity, CZCreateNBModel[ imageDims, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
+CZCreateNBModelDiscrete[ dims_:{28,28} ] := CZGenerativeModel[
+   CZNBModel, CZDiscrete[ imageDims ], CZOneHot,
+   CZCreateNBModel[ dims, CZDiscrete[ dims ] ]
+];
 
 
-CZSample[ CZGenerativeModel[ CZNBModel, CZBinaryImage[ imageDims_ ], _, net_ ] ] := CZSampleBinaryImage@net[ ConstantArray[0,imageDims]]["Output"];
+CZCreateNBModelRealGauss[ dims_:{28,28} ] := CZGenerativeModel[
+   CZNBModel, CZRealGauss[ dims ], Identity,
+   CZCreateNBModel[ dims, CZRealGauss[ dims ] ]
+];
 
 
-CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims ], Identity, CZCreateNBModel[ Prepend[imageDims, 10], {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
+CZSample[ CZGenerativeModel[ CZNBModel, CZDiscrete[ imageDims_ ], _, net_ ] ] :=
+   CZSampleDiscrete@NetTake[NetFlatten[net],{"array","loss/out"}][]/10;
 
 
-CZSample[ CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims_ ], _, net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
+CZSample[ CZGenerativeModel[ CZNBModel, CZRealGauss[ imageDims_ ], _, net_ ] ] := (
+   mean=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/mean"}][];
+   logdev=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/logdev"}][];
+   mean+Sqrt[Exp[logdev]]*Table[RandomVariate[NormalDistribution[0,1]],{imageDims[[1]]},{imageDims[[2]]}]
+)
