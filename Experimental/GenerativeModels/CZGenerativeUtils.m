@@ -72,6 +72,9 @@ CZGenerativeOutputLayer[ outputLayerType_, lossType_, dims_ ] := NetGraph[{
 }];
 
 
+(*
+   Exactly like CrossEntropyLossLayer["Probabilities"] but calculated using first dimension
+*)
 CZCrossEntropyLossLayer = NetGraph[{
    "cross"->CrossEntropyLossLayer["Probabilities"],
    "t1"->TransposeLayer[{3<->1,1<->2}],

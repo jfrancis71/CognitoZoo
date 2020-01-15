@@ -21,14 +21,23 @@ CZPixelVaEDecoder[ crossEntropyType_, imageDims_ ] := NetGraph[{
    ReshapeLayer[imageDims],
    CZCreatePixelCNNConditionalNet[ crossEntropyType, PixelCNNOrdering[ imageDims ] ]},{
    NetPort["Conditional"]->1->2->3->4->NetPort[{5,"Conditional"}],
-   NetPort["Input"]->NetPort[{5,"Image"}]}];
+   NetPort["Target"]->NetPort[{5,"Image"}]}];
 
 
-CZCreatePixelVaEBinaryImage[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[
+CZCreatePixelVaEBinary[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[
    CZPixelVaE[ latentUnits ], 
-   CZBinaryImage[imageDims],
+   CZBinary[imageDims],
    Identity,
    CZCreateVaENet[ PixelVaEEncoderBinaryImage[ imageDims, latentUnits ], CZPixelVaEDecoder[ "Binary", imageDims ] ]];
+
+
+e1 = PixelVaEEncoderBinaryImage[ {28,28}, 8 ]
+
+
+e2 = CZPixelVaEDecoder[ "Binary", {28,28} ]
+
+
+CZCreateVaENet[ e1, e2 ]
 
 
 CZCreatePixelVaEDiscreteImage[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[

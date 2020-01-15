@@ -90,52 +90,52 @@ CZLogDensity[ vaetrain3, images[[1]] ]
 <<"Experimental/GenerativeModels/CZPixelCNN.m"
 
 
-cnnmodel2 = CZCreatePixelCNNBinaryImage[];
+cnnmodel1 = CZCreatePixelCNNBinary[];
 
 
-cnntrain2 = CZTrain[ cnnmodel2, binImages ];
+cnntrain1 = CZTrain[ cnnmodel1, binImages ];
+
+
+CZLogDensity[ cnntrain1, binImages[[1]] ]
+
+
+Image@CZSample[ cnntrain1 ]
+
+
+cnnmodel2 = CZCreatePixelCNNDiscrete[];
+
+
+cnntrain2 = CZTrain[ cnnmodel2, images ];
+
+
+CZLogDensity[ cnntrain2, images[[1]] ]
 
 
 Image@CZSample[ cnntrain2 ]
 
 
-CZLogDensity[ cnntrain2, binImages[[1]] ]
-
-
-cnnmodel3 = CZCreatePixelCNNDiscreteImage[];
-
-
-cnntrain3 = CZTrain[ cnnmodel3, images ];
-
-
-Image@CZSample[ cnntrain3 ]
-
-
-CZLogDensity[ cnntrain3, images[[1]] ]
-
-
 <<"Experimental/GenerativeModels/CZPixelVaE.m"
 
 
-cnnmodel2 = CZCreatePixelVaEBinaryImage[];
+cnnvaemodel1 = CZCreatePixelVaEBinary[];
 
 
-cnnvaetrain2 = CZTrain[ cnnmodel2, binImages ];
+cnnvaetrain1 = CZTrain[ cnnvaemodel1, binImages ];
+
+
+CZLogDensity[ cnnvaetrain1, binImages[[1]] ]
+
+
+Image@CZSample[ cnnvaetrain1 ]
+
+
+cnnvaemodel2 = CZCreatePixelVaEDiscreteImage[];
+
+
+cnnvaetrain2 = CZTrain[ cnnvaemodel2, images ];
+
+
+CZLogDensity[ cnnvaetrain2, images[[1]] ]
 
 
 Image@CZSample[ cnnvaetrain2 ]
-
-
-CZLogDensity[ cnnvaetrain2, binImages[[1]] ]
-
-
-cnnvaemodel3 = CZCreatePixelVaEDiscreteImage[];
-
-
-cnnvaetrain3 = CZTrain[ cnnvaemodel3, images ];
-
-
-Image@CZSample[ cnnvaetrain3 ]
-
-
-CZLogDensity[ cnnvaetrain3, images[[1]] ]
