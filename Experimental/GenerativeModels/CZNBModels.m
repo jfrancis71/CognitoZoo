@@ -22,7 +22,7 @@ CZCreateNBModel[ dims_, outputType_ ] := Module[{probabilityParameters},
       _,$Failed];
    NetGraph[{
       "array"->ConstantArrayLayer[Prepend[ dims, probabilityParameters ]],
-      "loss"->CZLossLayerWithTransfer[ outputType ]},{
+      "loss"->CZLossLogits[ outputType ]},{
       "array"->NetPort[{"loss","Input"}],
       NetPort["Input"]->NetPort[{"loss","Target"}]
 }]];
@@ -38,7 +38,7 @@ CZCreateNBModelBinary[ dims_:{28,28} ] := CZGenerativeModel[
 ];
 
 
-CZSample[ CZGenerativeModel[ CZNBModel, CZBinary[ dims_ ], _, net_ ] ] := CZSampleBinary@NetTake[NetFlatten[net],{"array","loss/out/2"}][];
+CZSample[ CZGenerativeModel[ CZNBModel, CZBinary[ dims_ ], _, net_ ] ] := CZSampleBinary@NetExtract[net, "array"][];
 
 
 CZCreateNBModelDiscrete[ dims_:{28,28} ] := CZGenerativeModel[
@@ -54,11 +54,11 @@ CZCreateNBModelRealGauss[ dims_:{28,28} ] := CZGenerativeModel[
 
 
 CZSample[ CZGenerativeModel[ CZNBModel, CZDiscrete[ imageDims_ ], _, net_ ] ] :=
-   CZSampleDiscrete@NetTake[NetFlatten[net],{"array","loss/out"}][]/10;
+   CZSampleDiscrete@NetExtract[net,"array"][]/10;
 
 
 CZSample[ CZGenerativeModel[ CZNBModel, CZRealGauss[ imageDims_ ], _, net_ ] ] := (
-   mean=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/mean"}][];
-   logdev=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/logdev"}][];
+   mean=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/loss/mean"}][];
+   logdev=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/loss/logdev"}][];
    mean+Sqrt[Exp[logdev]]*Table[RandomVariate[NormalDistribution[0,1]],{imageDims[[1]]},{imageDims[[2]]}]
 )
