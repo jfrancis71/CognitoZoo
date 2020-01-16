@@ -49,9 +49,9 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_, opts
       LearningRateMultipliers->Switch[
          model,
          CZPixelVaE[_], Flatten[Table[
-            {{"decoder",5,"predict"<>ToString[k],"masked_input"}->0,{"decoder",5,"loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask1"]}->0,{"decoder",5,"loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask2"]}->0},{k,4}],1],
+            {{"decoder",5,"predict"<>ToString[k],"masked_input"}->0,{"decoder",5,"loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0,{"decoder",5,"loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0},{k,4}],1],
          CZPixelCNN, Flatten[Table[
-         {{"condpixelcnn","predict"<>ToString[k],"masked_input"}->0,{"condpixelcnn","loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask1"]}->0,{"condpixelcnn","loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask2"]}->0},{k,4}],1],
+         {{"condpixelcnn","predict"<>ToString[k],"masked_input"}->0,{"condpixelcnn","loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0,{"condpixelcnn","loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0},{k,4}],1],
          CZNBModel,{},
          CZVaE[_],{},
          CZNade[], {},
