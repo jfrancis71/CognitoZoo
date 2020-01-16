@@ -20,23 +20,17 @@ CZCreateEncoder[ dims_, latentUnits_, h1_:500, h2_: 500 ] :=
       "h1"->"h2"->{"mu","logvar"},"mu"->NetPort["Mean"],"logvar"->NetPort["LogVar"]}];
 
 
-CZCreateDecoder[ dims_, outputType_, h1_:500, h2_:500 ] := Module[{probabilityParameters},
-   probabilityParameters = Switch[
-      Head[outputType],
-      CZBinary,1,
-      CZRealGauss,2,
-      CZDiscrete,10,
-      _,$Failed];
+CZCreateDecoder[ dims_, outputType_, h1_:500, h2_:500 ] :=
    NetGraph[{
       "h1"->{h1,Ramp},
       "h2"->{h2,Ramp},
-      "o"->dims[[1]]*dims[[2]]*probabilityParameters,
-      "r"->ReshapeLayer[{probabilityParameters,dims[[1]],dims[[2]]}],
+      "o"->dims[[1]]*dims[[2]]*CZDistributionParameters[ outputType ],
+      "r"->ReshapeLayer[{CZDistributionParameters[ outputType ],dims[[1]],dims[[2]]}],
       "cond"->CZLossLogits[ outputType ]},{
       NetPort["Conditional"]->"h1",
       "h1"->"h2"->"o"->"r"->NetPort[{"cond","Input"}],
       NetPort[{"cond","Loss"}]->NetPort["Loss"]
-}]];
+}];
 
 
 CZVaESamplerNet = NetGraph[{

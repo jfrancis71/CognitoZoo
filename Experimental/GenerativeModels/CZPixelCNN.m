@@ -59,21 +59,14 @@ CZMaskLossLayer[ mask_, CZRealGauss[ dims_ ] ] := NetGraph[{
 }];
 
 
-PredictLayer[ hideMask_, type_ ] := Module[{probabilityParameters},
-   probabilityParameters = Switch[
-      Head[type],
-      CZBinary,1,
-      CZRealGauss,2,
-      CZDiscrete,10,
-      _,$Failed];
-   inputDepth = If[Head[type]===CZDiscrete,10,1];
+PredictLayer[ hideMask_, type_ ] := Module[{ inputDepth = If[Head[type]===CZDiscrete,10,1] },
    NetGraph[{
    "reshapeConditional"->ReshapeLayer[Prepend[hideMask//Dimensions,1]],
    "masked_input"->{ReshapeLayer[{inputDepth,type[[1,1]],type[[1,2]]}],
       MaskLayer[ConstantArray[hideMask,{inputDepth}]]},
    "cat"->CatenateLayer[],
    "conv"->{ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[16,{1,1},"PaddingSize"->0],Tanh,ConvolutionLayer[
-         probabilityParameters,{1,1}]}
+         CZDistributionParameters[ type ],{1,1}]}
          },{
    NetPort["Input"]->"masked_input",
    {"masked_input","reshapeConditional"}->"cat"->"conv",

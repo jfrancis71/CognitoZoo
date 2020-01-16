@@ -15,6 +15,11 @@ CZSampleDistribution[ CZDiscrete[ dims_ ], probs_ ] := Map[ RandomChoice[#->Rang
 CZSampleDistribution[ CZRealGauss[ dims_ ], params_ ] := params[[1]]+Sqrt[Exp[params[[2]]]]*Table[RandomVariate[NormalDistribution[0,1]],{Length[params[[1,1]]]},{Length[params[[1,2]]]}]
 
 
+CZDistributionParameters[ CZBinary[ _ ] ] := 1;
+CZDistributionParameters[ CZDiscrete[ _ ] ] := 10;
+CZDistributionParameters[ CZRealGauss[ _ ] ] := 2;
+
+
 SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_,_}};
 
 

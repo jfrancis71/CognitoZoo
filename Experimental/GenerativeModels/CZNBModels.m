@@ -13,19 +13,12 @@
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
-CZCreateNBModel[ dims_, outputType_ ] := Module[{probabilityParameters},
-   probabilityParameters = Switch[
-      Head[outputType],
-      CZBinary,1,
-      CZRealGauss,2,
-      CZDiscrete,10,
-      _,$Failed];
-   NetGraph[{
-      "array"->ConstantArrayLayer[Prepend[ dims, probabilityParameters ]],
-      "loss"->CZLossLogits[ outputType ]},{
-      "array"->NetPort[{"loss","Input"}],
-      NetPort["Input"]->NetPort[{"loss","Target"}]
-}]];
+CZCreateNBModel[ dims_, outputType_ ] := NetGraph[{
+   "array"->ConstantArrayLayer[Prepend[ dims, CZDistributionParameters[ outputType ] ]],
+   "loss"->CZLossLogits[ outputType ]},{
+   "array"->NetPort[{"loss","Input"}],
+   NetPort["Input"]->NetPort[{"loss","Target"}]
+}];
 
 
 SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{}};
