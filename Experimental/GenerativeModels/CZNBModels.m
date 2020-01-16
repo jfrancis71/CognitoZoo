@@ -38,7 +38,8 @@ CZCreateNBModelBinary[ dims_:{28,28} ] := CZGenerativeModel[
 ];
 
 
-CZSample[ CZGenerativeModel[ CZNBModel, CZBinary[ dims_ ], _, net_ ] ] := CZSampleBinary@NetExtract[net, "array"][];
+CZSample[ CZGenerativeModel[ CZNBModel, outputType_, _, net_ ] ] :=
+   CZSampleDistribution[ outputType, NetExtract[net, "array"][] ]/If[Head[outputType]===CZDiscrete,10,1];
 
 
 CZCreateNBModelDiscrete[ dims_:{28,28} ] := CZGenerativeModel[
@@ -51,11 +52,3 @@ CZCreateNBModelRealGauss[ dims_:{28,28} ] := CZGenerativeModel[
    CZNBModel, CZRealGauss[ dims ], Identity,
    CZCreateNBModel[ dims, CZRealGauss[ dims ] ]
 ];
-
-
-CZSample[ CZGenerativeModel[ CZNBModel, CZDiscrete[ imageDims_ ], _, net_ ] ] :=
-   CZSampleDiscrete@NetExtract[net,"array"][]/10;
-
-
-CZSample[ CZGenerativeModel[ CZNBModel, CZRealGauss[ imageDims_ ], _, net_ ] ] :=
-   CZSampleRealGauss@Normal@NetExtract[ net, {"array","Array"} ]

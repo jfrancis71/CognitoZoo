@@ -82,23 +82,15 @@ CZSampleVaELatent[ latentUnits_ ] := RandomVariate@MultinormalDistribution[ Cons
 SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
 
 
-CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealVector[ inputUnits_ ], encoder_, vaeNet_ ] ] :=
-   Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },tmp=decoder;
-   probMap = decoder[Association["Conditional"->CZSampleVaELatent[ latentUnits ],
-      "Input"->ConstantArray[0,{inputUnits}] ] ]["Output"];
-   CZSampleRealVector@probMap
-];
-
-
 CZCreateVaEBinary[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
    CZGenerativeModel[ CZVaE[ latentUnits ] , CZBinary[ imageDims ], Identity,
       CZCreateVaENet[ CZCreateEncoder[ imageDims, latentUnits ], CZCreateDecoder[ imageDims, CZBinary[ imageDims ] ] ] ];
 
 
-CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZBinary[ dims_ ], encoder_, vaeNet_ ] ] :=
+CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], outputType_, encoder_, vaeNet_ ] ] :=
    Module[{decoder=NetTake[NetExtract[ vaeNet, "decoder" ],{NetPort["Conditional"],"r"}], probMap },tmp=decoder;
    probMap = decoder[Association["Conditional"->CZSampleVaELatent[ latentUnits ] ] ];
-   CZSampleBinary@probMap
+   CZSampleDistribution[ outputType, probMap ]/If[outputType===CZDiscrete,10,1]
 ];
 
 
@@ -107,19 +99,9 @@ CZCreateVaEDiscrete[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
       CZCreateVaENet[ CZCreateEncoder[ imageDims, latentUnits ], CZCreateDecoder[ imageDims, CZDiscrete[ imageDims ] ] ] ];
 
 
-CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZDiscrete[ imageDims_ ], encoder_, vaeNet_ ] ] :=
-   CZSampleDiscrete@NetTake[NetExtract[vaeNet,"decoder"],"r"][
-      Association[ "Conditional"->CZSampleVaELatent[ latentUnits ]]]/10;
-
-
 CZCreateVaERealGauss[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
    CZGenerativeModel[ CZVaE[ latentUnits ],  CZRealGauss[ imageDims ], Identity,
       CZCreateVaENet[ CZCreateEncoder[ imageDims, latentUnits ], CZCreateDecoder[ imageDims, CZRealGauss[ imageDims ] ] ] ];
-
-
-CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealGauss[ imageDims_ ], encoder_, vaeNet_ ] ] :=
-   (CZSampleRealGauss@NetTake[ NetExtract[ vaeNet,"decoder" ],"r"]
-      [ Association["Conditional"->CZSampleVaELatent[ latentUnits ] ] ])
 
 
 CZGetLatent[ CZGenerativeModel[ CZVaE[ _ ], _, encoder_, vaeNet_ ], sample_ ] :=

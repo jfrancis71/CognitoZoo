@@ -6,18 +6,13 @@ CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
 CZOneHot[ image_ ] := Transpose[ Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {2} ], {2,3,1}];
 
 
-(* Note we've fixed variance here, may be more sophisticated choice
-*)
-(*CZSampleRealVector[ betas_ ] := Map[ RandomVariate[NormalDistribution[#,1]]&, betas, {2}];*)
+CZSampleDistribution[ CZBinary[ dims_ ], betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, LogisticSigmoid@betas[[1]], {2}];
 
 
-CZSampleBinary[ betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, LogisticSigmoid@betas[[1]], {2}];
+CZSampleDistribution[ CZDiscrete[ dims_ ], probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, SoftmaxLayer[][Transpose[probs,{3,1,2}]], {2} ];
 
 
-CZSampleDiscrete[ probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, SoftmaxLayer[][Transpose[probs,{3,1,2}]], {2} ];
-
-
-CZSampleRealGauss[ params_ ] := params[[1]]+Sqrt[Exp[params[[2]]]]*Table[RandomVariate[NormalDistribution[0,1]],{Length[params[[1,1]]]},{Length[params[[1,2]]]}]
+CZSampleDistribution[ CZRealGauss[ dims_ ], params_ ] := params[[1]]+Sqrt[Exp[params[[2]]]]*Table[RandomVariate[NormalDistribution[0,1]],{Length[params[[1,1]]]},{Length[params[[1,2]]]}]
 
 
 SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_,_}};

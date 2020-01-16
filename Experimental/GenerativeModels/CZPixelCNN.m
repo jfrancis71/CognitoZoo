@@ -119,7 +119,7 @@ CZCreatePixelCNNDiscrete[ imageDims_:{28,28} ] :=
 CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], encoder_, conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
    For[k=1,k<=Length[pixels],k++,
       l = NetTake[conditionalPixelCNNNet,"predict"<>ToString[k]][Association["Input"->encoder@s,"Conditional"->conditional]];
-      s = If[inputType===CZBinary,CZSampleBinary,If[inputType===CZRealGauss,CZSampleRealGauss,CZSampleDiscrete]][l]*pixels[[k]]+s*(1-pixels[[k]]);t=s;
+      s = CZSampleDistribution[ inputType[ imageDims ], l]*pixels[[k]]+s*(1-pixels[[k]]);t=s;
    ];
    s/If[inputType===CZDiscrete,10,1]]
 
