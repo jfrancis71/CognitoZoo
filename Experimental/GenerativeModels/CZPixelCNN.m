@@ -25,11 +25,10 @@ CZMaskLossLayer[mask_, type_ ] := If[Head[type]===CZDiscrete||Head[type]===CZBin
    "mask2"->ConstantArrayLayer["Array"->If[Head[type]===CZDiscrete,ConstantArray[mask,10],mask]],
    "th1"->ThreadingLayer[Times],
    "th2"->ThreadingLayer[Times],
-   "meancrossentropy"->CZLossLogits[ type ],
-   "totalcrossentropy"->ElementwiseLayer[#*Length[Flatten[mask]]&]},{
-   {NetPort["Input"],"mask1"}->"th1"->NetPort[{"meancrossentropy","Input"}],
-   {NetPort["Target"],"mask2"}->"th2"->NetPort[{"meancrossentropy","Target"}],
-   NetPort[{"meancrossentropy","Loss"}]->"totalcrossentropy"->NetPort["Loss"]}],
+   "totalcrossentropy"->CZLossLogits[ type ]},{
+   {NetPort["Input"],"mask1"}->"th1"->NetPort[{"totalcrossentropy","Input"}],
+   {NetPort["Target"],"mask2"}->"th2"->NetPort[{"totalcrossentropy","Target"}],
+   NetPort[{"totalcrossentropy","Loss"}]->NetPort["Loss"]}],
    NetGraph[{
    "mask"->ConstantArrayLayer["Array"->mask],
    "loss"->CZRawGaussianLossLayer,
@@ -99,7 +98,7 @@ CZCreatePixelCNNDiscrete[ imageDims_:{28,28} ] :=
 
 
 CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], encoder_, conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
-   For[k=1,k<=(*Length[pixels]*)1,k++,
+   For[k=1,k<=Length[pixels],k++,
       l = NetTake[conditionalPixelCNNNet,"predict"<>ToString[k]][Association["Input"->encoder@s,"Conditional"->conditional]];
       s = If[inputType===CZBinary,CZSampleBinary,If[inputType===CZRealGauss,CZSampleRealGauss,CZSampleDiscrete]][l]*pixels[[k]]+s;t=s;
    ];
