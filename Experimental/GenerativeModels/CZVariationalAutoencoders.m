@@ -111,3 +111,6 @@ CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ _ ], CZBinaryVector[ inputUnits_ ]
       "Input"->ConstantArray[0,{inputUnits}] ] ]["Output"];
    CZSampleBinaryVector@probMap
 ];
+
+
+CZModelLRM[ CZVaE[ _ ] ] := {}

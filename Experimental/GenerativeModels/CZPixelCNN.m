@@ -126,3 +126,8 @@ CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_, encoder_, pixelCNNNet_ ] ] 
 
 CZCreatePixelCNNRealGauss[ imageDims_:{28,28} ] :=
    CZGenerativeModel[ CZPixelCNN, CZRealGauss[ imageDims ], Identity, CZCreatePixelCNNNet[ CZRealGauss[ imageDims ], PixelCNNOrdering[ imageDims ] ] ];
+
+
+CZModelLRM[ CZPixelCNN ] := Flatten[Table[
+   {{"condpixelcnn","predict"<>ToString[k],"masked_input"}->0,
+   {"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,4}],1];

@@ -46,18 +46,7 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_, opts
       Table[ Append[ Association[ "Input"->encoder[RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
       tp1=trainBatch;
    trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->OptionValue[ MaxTrainingRounds ],
-      LearningRateMultipliers->Switch[
-         model,
-         CZPixelVaE[_], Flatten[Table[
-            {{"decoder",5,"predict"<>ToString[k],"masked_input"}->0,{"decoder",5,"loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0,{"decoder",5,"loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0},{k,4}],1],
-         CZPixelCNN, Flatten[Table[
-         {{"condpixelcnn","predict"<>ToString[k],"masked_input"}->0,{"condpixelcnn","loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0,{"condpixelcnn","loss"<>ToString[k],If[Head[inputType]===CZRealGauss,"mask","mask"]}->0},{k,4}],1],
-         CZNBModel,{},
-         CZVaE[_],{},
-         CZNade[], {},
-         CZNormFlowModel,{},
-         CZRealNVP,{},
-         CZNadeVaE[_], {} ] ];
+      LearningRateMultipliers->CZModelLRM[ model ] ];
    CZGenerativeModel[ model,  inputType, encoder, trained ]
 ];
 

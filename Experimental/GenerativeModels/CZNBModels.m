@@ -48,3 +48,6 @@ CZCreateNBModelRealGauss[ dims_:{28,28} ] := CZGenerativeModel[
    CZNBModel, CZRealGauss[ dims ], Identity,
    CZCreateNBModel[ dims, CZRealGauss[ dims ] ]
 ];
+
+
+CZModelLRM[ CZNBModel ] := {}

@@ -61,3 +61,8 @@ CZCreatePixelVaERealGauss[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeM
    CZRealGauss[imageDims],
    Identity,
    CZCreateVaENet[ PixelVaEEncoderRealGauss[ imageDims, latentUnits ], CZPixelVaEDecoder[ CZRealGauss[{28,28}], imageDims ] ]];
+
+
+CZModelLRM[ CZPixelVaE[ _ ] ] := Flatten[Table[
+   {{"decoder",5,"predict"<>ToString[k],"masked_input"}->0,
+   {"decoder",5,"loss"<>ToString[k],"mask"}->0},{k,4}],1]
