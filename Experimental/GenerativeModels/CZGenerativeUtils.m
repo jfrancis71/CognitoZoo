@@ -67,17 +67,6 @@ CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, encoder_, net_ ], samp
 
 
 (*
-   Note CrossEntropyLossLayer computes everything in nats
-*)
-CZGenerativeOutputLayer[ outputLayerType_, lossType_, dims_ ] := NetGraph[{
-   "out"->outputLayerType,
-   "loss"->{lossType,ElementwiseLayer[#*Apply[Times,dims]&]}},{
-   NetPort["Input"]->"out"->"loss"->NetPort["Loss"],
-   NetPort["Target"]->NetPort[{"loss","Target"}]
-}];
-
-
-(*
    Exactly like CrossEntropyLossLayer["Probabilities"] but calculated using first dimension
 *)
 CZCrossEntropyLossLayer = NetGraph[{
@@ -86,22 +75,6 @@ CZCrossEntropyLossLayer = NetGraph[{
    "t2"->TransposeLayer[{3<->1,1<->2}]},
    {NetPort["Input"]->"t1"->NetPort[{"cross","Input"}],
    NetPort["Target"]->"t2"->NetPort[{"cross","Target"}]}];
-
-
-CZLossLayerWithTransfer[ CZBinary[ dims_ ] ] := CZGenerativeOutputLayer[ {PartLayer[1],LogisticSigmoid}, CrossEntropyLossLayer["Binary"], dims ]
-
-
-CZLossLayerWithTransfer[ CZDiscrete[ dims_ ] ] := CZGenerativeOutputLayer[
-   SoftmaxLayer[1], CZCrossEntropyLossLayer, dims ]
-
-
-CZLossLayerWithTransfer[ CZRealGauss[ dims_ ] ] := CZGaussianLossLayer
-
-
-CZActivation[ CZBinary[ dims_ ] ] := LogisticSigmoid
-
-
-CZActivation[ CZDiscrete[ dims_ ] ] := SoftmaxLayer[1]
 
 
 CZLossLogits[ CZBinary[ dims_ ] ] := NetGraph[ {
