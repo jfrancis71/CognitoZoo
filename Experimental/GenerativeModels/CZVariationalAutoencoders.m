@@ -82,15 +82,6 @@ CZSampleVaELatent[ latentUnits_ ] := RandomVariate@MultinormalDistribution[ Cons
 SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
 
 
-meanSquaredLossLayer = NetGraph[{
-   "negtarget"->ElementwiseLayer[-#&],
-   "diff"->ThreadingLayer[Plus],
-   "sq"->ElementwiseLayer[#^2&]},{
-   NetPort["Target"]->"negtarget",
-   {NetPort["Input"],"negtarget"}->"diff"->"sq"->NetPort["Loss"]
-}];
-
-
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealVector[ inputUnits_ ], encoder_, vaeNet_ ] ] :=
    Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },tmp=decoder;
    probMap = decoder[Association["Conditional"->CZSampleVaELatent[ latentUnits ],
@@ -126,13 +117,9 @@ CZCreateVaERealGauss[ imageDims_:{28,28}, latentUnits_:8, h1_:500, h2_:500 ] :=
       CZCreateVaENet[ CZCreateEncoder[ imageDims, latentUnits ], CZCreateDecoder[ imageDims, CZRealGauss[ imageDims ] ] ] ];
 
 
-CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealGauss[ imageDims_ ], encoder_, vaeNet_ ] ] :=(
-   mean=NetTake[NetFlatten[NetExtract[vaeNet,"decoder"]],"cond/loss/mean"][
-      Association[ "Conditional"->CZSampleVaELatent[ latentUnits ]]];
-      logdev=NetTake[NetFlatten[NetExtract[vaeNet,"decoder"]],"cond/loss/logdev"][
-      Association[ "Conditional"->CZSampleVaELatent[ latentUnits ]]];
-        mean+Sqrt[Exp[logdev]]*Table[RandomVariate[NormalDistribution[0,1]],{imageDims[[1]]},{imageDims[[2]]}]
-        )
+CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], CZRealGauss[ imageDims_ ], encoder_, vaeNet_ ] ] :=
+   (CZSampleRealGauss@NetTake[ NetExtract[ vaeNet,"decoder" ],"r"]
+      [ Association["Conditional"->CZSampleVaELatent[ latentUnits ] ] ])
 
 
 CZGetLatent[ CZGenerativeModel[ CZVaE[ _ ], _, encoder_, vaeNet_ ], sample_ ] :=

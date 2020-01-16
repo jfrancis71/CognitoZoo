@@ -57,8 +57,5 @@ CZSample[ CZGenerativeModel[ CZNBModel, CZDiscrete[ imageDims_ ], _, net_ ] ] :=
    CZSampleDiscrete@NetExtract[net,"array"][]/10;
 
 
-CZSample[ CZGenerativeModel[ CZNBModel, CZRealGauss[ imageDims_ ], _, net_ ] ] := (
-   mean=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/loss/mean"}][];
-   logdev=NetTake[ NetFlatten[nbtrain3[[4]]], {"array","loss/loss/logdev"}][];
-   mean+Sqrt[Exp[logdev]]*Table[RandomVariate[NormalDistribution[0,1]],{imageDims[[1]]},{imageDims[[2]]}]
-)
+CZSample[ CZGenerativeModel[ CZNBModel, CZRealGauss[ imageDims_ ], _, net_ ] ] :=
+   CZSampleRealGauss@Normal@NetExtract[ net, {"array","Array"} ]
