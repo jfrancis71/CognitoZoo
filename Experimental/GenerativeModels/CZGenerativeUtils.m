@@ -41,9 +41,9 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_, opts
    rnd=RandomSample[ samples ];len=Round[Length[rnd]*.9];
    {trainingSet,validationSet}={rnd[[;;len]],rnd[[len+1;;]]};
    trainBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->encoder[RandomChoice[trainingSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE||Head@model===CZNadeVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
+      Table[ Append[ Association[ "Input"->encoder[RandomChoice[trainingSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
    validBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->encoder[RandomChoice[validationSet]]], If[ Head@model===CZVaE||Head@model===CZPixelVaE||Head@model===CZNadeVaE, "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
+      Table[ Append[ Association[ "Input"->encoder[RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
       tp1=trainBatch;
    trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->OptionValue[ MaxTrainingRounds ],
       LearningRateMultipliers->Switch[

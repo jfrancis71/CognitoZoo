@@ -3,6 +3,9 @@
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
+CZLatentModelQ[ CZPixelCNN ] := False;
+
+
 PixelCNNOrdering[ imageDims_ ] := Module[{pixels=ConstantArray[0,Prepend[imageDims,4]]},{
    (pixels[[1,1;;imageDims[[1]];;2,1;;imageDims[[2]];;2]]=1;pixels[[1]]),
    (pixels[[2,2;;imageDims[[1]];;2,2;;imageDims[[2]];;2]]=1;pixels[[2]]),

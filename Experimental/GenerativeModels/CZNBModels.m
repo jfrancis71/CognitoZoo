@@ -13,6 +13,9 @@
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
+CZLatentModelQ[ CZNBModel ] = False;
+
+
 CZCreateNBModel[ dims_, outputType_ ] := NetGraph[{
    "array"->ConstantArrayLayer[Prepend[ dims, CZDistributionParameters[ outputType ] ]],
    "loss"->CZLossLogits[ outputType ]},{

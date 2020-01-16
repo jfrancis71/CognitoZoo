@@ -4,6 +4,9 @@
 <<"Experimental/GenerativeModels/CZPixelCNN.m"
 
 
+CZLatentModelQ[ CZPixelVaE[ _ ] ] := True;
+
+
 PixelVaEEncoderBinary[ imageDims_, latentUnits_ ] := NetChain[{
    FlattenLayer[],
    CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ]}];

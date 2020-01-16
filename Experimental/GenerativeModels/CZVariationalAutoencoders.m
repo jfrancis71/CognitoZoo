@@ -11,6 +11,9 @@
 <<"Experimental/GenerativeModels/CZNBModels.m"
 
 
+CZLatentModelQ[ CZVaE[ _ ] ] := True;
+
+
 CZCreateEncoder[ dims_, latentUnits_, h1_:500, h2_: 500 ] :=
    NetGraph[{
       "h1"->{FlattenLayer[],h1,Ramp},
