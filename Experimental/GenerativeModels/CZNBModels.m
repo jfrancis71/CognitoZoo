@@ -16,7 +16,7 @@
 CZLatentModelQ[ CZNBModel ] = False;
 
 
-CZCreateNBModel[ dims_, outputType_ ] := NetGraph[{
+CZCreateNBModelNet[ dims_, outputType_ ] := NetGraph[{
    "array"->ConstantArrayLayer[Prepend[ dims, CZDistributionParameters[ outputType ] ]],
    "loss"->CZLossLogits[ outputType ]},{
    "array"->NetPort[{"loss","Input"}],
@@ -27,27 +27,15 @@ CZCreateNBModel[ dims_, outputType_ ] := NetGraph[{
 SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{}};
 
 
-CZCreateNBModelBinary[ dims_:{28,28} ] := CZGenerativeModel[ 
+CZCreateNBModel[ type_:CZBinary[{28,28}] ] := CZGenerativeModel[ 
    CZNBModel,
-   CZBinary[ dims ], Identity,
-   CZCreateNBModel[ dims, CZBinary[ dims ] ]
+   type, CZEncoder[ type ],
+   CZCreateNBModelNet[ type[[1]], type ]
 ];
 
 
 CZSample[ CZGenerativeModel[ CZNBModel, outputType_, _, net_ ] ] :=
    CZSampleDistribution[ outputType, NetExtract[net, "array"][] ]/If[Head[outputType]===CZDiscrete,10,1];
-
-
-CZCreateNBModelDiscrete[ dims_:{28,28} ] := CZGenerativeModel[
-   CZNBModel, CZDiscrete[ imageDims ], CZOneHot,
-   CZCreateNBModel[ dims, CZDiscrete[ dims ] ]
-];
-
-
-CZCreateNBModelRealGauss[ dims_:{28,28} ] := CZGenerativeModel[
-   CZNBModel, CZRealGauss[ dims ], Identity,
-   CZCreateNBModel[ dims, CZRealGauss[ dims ] ]
-];
 
 
 CZModelLRM[ CZNBModel ] := {}

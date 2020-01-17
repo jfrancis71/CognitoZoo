@@ -20,6 +20,9 @@ CZDistributionParameters[ CZDiscrete[ _ ] ] := 10;
 CZDistributionParameters[ CZRealGauss[ _ ] ] := 2;
 
 
+CZEncoder[ type_[_] ] := If[ type===CZDiscrete, CZOneHot, Identity ]
+
+
 SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_,_}};
 
 
