@@ -129,7 +129,7 @@ Image@CZSample[ cnntrain3 ]
 <<"Experimental/GenerativeModels/CZPixelVaE.m"
 
 
-pixelvaemodel1 = CZCreatePixelVaEBinary[];
+pixelvaemodel1 = CZCreatePixelVaE[];
 
 
 pixelvaetrain1 = CZTrain[ pixelvaemodel1, binImages, MaxTrainingRounds->1  ];
@@ -141,7 +141,7 @@ CZLogDensity[ pixelvaetrain1, binImages[[1]] ]
 Image@CZSample[ pixelvaetrain1 ]
 
 
-pixelvaemodel2 = CZCreatePixelVaEDiscrete[];
+pixelvaemodel2 = CZCreatePixelVaE[ CZDiscrete[{28,28}] ];
 
 
 pixelvaetrain2 = CZTrain[ pixelvaemodel2, images, MaxTrainingRounds->1  ];
@@ -153,7 +153,7 @@ CZLogDensity[ pixelvaetrain2, images[[1]] ]
 Image@CZSample[ pixelvaetrain2 ]
 
 
-pixelvaemodel3 = CZCreatePixelVaERealGauss[];
+pixelvaemodel3 = CZCreatePixelVaE[ CZRealGauss[{28,28}] ];
 
 
 pixelvaetrain3 = CZTrain[ pixelvaemodel3, ImageData/@mnist, MaxTrainingRounds->1  ];

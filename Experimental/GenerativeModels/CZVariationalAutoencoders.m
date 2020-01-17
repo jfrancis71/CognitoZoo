@@ -14,7 +14,7 @@
 CZLatentModelQ[ CZVaE[ _ ] ] := True;
 
 
-CZCreateEncoder[ dims_, latentUnits_, h1_:500, h2_: 500 ] :=
+CZCreateEncoder[ latentUnits_, h1_:500, h2_: 500 ] :=
    NetGraph[{
       "h1"->{FlattenLayer[],h1,Ramp},
       "h2"->{h2,Ramp},
@@ -82,13 +82,13 @@ SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], outputType_, encoder_, vaeNet_ ] ] :=
    Module[{decoder=NetTake[NetExtract[ vaeNet, "decoder" ],{NetPort["Conditional"],"r"}], probMap },tmp=decoder;
    probMap = decoder[Association["Conditional"->CZSampleVaELatent[ latentUnits ] ] ];
-   CZSampleDistribution[ outputType, probMap ]/If[outputType===CZDiscrete,10,1]
+   CZSampleDistribution[ outputType, probMap ]/If[Head[outputType]===CZDiscrete,10,1]
 ];
 
 
 CZCreateVaE[ type_:CZBinary[{28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=
    CZGenerativeModel[ CZVaE[ latentUnits ], type, CZEncoder[type],
-      CZCreateVaENet[ CZCreateEncoder[ type[[1]], latentUnits ], CZCreateDecoder[ type[[1]], type ] ] ];
+      CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZCreateDecoder[ type[[1]], type ] ] ];
 
 
 CZGetLatent[ CZGenerativeModel[ CZVaE[ _ ], _, encoder_, vaeNet_ ], sample_ ] :=

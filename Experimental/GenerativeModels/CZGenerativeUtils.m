@@ -26,16 +26,13 @@ CZEncoder[ type_[_] ] := If[ type===CZDiscrete, CZOneHot, Identity ]
 SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_,_}};
 
 
-SyntaxInformation[ CZBinaryVector ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZBinary ]= {"ArgumentsPattern"->{_}};
 
 
-SyntaxInformation[ CZRealVector ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZDiscrete ]= {"ArgumentsPattern"->{_}};
 
 
-SyntaxInformation[ CZBinaryImage ]= {"ArgumentsPattern"->{_}};
-
-
-SyntaxInformation[ CZDiscreteImage ]= {"ArgumentsPattern"->{_}};
+SyntaxInformation[ CZRealGauss ]= {"ArgumentsPattern"->{_}};
 
 
 Options[ CZTrain ] = {

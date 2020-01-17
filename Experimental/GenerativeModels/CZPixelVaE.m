@@ -7,21 +7,6 @@
 CZLatentModelQ[ CZPixelVaE[ _ ] ] := True;
 
 
-PixelVaEEncoderBinary[ imageDims_, latentUnits_ ] := NetChain[{
-   FlattenLayer[],
-   CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ]}];
-
-
-PixelVaEEncoderRealGauss[ imageDims_, latentUnits_ ] := NetChain[{
-   FlattenLayer[],
-   CZCreateEncoder[ imageDims[[1]]*imageDims[[2]], latentUnits ]}];
-
-
-PixelVaEEncoderDiscrete[ imageDims_, latentUnits_ ] := NetChain[{
-   FlattenLayer[],
-   CZCreateEncoder[ imageDims[[1]]*imageDims[[2]]*10, latentUnits ]}];
-
-
 CZPixelVaEDecoder[ crossEntropyType_, imageDims_ ] := NetGraph[{
    {500,Ramp},
    {500,Ramp},
@@ -32,18 +17,11 @@ CZPixelVaEDecoder[ crossEntropyType_, imageDims_ ] := NetGraph[{
    NetPort["Target"]->NetPort[{5,"Input"}]}];
 
 
-CZCreatePixelVaEBinary[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[
+CZCreatePixelVaE[ type_:CZBinary[{28,28}], latentUnits_:8 ] := CZGenerativeModel[
    CZPixelVaE[ latentUnits ], 
-   CZBinary[imageDims],
-   Identity,
-   CZCreateVaENet[ PixelVaEEncoderBinary[ imageDims, latentUnits ], CZPixelVaEDecoder[ CZBinary[{28,28}], imageDims ] ]];
-
-
-CZCreatePixelVaEDiscrete[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[
-   CZPixelVaE[ latentUnits ], 
-   CZDiscrete[imageDims],
-   CZOneHot,
-   CZCreateVaENet[ PixelVaEEncoderDiscrete[ imageDims, latentUnits ], CZPixelVaEDecoder[ CZDiscrete[{28,28}], imageDims ] ]];
+   type,
+   CZEncoder[ type ],
+   CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type, type[[1]] ] ]];
 
 
 SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};
@@ -54,13 +32,6 @@ CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, encoder_, p
    cond = NetTake[ NetExtract[ pixelCNNNet, "decoder" ],{1,4} ][ z ];
    CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, {"decoder",5} ], inputType, encoder, cond ]
 )
-
-
-CZCreatePixelVaERealGauss[ imageDims_:{28,28}, latentUnits_:8 ] := CZGenerativeModel[
-   CZPixelVaE[ latentUnits ], 
-   CZRealGauss[imageDims],
-   Identity,
-   CZCreateVaENet[ PixelVaEEncoderRealGauss[ imageDims, latentUnits ], CZPixelVaEDecoder[ CZRealGauss[{28,28}], imageDims ] ]];
 
 
 CZModelLRM[ CZPixelVaE[ _ ] ] := Flatten[Table[
