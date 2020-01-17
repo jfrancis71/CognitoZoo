@@ -73,7 +73,7 @@ CZCreateVaENet[ encoder_, decoder_ ] := NetGraph[{
 }];
 
 
-CZSampleVaELatent[ latentUnits_ ] := RandomVariate@MultinormalDistribution[ ConstantArray[0,{latentUnits}], IdentityMatrix[latentUnits] ];
+CZSampleVaELatent[ latentUnits_ ] := CZSampleStandardNormalDistribution[{1,latentUnits}][[1]];
 
 
 SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};

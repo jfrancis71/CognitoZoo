@@ -1,5 +1,15 @@
 (* ::Package:: *)
 
+(*
+   PixelVAE: A Latent Variable Model For Natural Images, 2016
+   Gulrajani, Kumar, Ahmed, Ali Taiga, Visin, Vazquez, Courville
+   
+   Note, this codes implements the above idea of marrying the
+   Variation Autoencoder with PixelCNN, but does not implement
+   the hierarchical aspect.
+*)
+
+
 <<"Experimental/GenerativeModels/CZVariationalAutoencoders.m"
 <<"Experimental/GenerativeModels/CZPixelCNN.m"
 

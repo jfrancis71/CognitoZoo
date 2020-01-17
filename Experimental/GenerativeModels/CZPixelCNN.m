@@ -1,5 +1,12 @@
 (* ::Package:: *)
 
+(*
+   Conditional Image Generation with PixelCNN Decoders, 2016
+   van den Oord, Kalchbrenner, Vinyals, Espeholt, Graves, Kavukcuoglu
+   http: https://arxiv.org/pdf/1606.05328.pdf
+*)
+
+
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 

@@ -1,15 +1,5 @@
 (* ::Package:: *)
 
-(*
-   Generative models all have an Input port, an Output port and a Loss port.
-   Conditional Generative models are considered to be generative models, but have
-   an additional Conditional port.
-   The input for discrete images in the net is eg 28x28x10
-   Note this isn't always convenient for within the net, so they may reformat (to 10x28x28).
-   Models are in format: CZGenerativeModel[ modelType, inputType, encoder, net ]
-*)
-
-
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 

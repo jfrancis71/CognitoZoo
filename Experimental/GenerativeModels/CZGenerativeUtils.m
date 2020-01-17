@@ -12,7 +12,10 @@ CZSampleDistribution[ CZBinary[ dims_ ], betas_ ] := Map[ RandomChoice[{1-#,#}->
 CZSampleDistribution[ CZDiscrete[ dims_ ], probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, SoftmaxLayer[][Transpose[probs,{3,1,2}]], {2} ];
 
 
-CZSampleDistribution[ CZRealGauss[ dims_ ], params_ ] := params[[1]]+Sqrt[Exp[params[[2]]]]*Table[RandomVariate[NormalDistribution[0,1]],{Length[params[[1,1]]]},{Length[params[[1,2]]]}]
+CZSampleStandardNormalDistribution[ dims_ ] := Table[RandomVariate[NormalDistribution[0,1]],{dims[[1]]},{dims[[2]]}];
+
+
+CZSampleDistribution[ CZRealGauss[ dims_ ], params_ ] := params[[1]]+Sqrt[Exp[params[[2]]]]*CZSampleStandardNormalDistribution[ dims ];
 
 
 CZDistributionParameters[ CZBinary[ _ ] ] := 1;
