@@ -23,7 +23,7 @@ CZDistributionParameters[ CZRealGauss[ _ ] ] := 2;
 CZEncoder[ type_[_] ] := If[ type===CZDiscrete, CZOneHot, Identity ]
 
 
-SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_,_}};
+SyntaxInformation[ CZGenerativeModel ]= {"ArgumentsPattern"->{_,_,_}};
 
 
 SyntaxInformation[ CZBinary ]= {"ArgumentsPattern"->{_}};
@@ -37,22 +37,22 @@ SyntaxInformation[ CZRealGauss ]= {"ArgumentsPattern"->{_}};
 
 Options[ CZTrain ] = {
    MaxTrainingRounds->10000 };
-CZTrain[ CZGenerativeModel[ model_, inputType_, encoder_, net_ ], samples_, opts:OptionsPattern[] ] := Module[{trained, lossNet, f},
+CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPattern[] ] := Module[{trained, lossNet, f},
    rnd=RandomSample[ samples ];len=Round[Length[rnd]*.9];
    {trainingSet,validationSet}={rnd[[;;len]],rnd[[len+1;;]]};
    trainBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->encoder[RandomChoice[trainingSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
+      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[trainingSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
    validBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->encoder[RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
+      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
       tp1=trainBatch;
    trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->OptionValue[ MaxTrainingRounds ],
       LearningRateMultipliers->CZModelLRM[ model ] ];
-   CZGenerativeModel[ model,  inputType, encoder, trained ]
+   CZGenerativeModel[ model,  inputType, trained ]
 ];
 
 
-CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, encoder_, net_ ], sample_ ] :=
-   -net[ Append[ Association[ "Input"->encoder@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE||Head@modelType===CZNadeVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ]
+CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, net_ ], sample_ ] :=
+   -net[ Append[ Association[ "Input"->CZEncoder[ modelInput ]@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE||Head@modelType===CZNadeVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ]
 
 
 (*

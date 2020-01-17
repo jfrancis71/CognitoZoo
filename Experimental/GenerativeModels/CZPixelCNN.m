@@ -105,19 +105,19 @@ SyntaxInformation[ CZPixelCNN ]= {"ArgumentsPattern"->{}};
 
 
 CZCreatePixelCNN[ type_:CZBinary[{28,28}] ] :=
-   CZGenerativeModel[ CZPixelCNN, type, CZEncoder[ type ], CZCreatePixelCNNNet[ type, PixelCNNOrdering[ type[[1]] ] ] ];
+   CZGenerativeModel[ CZPixelCNN, type, CZCreatePixelCNNNet[ type, PixelCNNOrdering[ type[[1]] ] ] ];
 
 
-CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], encoder_, conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
+CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
    For[k=1,k<=Length[pixels],k++,
-      l = NetTake[conditionalPixelCNNNet,"predict"<>ToString[k]][Association["Input"->encoder@s,"Conditional"->conditional]];
+      l = NetTake[conditionalPixelCNNNet,"predict"<>ToString[k]][Association["Input"->CZEncoder[ inputType[ imageDims ] ]@s,"Conditional"->conditional]];
       s = CZSampleDistribution[ inputType[ imageDims ], l]*pixels[[k]]+s*(1-pixels[[k]]);t=s;
    ];
    s/If[inputType===CZDiscrete,10,1]]
 
 
-CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_, encoder_, pixelCNNNet_ ] ] :=
-   CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, "condpixelcnn" ], inputType, encoder, NetExtract[ pixelCNNNet, "global" ][] ];
+CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_, pixelCNNNet_ ] ] :=
+   CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, "condpixelcnn" ], inputType, NetExtract[ pixelCNNNet, "global" ][] ];
 
 
 CZModelLRM[ CZPixelCNN ] := Flatten[Table[

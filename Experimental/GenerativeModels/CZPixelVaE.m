@@ -7,12 +7,12 @@
 CZLatentModelQ[ CZPixelVaE[ _ ] ] := True;
 
 
-CZPixelVaEDecoder[ crossEntropyType_, imageDims_ ] := NetGraph[{
+CZPixelVaEDecoder[ inputType_ ] := NetGraph[{
    {500,Ramp},
    {500,Ramp},
-   {imageDims[[1]]*imageDims[[2]]},
-   ReshapeLayer[imageDims],
-   CZCreatePixelCNNConditionalNet[ crossEntropyType, PixelCNNOrdering[ imageDims ] ]},{
+   {inputType[[1,1]]*inputType[[1,2]]},
+   ReshapeLayer[inputType[[1,1;;2]]],
+   CZCreatePixelCNNConditionalNet[ inputType, PixelCNNOrdering[ inputType[[1]] ] ]},{
    NetPort["Conditional"]->1->2->3->4->NetPort[{5,"Conditional"}],
    NetPort["Target"]->NetPort[{5,"Input"}]}];
 
@@ -20,17 +20,16 @@ CZPixelVaEDecoder[ crossEntropyType_, imageDims_ ] := NetGraph[{
 CZCreatePixelVaE[ type_:CZBinary[{28,28}], latentUnits_:8 ] := CZGenerativeModel[
    CZPixelVaE[ latentUnits ], 
    type,
-   CZEncoder[ type ],
-   CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type, type[[1]] ] ]];
+   CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type ] ]];
 
 
 SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};
 
 
-CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, encoder_, pixelCNNNet_ ] ] := (
+CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, pixelCNNNet_ ] ] := (
    z = CZSampleVaELatent[ latentUnits ];
    cond = NetTake[ NetExtract[ pixelCNNNet, "decoder" ],{1,4} ][ z ];
-   CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, {"decoder",5} ], inputType, encoder, cond ]
+   CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, {"decoder",5} ], inputType, cond ]
 )
 
 
