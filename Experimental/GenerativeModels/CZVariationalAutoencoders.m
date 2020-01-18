@@ -73,15 +73,12 @@ CZCreateVaENet[ encoder_, decoder_ ] := NetGraph[{
 }];
 
 
-CZSampleVaELatent[ latentUnits_ ] := CZSampleStandardNormalDistribution[{1,latentUnits}][[1]];
-
-
 SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
 
 
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], inputType_, vaeNet_ ] ] :=
    CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ latentUnits ], inputType, vaeNet ],
-      CZSampleVaELatent[ latentUnits ]];
+      CZSampleStandardNormalDistribution[ {latentUnits } ] ];
 
 
 CZCreateVaE[ type_:CZBinary[{28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=

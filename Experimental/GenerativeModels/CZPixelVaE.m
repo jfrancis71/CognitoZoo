@@ -37,7 +37,7 @@ SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};
 
 
 CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, pixelCNNNet_ ] ] := (
-   z = CZSampleVaELatent[ latentUnits ];
+   z = CZSampleStandardNormalDistribution[ {latentUnits} ];
    cond = NetTake[ NetExtract[ pixelCNNNet, "decoder" ],{1,4} ][ z ];
    CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, {"decoder",5} ], inputType, cond ]
 )
