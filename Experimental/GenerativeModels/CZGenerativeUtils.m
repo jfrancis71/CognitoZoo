@@ -6,13 +6,13 @@ CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
 CZOneHot[ image_ ] := Transpose[ Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {2} ], {2,3,1}];
 
 
-CZSampleDistribution[ CZBinary[ dims_ ], betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, LogisticSigmoid@betas[[1]], {2}];
+CZSampleDistribution[ CZBinary[ dims_ ], betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, LogisticSigmoid@betas[[1]], {Length[dims]}];
 
 
-CZSampleDistribution[ CZDiscrete[ dims_ ], probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, SoftmaxLayer[][Transpose[probs,{3,1,2}]], {2} ];
+CZSampleDistribution[ CZDiscrete[ dims_ ], probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, SoftmaxLayer[][Transpose[probs,{3,1,2}]], {Length[dims]} ];
 
 
-CZSampleStandardNormalDistribution[ dims_ ] := Table[RandomVariate[NormalDistribution[0,1]],{dims[[1]]},{dims[[2]]}];
+CZSampleStandardNormalDistribution[ dims_ ] := Array[RandomVariate@NormalDistribution[0,1]&,dims];
 
 
 CZSampleDistribution[ CZRealGauss[ dims_ ], params_ ] := params[[1]]+Sqrt[Exp[params[[2]]]]*CZSampleStandardNormalDistribution[ dims ];
@@ -44,9 +44,9 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPa
    rnd=RandomSample[ samples ];len=Round[Length[rnd]*.9];
    {trainingSet,validationSet}={rnd[[;;len]],rnd[[len+1;;]]};
    trainBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[trainingSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
+      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[trainingSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ {model[[1]]} ], {} ] ], {assoc["BatchSize"]} ];
    validBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleVaELatent[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
+      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ {model[[1]]} ], {} ] ], {assoc["BatchSize"]} ];      
       tp1=trainBatch;
    trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->OptionValue[ MaxTrainingRounds ],
       LearningRateMultipliers->CZModelLRM[ model ] ];
@@ -55,7 +55,8 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPa
 
 
 CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, net_ ], sample_ ] :=
-   -net[ Append[ Association[ "Input"->CZEncoder[ modelInput ]@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE||Head@modelType===CZNadeVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ]
+   -net[ Association[ { "Input"->CZEncoder[ modelInput ]@sample,
+      If[ CZLatentModelQ[ modelType ], "RandomSample"->ConstantArray[0,{modelType[[1]]}], Nothing ] } ] ]
 
 
 (*
