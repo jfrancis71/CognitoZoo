@@ -79,11 +79,9 @@ CZSampleVaELatent[ latentUnits_ ] := CZSampleStandardNormalDistribution[{1,laten
 SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
 
 
-CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], outputType_, vaeNet_ ] ] :=
-   Module[{decoder=NetTake[NetExtract[ vaeNet, "decoder" ],{NetPort["Conditional"],"r"}], probMap },tmp=decoder;
-   probMap = decoder[Association["Conditional"->CZSampleVaELatent[ latentUnits ] ] ];
-   CZSampleDistribution[ outputType, probMap ]/If[Head[outputType]===CZDiscrete,10,1]
-];
+CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], inputType_, vaeNet_ ] ] :=
+   CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ latentUnits ], inputType, vaeNet ],
+      CZSampleVaELatent[ latentUnits ]];
 
 
 CZCreateVaE[ type_:CZBinary[{28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=
@@ -91,15 +89,14 @@ CZCreateVaE[ type_:CZBinary[{28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=
       CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZCreateDecoder[ type ] ] ];
 
 
-CZGetLatent[ CZGenerativeModel[ CZVaE[ _ ], _, encoder_, vaeNet_ ], sample_ ] :=
+CZGetLatent[ CZGenerativeModel[ CZVaE[ _ ], _, vaeNet_ ], sample_ ] :=
  NetExtract[ vaeNet, "encoder"][ sample ]["Mean"];  
 
 
-CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ _ ], CZBinaryVector[ inputUnits_ ], encoder_, vaeNet_ ], latent_ ] :=
-   Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },tmp=decoder;
-      probMap = decoder[Association["Conditional"->latent,
-      "Input"->ConstantArray[0,{inputUnits}] ] ]["Output"];
-   CZSampleBinaryVector@probMap
+CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ _ ], inputType_, vaeNet_ ], latent_ ] :=
+   Module[{decoder=NetExtract[ vaeNet, "decoder" ], probMap },
+      probMap = NetTake[ decoder, "r" ][ Association["Conditional"->latent] ];
+   CZSampleDistribution[ inputType, probMap ]/If[Head[inputType]===CZDiscrete,10,1]
 ];
 
 
