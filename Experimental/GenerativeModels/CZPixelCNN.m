@@ -1,6 +1,16 @@
 (* ::Package:: *)
 
+(*
+   Conditional Image Generation with PixelCNN Decoders, 2016
+   van den Oord, Kalchbrenner, Vinyals, Espeholt, Graves, Kavukcuoglu
+   http: https://arxiv.org/pdf/1606.05328.pdf
+*)
+
+
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
+
+
+CZLatentModelQ[ CZPixelCNN ] := False;
 
 
 PixelCNNOrdering[ imageDims_ ] := Module[{pixels=ConstantArray[0,Prepend[imageDims,4]]},{
@@ -20,54 +30,75 @@ MaskLayer[mask_]:=NetGraph[{
    {NetPort["Input"],"mask"}->"thread"}]
 
 
-(* Note the cross entropy is calculated on final level so might want to arrange
-   Input is 28x28x10 (for probabilities)
-*)
-MaskCrossEntropyLossLayer[mask_, crossEntropyType_ ] := NetGraph[{
+CZMaskLossLayer[ mask_, CZBinary[ dims_ ] ] := NetGraph[{
    "mask"->ConstantArrayLayer["Array"->mask],
-   "th1"->ThreadingLayer[Times],
-   "th2"->ThreadingLayer[Times],
-   "meancrossentropy"->CrossEntropyLossLayer[crossEntropyType],
+   "activation"->{PartLayer[1],LogisticSigmoid},
+   "masked_input"->ThreadingLayer[Times],
+   "masked_target"->ThreadingLayer[Times],
+   "crossentropylayer"->CrossEntropyLossLayer["Binary"],
    "totalcrossentropy"->ElementwiseLayer[#*Length[Flatten[mask]]&]},{
-   {NetPort["Input"],"mask"}->"th1"->NetPort[{"meancrossentropy","Input"}],
-   {NetPort["Target"],"mask"}->"th2"->NetPort[{"meancrossentropy","Target"}],
-   NetPort[{"meancrossentropy","Loss"}]->"totalcrossentropy"->NetPort["Loss"]
+   NetPort["Input"]->"activation",
+   {"mask","activation"}->"masked_input"->NetPort[{"crossentropylayer","Input"}],
+   {"mask",NetPort["Target"]}->"masked_target"->NetPort[{"crossentropylayer","Target"}],
+   NetPort[{"crossentropylayer","Loss"}]->"totalcrossentropy"->NetPort["Loss"]
+}] 
+
+
+CZMaskLossLayer[ mask_, CZDiscrete[ dims_ ] ] := NetGraph[{
+   "mask"->ConstantArrayLayer["Array"->ConstantArray[mask,{10}]],
+   "activation"->{SoftmaxLayer[1]},
+   "masked_input"->ThreadingLayer[Times],
+   "masked_target"->ThreadingLayer[Times],
+   "crossentropylayer"->CZCrossEntropyLossLayer,
+   "totalcrossentropy"->ElementwiseLayer[#*Length[Flatten[mask]]&]},{
+   NetPort["Input"]->"activation",
+   {"mask","activation"}->"masked_input"->NetPort[{"crossentropylayer","Input"}],
+   {"mask",NetPort["Target"]}->"masked_target"->NetPort[{"crossentropylayer","Target"}],
+   NetPort[{"crossentropylayer","Loss"}]->"totalcrossentropy"->NetPort["Loss"]
+}] 
+
+
+CZMaskLossLayer[ mask_, CZRealGauss[ dims_ ] ] := NetGraph[{
+   "mask"->ConstantArrayLayer["Array"->mask],
+   "loss"->CZRawGaussianLossLayer,
+   "th"->ThreadingLayer[Times],
+   "totalcrossentropy"->SummationLayer[]},{
+   NetPort["Input"]->NetPort[{"loss","Input"}],
+   NetPort["Target"]->NetPort[{"loss","Target"}],
+   {"mask",NetPort[{"loss","Loss"}]}->"th"->"totalcrossentropy"->NetPort["Loss"]
 }];
 
 
-PredictLayer[mask_, crossEntropyType_ ]:=NetGraph[{
-   "reshapeConditional"->ReshapeLayer[Prepend[mask//Dimensions,1]],
-   "mask"->If[
-      crossEntropyType=="Binary",
-      {ReshapeLayer[Prepend[mask//Dimensions,1]], MaskLayer[{mask}]},
-      {TransposeLayer[{1<->3,2<->3}],MaskLayer[ConstantArray[mask,{10}]]}],
+PredictLayer[ hideMask_, type_ ] := Module[{ inputDepth = If[Head[type]===CZDiscrete,10,1] },
+   NetGraph[{
+   "reshapeConditional"->ReshapeLayer[Prepend[hideMask//Dimensions,1]],
+   "masked_input"->{ReshapeLayer[{inputDepth,type[[1,1]],type[[1,2]]}],
+      MaskLayer[ConstantArray[hideMask,{inputDepth}]]},
    "cat"->CatenateLayer[],
    "conv"->{ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[16,{1,1},"PaddingSize"->0],Tanh,ConvolutionLayer[
-         If[crossEntropyType=="Binary",1,10],{1,1}]},
-   "reshapeOutput"->If[crossEntropyType=="Binary",ReshapeLayer[mask//Dimensions],
-   TransposeLayer[{1<->3,1<->2}]],
-   "probs"->If[crossEntropyType=="Binary",LogisticSigmoid,SoftmaxLayer[]]
+         CZDistributionParameters[ type ],{1,1}]}
          },{
-   NetPort["Image"]->"mask",
-   {"mask","reshapeConditional"}->"cat"->"conv"->"reshapeOutput"->"probs",
+   NetPort["Input"]->"masked_input",
+   {"masked_input","reshapeConditional"}->"cat"->"conv",
    NetPort["Conditional"]->"reshapeConditional"},
-   "Conditional"->(mask//Dimensions)];
+   "Conditional"->(hideMask//Dimensions)]
+];
 
 
-CZCreatePixelCNNConditionalNet[ crossEntropyType_, pixels_ ] := Module[{masks=InformationMasking[ pixels ]},NetGraph[Flatten@{
-   Table[ "predict"<>ToString[k]->PredictLayer[ masks[[k]], crossEntropyType ],{k,Length[pixels]}],
-   Table[ "loss"<>ToString[k]->MaskCrossEntropyLossLayer[ If[crossEntropyType=="Binary",pixels[[k]],Transpose[Table[pixels[[k]],{10}],{3,1,2}]], crossEntropyType ], {k,Length[pixels]} ],
-   Table[ "maskoutput"<>ToString[k]->MaskLayer[ If[crossEntropyType=="Binary",pixels[[k]],Transpose[Table[pixels[[k]],{10}],{3,1,2}]] ], {k,Length[pixels]}],
-   "total_output"->TotalLayer[],
+CZCreatePixelCNNConditionalNet[ crossEntropyType_, computeOrdering_ ] := Module[{hideMasks=InformationMasking[ computeOrdering ]},tm=masks;NetGraph[Flatten@{
+   Table[ "predict"<>ToString[k]->PredictLayer[ hideMasks[[k]], crossEntropyType ],{k,Length[computeOrdering]}],
+   Table[ "loss"<>ToString[k]->CZMaskLossLayer[ computeOrdering[[k]], crossEntropyType ],{k,Length[computeOrdering]}],
    "total_loss"->TotalLayer[]
    },
    {
-   Table[NetPort[{"predict"<>ToString[k],"Output"}]->{"maskoutput"<>ToString[k],NetPort[{"loss"<>ToString[k],"Input"}]},{k,Length[pixels]}],
-   Table["maskoutput"<>ToString[k]->"total_output",{k,Length[pixels]}],
-   Table[NetPort["Image"]->NetPort[{"loss"<>ToString[k],"Target"}],{k,Length[pixels]}],
-   Table["loss"<>ToString[k]->"total_loss",{k,Length[pixels]}],
+   Table[NetPort["Input"]->NetPort[{"loss"<>ToString[k],"Target"}],{k,Length[computeOrdering]}],
+   Table["predict"<>ToString[k]->"loss"<>ToString[k],{k,Length[computeOrdering]}],
+   Table["loss"<>ToString[k]->"total_loss",{k,Length[computeOrdering]}],
    "total_loss"->NetPort["Loss"]
    }]];
+
+
+CZMaskLossLayer[ PixelCNNOrdering[{28,28}][[1]], CZRealGauss[ {28,28} ] ]
 
 
 CZCreatePixelCNNNet[ crossEntropyType_, pixels_ ] := NetGraph[{
@@ -80,21 +111,22 @@ CZCreatePixelCNNNet[ crossEntropyType_, pixels_ ] := NetGraph[{
 SyntaxInformation[ CZPixelCNN ]= {"ArgumentsPattern"->{}};
 
 
-CZCreatePixelCNNBinaryImage[ imageDims_:{28,28} ] :=
-   CZGenerativeModel[ CZPixelCNN, CZBinaryImage[ imageDims ], Identity, CZCreatePixelCNNNet[ "Binary", PixelCNNOrdering[ imageDims ] ] ];
+CZCreatePixelCNN[ type_:CZBinary[{28,28}] ] :=
+   CZGenerativeModel[ CZPixelCNN, type, CZCreatePixelCNNNet[ type, PixelCNNOrdering[ type[[1]] ] ] ];
 
 
-CZCreatePixelCNNDiscreteImage[ imageDims_:{28,28} ] :=
-   CZGenerativeModel[ CZPixelCNN, CZDiscreteImage[ imageDims ], CZOneHot, CZCreatePixelCNNNet[ "Probabilities", PixelCNNOrdering[ imageDims ] ] ];
-
-
-CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], encoder_, conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
+CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrdering[ imageDims ]},
    For[k=1,k<=Length[pixels],k++,
-      l = conditionalPixelCNNNet[Association["Image"->encoder@s,"Conditional"->conditional]]["Output"];
-      s = If[inputType===CZBinaryImage,CZSampleBinaryImage,CZSampleDiscreteImage][l]*pixels[[k]]+s;t=s;
+      l = NetTake[conditionalPixelCNNNet,"predict"<>ToString[k]][Association["Input"->CZEncoder[ inputType[ imageDims ] ]@s,"Conditional"->conditional]];
+      s = CZSampleDistribution[ inputType[ imageDims ], l]*pixels[[k]]+s*(1-pixels[[k]]);t=s;
    ];
-   s/If[inputType===CZBinaryImage,1,10]]
+   s/If[inputType===CZDiscrete,10,1]]
 
 
-CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_, encoder_, pixelCNNNet_ ] ] :=
-   CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, "condpixelcnn" ], inputType, encoder, NetExtract[ pixelCNNNet, "global" ][] ]
+CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_, pixelCNNNet_ ] ] :=
+   CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, "condpixelcnn" ], inputType, NetExtract[ pixelCNNNet, "global" ][] ];
+
+
+CZModelLRM[ CZPixelCNN ] := Flatten[Table[
+   {{"condpixelcnn","predict"<>ToString[k],"masked_input"}->0,
+   {"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,4}],1];

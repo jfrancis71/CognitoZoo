@@ -1,5 +1,22 @@
 (* ::Package:: *)
 
+(*
+   Implementation of ideas from Real NVP
+   Ref: https://arxiv.org/pdf/1605.08803.pdf
+   Dinh, Sohl-Dickstein, Bengio, 2017.
+   This Mathematica implementation is not identical with reference implementation, but
+   does use ideas from their paper.
+   
+   Achieves reasonable generative model on MNIST, good clear images, digit-like but not always
+   recognisable as specific digit.
+   When trained on CelebA dataset around 20% of samples look very realistic, about 50% strongly resemble
+   faces (but notable generative artefacts) and 20% look quite distorted. Model has log likelihood of around -2000.
+   Did experiment with more coupling layers, more powerful coupling nets, increasing power of coupling nets through
+   each layer, and also implementing multi-scale (ie factoring out at each level). These changes seem to make
+   little difference either in isolation or in combination.
+*)
+
+
 gauss = NetChain[{
    ElementwiseLayer[-0.5*#^2-Log[Sqrt[2*Pi]]&],\
    SummationLayer[]}];

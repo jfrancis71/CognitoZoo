@@ -6,139 +6,160 @@
 mnist=ResourceData["MNIST","TrainingData"][[;;500,1]];
 
 
-binVectors = Flatten/@ImageData/@Binarize/@mnist;
-
-
 binImages = ImageData/@Binarize/@mnist;
 
 
 images = CZDiscretize/@mnist;
 
 
-nbmodel1 = CZCreateNBModelBinaryVector[];
+nbmodel1 = CZCreateNBModel[];
 
 
-nbtrain1 = CZTrain[ nbmodel1, binVectors ];
+nbtrain1 = CZTrain[ nbmodel1, binImages, MaxTrainingRounds->1  ];
 
 
-Image@Partition[ CZSample[ nbtrain1 ], 28 ]
+CZLogDensity[ nbtrain1, binImages[[1]] ]
 
 
-CZLogDensity[ nbtrain1, binVectors[[1]] ]
+Image@CZSample[ nbtrain1 ]
 
 
-nbmodel2 = CZCreateNBModelBinaryImage[];
+nbmodel2 = CZCreateNBModel[ CZDiscrete[{28,28}] ];
 
 
-nbtrain2 = CZTrain[ nbmodel2, binImages ];
+nbtrain2 = CZTrain[ nbmodel2, images, MaxTrainingRounds->1  ];
+
+
+CZLogDensity[ nbtrain2, images[[1]] ]
 
 
 Image@CZSample[ nbtrain2 ]
 
 
-CZLogDensity[ nbtrain2, binImages[[1]] ]
+nbmodel3 = CZCreateNBModel[ CZRealGauss[{28,28}] ];
 
 
-nbmodel3 = CZCreateNBModelDiscreteImage[];
+nbtrain3 = CZTrain[ nbmodel3, ImageData/@mnist, MaxTrainingRounds->1  ];
 
 
-nbtrain3 = CZTrain[ nbmodel3, images ];
+CZLogDensity[ nbtrain3, ImageData@mnist[[1]] ]
 
 
 Image@CZSample[ nbtrain3 ]
 
 
-CZLogDensity[ nbtrain3, images[[1]] ]
-
-
 <<"Experimental/GenerativeModels/CZVariationalAutoencoders.m"
 
 
-vaemodel1 = CZCreateVaEBinaryVector[];
+vaemodel1 = CZCreateVaE[];
 
 
-vaetrain1 = CZTrain[ vaemodel1, binVectors ];
+vaetrain1 = CZTrain[ vaemodel1, binImages, MaxTrainingRounds->1  ];
 
 
-Image@Partition[ CZSample[ vaetrain1 ], 28 ]
+CZLogDensity[ vaetrain1, binImages[[1]] ]
 
 
-CZLogDensity[ vaetrain1, binVectors[[1]] ]
+Image@CZSample[ vaetrain1 ]
 
 
-vaemodel2 = CZCreateVaEBinaryImage[];
+vaemodel2 = CZCreateVaE[ CZDiscrete[{28,28}] ];
 
 
-vaetrain2 = CZTrain[ vaemodel2, binImages ];
+vaetrain2 = CZTrain[ vaemodel2, images, MaxTrainingRounds->1  ];
+
+
+CZLogDensity[ vaetrain2, images[[1]] ]
 
 
 Image@CZSample[ vaetrain2 ]
 
 
-CZLogDensity[ vaetrain2, binImages[[1]] ]
+vaemodel3 = CZCreateVaE[ CZRealGauss[{28,28}] ];
 
 
-vaemodel3 = CZCreateVaEDiscreteImage[];
+vaetrain3 = CZTrain[ vaemodel3, ImageData/@mnist, MaxTrainingRounds->1  ];
 
 
-vaetrain3 = CZTrain[ vaemodel3, images ];
+CZLogDensity[ vaetrain3, ImageData@mnist[[1]] ]
 
 
 Image@CZSample[ vaetrain3 ]
 
 
-CZLogDensity[ vaetrain3, images[[1]] ]
-
-
 <<"Experimental/GenerativeModels/CZPixelCNN.m"
 
 
-cnnmodel2 = CZCreatePixelCNNBinaryImage[];
+cnnmodel1 = CZCreatePixelCNN[];
 
 
-cnntrain2 = CZTrain[ cnnmodel2, binImages ];
+cnntrain1 = CZTrain[ cnnmodel1, binImages, MaxTrainingRounds->1  ];
+
+
+CZLogDensity[ cnntrain1, binImages[[1]] ]
+
+
+Image@CZSample[ cnntrain1 ]
+
+
+cnnmodel2 = CZCreatePixelCNN[ CZDiscrete[{28,28}] ];
+
+
+cnntrain2 = CZTrain[ cnnmodel2, images, MaxTrainingRounds->1  ];
+
+
+CZLogDensity[ cnntrain2, images[[1]] ]
 
 
 Image@CZSample[ cnntrain2 ]
 
 
-CZLogDensity[ cnntrain2, binImages[[1]] ]
+cnnmodel3 = CZCreatePixelCNN[ CZRealGauss[{28,28}] ];
 
 
-cnnmodel3 = CZCreatePixelCNNDiscreteImage[];
+cnntrain3 = CZTrain[ cnnmodel3, ImageData/@mnist, MaxTrainingRounds->1  ];
 
 
-cnntrain3 = CZTrain[ cnnmodel3, images ];
+CZLogDensity[ cnntrain3, ImageData@mnist[[1]] ]
 
 
 Image@CZSample[ cnntrain3 ]
 
 
-CZLogDensity[ cnntrain3, images[[1]] ]
-
-
 <<"Experimental/GenerativeModels/CZPixelVaE.m"
 
 
-cnnmodel2 = CZCreatePixelVaEBinaryImage[];
+pixelvaemodel1 = CZCreatePixelVaE[];
 
 
-cnnvaetrain2 = CZTrain[ cnnmodel2, binImages ];
+pixelvaetrain1 = CZTrain[ pixelvaemodel1, binImages, MaxTrainingRounds->1  ];
 
 
-Image@CZSample[ cnnvaetrain2 ]
+CZLogDensity[ pixelvaetrain1, binImages[[1]] ]
 
 
-CZLogDensity[ cnnvaetrain2, binImages[[1]] ]
+Image@CZSample[ pixelvaetrain1 ]
 
 
-cnnvaemodel3 = CZCreatePixelVaEDiscreteImage[];
+pixelvaemodel2 = CZCreatePixelVaE[ CZDiscrete[{28,28}] ];
 
 
-cnnvaetrain3 = CZTrain[ cnnvaemodel3, images ];
+pixelvaetrain2 = CZTrain[ pixelvaemodel2, images, MaxTrainingRounds->1  ];
 
 
-Image@CZSample[ cnnvaetrain3 ]
+CZLogDensity[ pixelvaetrain2, images[[1]] ]
 
 
-CZLogDensity[ cnnvaetrain3, images[[1]] ]
+Image@CZSample[ pixelvaetrain2 ]
+
+
+pixelvaemodel3 = CZCreatePixelVaE[ CZRealGauss[{28,28}] ];
+
+
+pixelvaetrain3 = CZTrain[ pixelvaemodel3, ImageData/@mnist, MaxTrainingRounds->1  ];
+
+
+CZLogDensity[ pixelvaetrain3, ImageData@mnist[[1]] ]
+
+
+Image@CZSample[ pixelvaetrain3 ]

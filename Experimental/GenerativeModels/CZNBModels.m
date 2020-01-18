@@ -1,54 +1,29 @@
 (* ::Package:: *)
 
-(*
-   Generative models all have an Input port, an Output port and a Loss port.
-   Conditional Generative models are considered to be generative models, but have
-   an additional Conditional port.
-   The input for discrete images in the net is eg 28x28x10
-   Note this isn't always convenient for within the net, so they may reformat (to 10x28x28).
-   Models are in format: CZGenerativeModel[ modelType, inputType, encoder, net ]
-*)
-
-
 <<"Experimental/GenerativeModels/CZGenerativeUtils.m"
 
 
-(*
-   Note CrossEntropyLossLayer computes everything in nats
-*)
-CZGenerativeOutputLayer[ outputLayerType_, lossType_, dims_ ] := NetGraph[{
-   "out"->outputLayerType,
-   "crossentropy"->{lossType,ElementwiseLayer[#*Apply[Times,dims]&]}},{
-   NetPort["Conditional"]->"out"->"crossentropy"->NetPort["Loss"],
-   "out"->NetPort["Output"],
-   NetPort["Input"]->NetPort[{"crossentropy","Target"}]
-}];
+CZLatentModelQ[ CZNBModel ] = False;
 
 
-CZCreateNBModel[ conditionalDims_, outputLayerType_, lossType_ ] := NetGraph[{
-   "array"->ConstantArrayLayer[conditionalDims],
-   "decoder"->CZGenerativeOutputLayer[ outputLayerType, lossType, conditionalDims ]},{
-   "array"->NetPort[{"decoder","Conditional"}],
-   NetPort["Input"]->NetPort[{"decoder","Input"}]
+CZCreateNBModelNet[ outputType_ ] := NetGraph[{
+   "array"->ConstantArrayLayer[Prepend[ outputType[[1]], CZDistributionParameters[ outputType ] ]],
+   "loss"->CZLossLogits[ outputType ]},{
+   "array"->NetPort[{"loss","Input"}],
+   NetPort["Input"]->NetPort[{"loss","Target"}]
 }];
 
 
 SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{}};
 
 
-CZCreateNBModelBinaryVector[ inputUnits_:784 ] := CZGenerativeModel[ CZNBModel, CZBinaryVector[ inputUnits ], Identity, CZCreateNBModel[ {inputUnits}, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
+CZCreateNBModel[ type_:CZBinary[{28,28}] ] := CZGenerativeModel[ 
+   CZNBModel, type, CZCreateNBModelNet[ type ]
+];
 
 
-CZSample[ CZGenerativeModel[ CZNBModel, CZBinaryVector[ inputUnits_ ], _, net_ ] ] := CZSampleBinaryVector@net[ConstantArray[0,{inputUnits}]]["Output"];
+CZSample[ CZGenerativeModel[ CZNBModel, outputType_, net_ ] ] :=
+   CZSampleDistribution[ outputType, NetExtract[net, "array"][] ]/If[Head[outputType]===CZDiscrete,10,1];
 
 
-CZCreateNBModelBinaryImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBModel, CZBinaryImage[ imageDims ], Identity, CZCreateNBModel[ imageDims, LogisticSigmoid, CrossEntropyLossLayer["Binary"] ] ];
-
-
-CZSample[ CZGenerativeModel[ CZNBModel, CZBinaryImage[ imageDims_ ], _, net_ ] ] := CZSampleBinaryImage@net[ ConstantArray[0,imageDims]]["Output"];
-
-
-CZCreateNBModelDiscreteImage[ imageDims_:{28,28} ] := CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims ], Identity, CZCreateNBModel[ Prepend[imageDims, 10], {TransposeLayer[{3<->1,1<->2}],SoftmaxLayer[]}, CrossEntropyLossLayer["Index"]  ] ];
-
-
-CZSample[ CZGenerativeModel[ CZNBModel, CZDiscreteImage[ imageDims_ ], _, net_ ] ] := CZSampleDiscreteImage@net[ConstantArray[1,imageDims]]["Output"]/10;
+CZModelLRM[ CZNBModel ] := {}
