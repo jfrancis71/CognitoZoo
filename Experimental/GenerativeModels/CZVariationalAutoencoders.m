@@ -27,8 +27,8 @@ CZCreateDecoder[ outputType_, h1_:500, h2_:500 ] :=
    NetGraph[{
       "h1"->{h1,Ramp},
       "h2"->{h2,Ramp},
-      "o"->outputType[[1,1]]*outputType[[1,2]]*CZDistributionParameters[ outputType ],
-      "r"->ReshapeLayer[{CZDistributionParameters[ outputType ],outputType[[1,1]],outputType[[1,2]]}],
+      "o"->Apply[Times,outputType[[1]]]*CZDistributionParameters[ outputType ],
+      "r"->ReshapeLayer[Prepend[ outputType[[1]], CZDistributionParameters[ outputType ]]],
       "cond"->CZLossLogits[ outputType ]},{
       NetPort["Conditional"]->"h1",
       "h1"->"h2"->"o"->"r"->NetPort[{"cond","Input"}],
