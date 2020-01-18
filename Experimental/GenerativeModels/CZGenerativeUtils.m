@@ -55,7 +55,8 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPa
 
 
 CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, net_ ], sample_ ] :=
-   -net[ Append[ Association[ "Input"->CZEncoder[ modelInput ]@sample ], If[ Head@modelType===CZVaE||Head@modelType===CZPixelVaE||Head@modelType===CZNadeVaE, "RandomSample"->ConstantArray[0,{modelType[[1]]}], {} ] ] ]
+   -net[ Association[ { "Input"->CZEncoder[ modelInput ]@sample,
+      If[ CZLatentModelQ[ modelType ], "RandomSample"->ConstantArray[0,{modelType[[1]]}], Nothing ] } ] ]
 
 
 (*
