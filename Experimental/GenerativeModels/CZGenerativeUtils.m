@@ -1,15 +1,17 @@
 (* ::Package:: *)
 
-CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image],{2}]
+CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image, Interleaving->False],{2}]
 
 
-CZOneHot[ image_ ] := Transpose[ Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {2} ], {2,3,1}];
+CZOneHot[ image_ ] := Transpose[ Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {Length[Dimensions[image]]} ],
+   If[Length[Dimensions[image]]==2,{2,3,1},{2,3,4,1}]];
 
 
 CZSampleDistribution[ CZBinary[ dims_ ], betas_ ] := Map[ RandomChoice[{1-#,#}->{0,1}]&, LogisticSigmoid@betas[[1]], {Length[dims]}];
 
 
-CZSampleDistribution[ CZDiscrete[ dims_ ], probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, SoftmaxLayer[][Transpose[probs,{3,1,2}]], {Length[dims]} ];
+CZSampleDistribution[ CZDiscrete[ dims_ ], probs_ ] := Map[ RandomChoice[#->Range[1,10]]&, SoftmaxLayer[]@
+   Transpose[probs,If[Length[dims]==2,{3,1,2},{4,1,2,3}]], {Length[dims]} ];
 
 
 CZSampleStandardNormalDistribution[ dims_ ] := Array[RandomVariate@NormalDistribution[0,1]&,dims];
