@@ -20,8 +20,8 @@ CZLatentModelQ[ CZPixelVaE[ _ ] ] := True;
 CZPixelVaEDecoder[ inputType_ ] := NetGraph[{
    {500,Ramp},
    {500,Ramp},
-   {inputType[[1,1]]*inputType[[1,2]]},
-   ReshapeLayer[inputType[[1,1;;2]]],
+   {Apply[Times,inputType[[1,-2;;-1]]]},
+   ReshapeLayer[inputType[[1,-2;;-1]]],
    CZCreatePixelCNNConditionalNet[ inputType, PixelCNNOrder[ inputType[[1]] ] ]},{
    NetPort["Conditional"]->1->2->3->4->NetPort[{5,"Conditional"}],
    NetPort["Target"]->NetPort[{5,"Input"}]}];
