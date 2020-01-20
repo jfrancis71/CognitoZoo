@@ -137,6 +137,6 @@ CZSample[ CZGenerativeModel[ CZPixelCNN, inputType_, pixelCNNNet_ ] ] :=
    CZSampleConditionalPixelCNN[ NetExtract[ pixelCNNNet, "condpixelcnn" ], inputType, NetExtract[ pixelCNNNet, "global" ][] ];
 
 
-CZModelLRM[ CZPixelCNN ] := Flatten[Table[
+CZModelLRM[ CZPixelCNN, dims_ ] := Flatten[Table[
    {{"condpixelcnn","predict"<>ToString[k],"masked_input"}->0,
-   {"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,4}],1];
+   {"condpixelcnn","loss"<>ToString[k],"mask"}->0},{k,If[Length[dims]==2,4,4*dims[[1]]]}],1];

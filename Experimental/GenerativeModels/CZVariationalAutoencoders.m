@@ -97,4 +97,4 @@ CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ _ ], inputType_, vaeNet_ ], latent
 ];
 
 
-CZModelLRM[ CZVaE[ _ ] ] := {}
+CZModelLRM[ CZVaE[ _ ], _ ] := {}

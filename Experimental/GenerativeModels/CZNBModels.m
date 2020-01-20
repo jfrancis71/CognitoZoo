@@ -26,4 +26,4 @@ CZSample[ CZGenerativeModel[ CZNBModel, outputType_, net_ ] ] :=
    CZSampleDistribution[ outputType, NetExtract[net, "array"][] ]/If[Head[outputType]===CZDiscrete,10,1];
 
 
-CZModelLRM[ CZNBModel ] := {}
+CZModelLRM[ CZNBModel, _ ] := {}

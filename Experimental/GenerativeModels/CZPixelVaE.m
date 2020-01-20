@@ -43,6 +43,6 @@ CZSample[ CZGenerativeModel[ CZPixelVaE[ latentUnits_ ], inputType_, pixelCNNNet
 )
 
 
-CZModelLRM[ CZPixelVaE[ _ ] ] := Flatten[Table[
+CZModelLRM[ CZPixelVaE[ _ ], dims_ ] := Flatten[Table[
    {{"decoder",5,"predict"<>ToString[k],"masked_input"}->0,
-   {"decoder",5,"loss"<>ToString[k],"mask"}->0},{k,4}],1]
+   {"decoder",5,"loss"<>ToString[k],"mask"}->0},{k,If[Length[dims]==2,4,4*dims[[1]]]}],1]
