@@ -40,8 +40,6 @@ SyntaxInformation[ CZDiscrete ]= {"ArgumentsPattern"->{_}};
 SyntaxInformation[ CZRealGauss ]= {"ArgumentsPattern"->{_}};
 
 
-Options[ CZTrain ] = {
-   MaxTrainingRounds->10000 };
 CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPattern[] ] := Module[{trained, lossNet, f},
    rnd=RandomSample[ samples ];len=Round[Length[rnd]*.9];
    {trainingSet,validationSet}={rnd[[;;len]],rnd[[len+1;;]]};
@@ -50,8 +48,8 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPa
    validBatch[assoc_] :=
       Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ {model[[1]]} ], {} ] ], {assoc["BatchSize"]} ];      
       tp1=trainBatch;
-   trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,MaxTrainingRounds->OptionValue[ MaxTrainingRounds ],
-      LearningRateMultipliers->CZModelLRM[ model, inputType[[1]] ] ];
+   trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,
+      FilterRules[{opts}, Options[NetTrain]], LearningRateMultipliers->CZModelLRM[ model, inputType[[1]] ] ];
    CZGenerativeModel[ model,  inputType, trained ]
 ];
 
