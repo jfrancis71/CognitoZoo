@@ -48,7 +48,7 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPa
    validBatch[assoc_] :=
       Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ {model[[1]]} ], {} ] ], {assoc["BatchSize"]} ];      
       tp1=trainBatch;
-   trained = NetTrain[ net, trainBatch, ValidationSet->validBatch, LossFunction->"Loss", "BatchSize"->128,
+   trained = NetTrain[ net, {trainBatch,"RoundLength"->Length[trainingSet]}, ValidationSet->{validBatch,"RoundLength"->Length[validationSet]}, LossFunction->"Loss", "BatchSize"->128,
       FilterRules[{opts}, Options[NetTrain]], LearningRateMultipliers->CZModelLRM[ model, inputType[[1]] ] ];
    CZGenerativeModel[ model,  inputType, trained ]
 ];
