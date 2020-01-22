@@ -17,6 +17,18 @@
 *)
 
 
+<<"Experimental/GenerativeModels/CZGenerativeUtils.m"
+
+
+SyntaxInformation[ CZRealNVPModel ]= {"ArgumentsPattern"->{_,_}};
+
+
+SyntaxInformation[ CZRealNVP ]= {"ArgumentsPattern"->{_,_,_}};
+
+
+CZLatentModelQ[ CZRealNVPModel[_,_] ] = False;
+
+
 gauss = NetChain[{
    ElementwiseLayer[-0.5*#^2-Log[Sqrt[2*Pi]]&],\
    SummationLayer[]}];
@@ -150,6 +162,10 @@ RealNVP[blocks_,channelCoupling_,dims_] := Module[{els = Apply[Times,dims]},NetG
 ]];
 
 
+CZCreateRealNVP[ {1,32,32} ]:=
+   CZGenerativeModel[ CZRealNVPModel[ 3,1 ], CZRealNVP[ dims], RealNVP[ 3,1, {1,32,32} ]]
+
+
 RealNVPLRM[ blocks_, channelCoupling_ ] := Flatten@Join[
    Table[PrependLRM[ RealNVPBlockLRM, "block"<>ToString[k] ],{k,blocks}],
    Table[PrependLRM[ CouplingLayerLRM, "c"<>ToString[k] ],{k,channelCoupling}],
@@ -157,23 +173,7 @@ RealNVPLRM[ blocks_, channelCoupling_ ] := Flatten@Join[
 ];
 
 
-images = ResourceData["MNIST","TrainingData"][[All,1]];
-
-
-resize = ImageResize[#,{32,32}]&/@images;
-
-
-data = {ImageData[#]}&/@resize;data//Dimensions;
-
-
-data1 = data+Table[RandomReal[]/10,{60000},{1},{32},{32}];
-
-
-train = NetTrain[ RealNVP, 
-   Association["Input"->#]&/@data1,
-   LearningRateMultipliers->RealNVPLRM[3,1],
-   LossFunction->"Loss"
-];
+CZModelLRM[ CZRealNVPModel[ blocks_, channelCoupling_ ], _ ] := RealNVPLRM[ blocks, channelCoupling ]
 
 
 ReverseCouplingLayer[net_,z_,mask_]:=(

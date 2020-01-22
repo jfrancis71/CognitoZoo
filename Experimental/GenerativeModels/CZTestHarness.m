@@ -163,3 +163,18 @@ CZLogDensity[ pixelvaetrain3, ImageData@mnist[[1]] ]
 
 
 Image@CZSample[ pixelvaetrain3 ]
+
+
+<<"Experimental/GenerativeModels/CZRealNVPConv.m"
+
+
+realnvp = CZCreateRealNVP[{1,32,32}];
+
+
+multichannel={ImageData[ImageResize[#,{32,32}],Interleaving->False]}&/@mnist;
+
+
+realnvptrain=CZTrain[ realnvp, multichannel]
+
+
+CZLogDensity[ realnvptrain, multichannel[[67]]]
