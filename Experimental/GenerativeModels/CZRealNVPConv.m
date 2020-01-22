@@ -124,32 +124,36 @@ RealNVPBlockLRM = Join[
 ];
 
 
-RealNVP = NetGraph[{
-   "block1"->RealNVPBlock[ CheckerboardMask[{1,32,32}], ChannelMask[{4,16,16}], 1],
-   "block2"->RealNVPBlock[ CheckerboardMask[{4,16,16}], ChannelMask[{16,8,8}], 4],
-   "block3"->RealNVPBlock[ CheckerboardMask[{16,8,8}], ChannelMask[{64,4,4}], 16],
-   "reshape"->ReshapeLayer[{1024,1,1}],
-   "c1"->CouplingLayer[ ChannelMask[{1024,1,1}] ],
-   "c2"->CouplingLayer[ 1 - ChannelMask[{1024,1,1}] ],
+(* Note you do need to ensure the block number is appropriate to the dimensions of the Input *)
+RealNVP[blocks_,channelCoupling_,dims_] := Module[{els = Apply[Times,dims]},NetGraph[Join[
+   Table["block"<>ToString[ k+1 ]->
+      RealNVPBlock[ 
+         CheckerboardMask[{dims[[1]]*4^k,dims[[2]]/2^k,dims[[3]]/2^k}], 
+         ChannelMask[{dims[[1]]*4^(k+1),dims[[2]]/2^(k+1),dims[[3]]/2^(k+1)}], 4^k],{k,0,blocks-1}],
+   {"reshape"->ReshapeLayer[{els,1,1}]},
+   Table["c"<>ToString[k]->CouplingLayer[ ChannelMask[{els,1,1}] ],{k,channelCoupling}],
+   Table["d"<>ToString[k]->CouplingLayer[ 1 - ChannelMask[{els,1,1}] ],{k,channelCoupling}],{
    "g"->gauss,
    "th"->ThreadingLayer[Plus],
-   "loss"->ElementwiseLayer[ -#& ]
-},{
-   NetPort[{"block1","Transformed"}]->"block2",
-   NetPort[{"block2","Transformed"}]->"block3",
-   NetPort[{"block3","Transformed"}]->"reshape"->"c1",
-   NetPort[{"c1","Transformed"}]->"c2",
-   NetPort[{"c2","Transformed"}]->"g",
-   {NetPort[{"block1","Jacobian"}],NetPort[{"block2","Jacobian"}],NetPort[{"block3","Jacobian"}],"g",NetPort[{"c1","Jacobian"}],NetPort[{"c2","Jacobian"}]}->"th"->"loss"->NetPort["Loss"]
-},"Input"->{1,32,32}];
+   "loss"->ElementwiseLayer[ -#& ]}]
+,Join[
+   Table[NetPort[{"block"<>ToString[k],"Transformed"}]->"block"<>ToString[k+1],{k,1,blocks-1}],
+{   If[blocks>0,NetPort[{"block"<>ToString[blocks],"Transformed"}]->"reshape",Nothing],
+   "reshape"->If[channelCoupling>0,"c1","g"],
+   Table[NetPort[{"c"<>ToString[k],"Transformed"}]->"d"<>ToString[k],{k,channelCoupling}],
+   Table[NetPort[{"d"<>ToString[k],"Transformed"}]->"c"<>ToString[k+1],{k,channelCoupling-1}],
+   If[channelCoupling>0,NetPort[{"d"<>ToString[channelCoupling],"Transformed"}]->"g",Nothing],
+   Join[Table[NetPort[{"block"<>ToString[k],"Jacobian"}],{k,blocks}],
+      {"g"},Table[NetPort[{"c"<>ToString[k],"Jacobian"}],{k,channelCoupling}],Table[NetPort[{"d"<>ToString[k],"Jacobian"}],{k,channelCoupling}]]->"th"->"loss"->NetPort["Loss"]
+   }],
+   "Input"->dims
+]];
 
 
-RealNVPLRM = Join[
-   PrependLRM[ RealNVPBlockLRM, "block1" ],
-   PrependLRM[ RealNVPBlockLRM, "block2" ],
-   PrependLRM[ RealNVPBlockLRM, "block3" ],
-   PrependLRM[ CouplingLayerLRM, "c1" ],
-   PrependLRM[ CouplingLayerLRM, "c2" ]
+RealNVPLRM[ blocks_, channelCoupling_ ] := Flatten@Join[
+   Table[PrependLRM[ RealNVPBlockLRM, "block"<>ToString[k] ],{k,blocks}],
+   Table[PrependLRM[ CouplingLayerLRM, "c"<>ToString[k] ],{k,channelCoupling}],
+   Table[PrependLRM[ CouplingLayerLRM, "d"<>ToString[k] ],{k,channelCoupling}]
 ];
 
 
@@ -167,7 +171,7 @@ data1 = data+Table[RandomReal[]/10,{60000},{1},{32},{32}];
 
 train = NetTrain[ RealNVP, 
    Association["Input"->#]&/@data1,
-   LearningRateMultipliers->RealNVPLRM,
+   LearningRateMultipliers->RealNVPLRM[3,1],
    LossFunction->"Loss"
 ];
 
