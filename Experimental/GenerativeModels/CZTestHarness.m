@@ -174,7 +174,10 @@ realnvp = CZCreateRealNVP[{1,32,32}];
 multichannel={ImageData[ImageResize[#,{32,32}],Interleaving->False]}&/@mnist;
 
 
-realnvptrain=CZTrain[ realnvp, multichannel]
+realnvptrain=CZTrain[ realnvp, multichannel, MaxTrainingRounds->1]
 
 
 CZLogDensity[ realnvptrain, multichannel[[67]]]
+
+
+Image@CZSample[ realnvptrain ][[1]]

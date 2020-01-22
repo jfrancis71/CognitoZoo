@@ -163,7 +163,7 @@ RealNVP[blocks_,channelCoupling_,dims_] := Module[{els = Apply[Times,dims]},NetG
 
 
 CZCreateRealNVP[ {1,32,32} ]:=
-   CZGenerativeModel[ CZRealNVPModel[ 3,1 ], CZRealNVP[ dims], RealNVP[ 3,1, {1,32,32} ]]
+   CZGenerativeModel[ CZRealNVPModel[ 3,1 ], CZRealNVP[ {1,32,32} ], RealNVP[ 3,1, {1,32,32} ]]
 
 
 RealNVPLRM[ blocks_, channelCoupling_ ] := Flatten@Join[
@@ -183,13 +183,12 @@ ReverseCouplingLayer[net_,z_,mask_]:=(
    tot=ch*(1-mask)+z*mask)
 
 
-ReverseRealNVP[ z_ ] := (
-   oc2i = ReverseCouplingLayer[ NetExtract[ train, {"c2"} ], z, 1-ChannelMask[{1024,1,1}] ];
-   oc1i = ReverseCouplingLayer[ NetExtract[ train, {"c1"} ], oc2i, ChannelMask[{1024,1,1}] ];
-   reshape = ReshapeLayer[{64,4,4}][oc1i];
-   revblock3 = ReverseRealNVPBlock[ "block3", { 16, 8, 8 }, reshape ];
-   revblock2 = ReverseRealNVPBlock[ "block2", { 4, 16, 16 }, revblock3 ];
-   revblock1 = ReverseRealNVPBlock[ "block1", { 1, 32, 32 }, revblock2 ]
+ReverseRealNVP[ model_, z_ ] := (
+   ch = Fold[Function[{z1,l},
+   Function[inp1,ReverseCouplingLayer[ NetExtract[ model[[3]], {"c1"} ], inp1, ChannelMask[{1024,1,1}] ]]@
+      Function[inp,ReverseCouplingLayer[ NetExtract[ model[[3]], {"d1"} ], inp, 1-ChannelMask[{1024,1,1}] ]][z1]],z,Reverse@Range[model[[1,1]]]];
+   reshape = ReshapeLayer[{64,4,4}][ch];
+   Fold[ Function[{zt,l},ReverseRealNVPBlock[ NetExtract[ model[[3]], "block"<>ToString[l] ], {4^(l-1),32/2^(l-1),32/2^(l-1)}, zt ] ], reshape, Reverse@Range[model[[1,1]] ] ]
 )
 
 
@@ -206,16 +205,17 @@ ReverseSqueezeLayer[ inp_, dims_ ] := Module[{tmp = ConstantArray[0,dims]},
 (*
    Note dims is the dimensions of the input to the block
 *)
-ReverseRealNVPBlock[ blockName_, dims_, z_ ] := (
-   c4i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c4"} ], z, 1 - ChannelMask[{dims[[1]]*4,dims[[2]]/2,dims[[3]]/2}] ];
-   c3i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c3"} ], c4i, ChannelMask[{dims[[1]]*4,dims[[2]]/2,dims[[3]]/2}] ];
+ReverseRealNVPBlock[ block_, dims_, z_ ] := (
+   c4i = ReverseCouplingLayer[ NetExtract[ block, {"c4"} ], z, 1 - ChannelMask[{dims[[1]]*4,dims[[2]]/2,dims[[3]]/2}] ];
+   c3i = ReverseCouplingLayer[ NetExtract[ block, {"c3"} ], c4i, ChannelMask[{dims[[1]]*4,dims[[2]]/2,dims[[3]]/2}] ];
    desq = ReverseSqueezeLayer[ c3i, dims ];
-   c2i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c2"} ], desq, 1 - CheckerboardMask[dims] ];
-   c1i = ReverseCouplingLayer[ NetExtract[ train, {blockName,"c1"} ], c2i, CheckerboardMask[dims] ]
+   c2i = ReverseCouplingLayer[ NetExtract[ block, {"c2"} ], desq, 1 - CheckerboardMask[dims] ];
+   c1i = ReverseCouplingLayer[ NetExtract[ block, {"c1"} ], c2i, CheckerboardMask[dims] ]
 )
 
 
 gaussiansample[] := Table[RandomVariate@NormalDistribution[0,1],{1024},{1},{1}]
 
 
-sample[] := ReverseRealNVP[ gaussiansample[] ];
+CZSample[ CZGenerativeModel[ CZRealNVPModel[ blocks_,channelCouplings_ ], type_, net_ ] ] :=
+   ReverseRealNVP[ CZGenerativeModel[ CZRealNVPModel[ blocks,channelCouplings ], type, net ], gaussiansample[] ]
