@@ -14,12 +14,12 @@
 CZLatentModelQ[ CZVaE[ _ ] ] := True;
 
 
-CZCreateEncoder[ latentUnits_, h1_:500, h2_: 500 ] :=
+CZCreateEncoder[ latentChannels_, h1_:500, h2_: 500 ] :=
    NetGraph[{
-      "h1"->{FlattenLayer[],h1,Ramp},
-      "h2"->{h2,Ramp},
-      "mu"->latentUnits,
-      "logvar"->latentUnits},{
+      "h1"->{ReshapeLayer[{Automatic,1,1}],ConvolutionLayer[h1,{1,1}],Ramp},
+      "h2"->{ConvolutionLayer[h2,{1,1}],Ramp},
+      "mu"->ConvolutionLayer[latentChannels,{1,1}],
+      "logvar"->ConvolutionLayer[latentChannels,{1,1}]},{
       "h1"->"h2"->{"mu","logvar"},"mu"->NetPort["Mean"],"logvar"->NetPort["LogVar"]}];
 
 
@@ -50,7 +50,7 @@ CZKLLoss = NetGraph[{
    "meansq"->ElementwiseLayer[#^2&],
    "th"->ThreadingLayer[Plus],
    "neg"->ElementwiseLayer[-1-#&],
-   "ag"->AggregationLayer[Total,1],
+   "ag"->AggregationLayer[Total,All],
    "kl_loss"->ElementwiseLayer[0.5*#&]},{
    NetPort["LogVar"]->{"var","neg"},
    NetPort["Mean"]->"meansq",
@@ -78,11 +78,11 @@ SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
 
 CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], inputType_, vaeNet_ ] ] :=
    CZSampleFromLatent[ CZGenerativeModel[ CZVaE[ latentUnits ], inputType, vaeNet ],
-      CZSampleStandardNormalDistribution[ {latentUnits } ] ];
+      CZSampleStandardNormalDistribution[ latentUnits ] ];
 
 
 CZCreateVaE[ type_:CZBinary[{28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=
-   CZGenerativeModel[ CZVaE[ latentUnits ], type,
+   CZGenerativeModel[ CZVaE[ {latentUnits,1,1} ], type,
       CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZCreateDecoder[ type ] ] ];
 
 
