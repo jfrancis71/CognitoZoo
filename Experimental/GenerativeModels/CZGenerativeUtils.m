@@ -121,3 +121,9 @@ CZGaussianLossLayer = NetGraph[{
    NetPort["Target"]->NetPort[{"loss","Target"}],
    NetPort[{"loss","Loss"}]->"total_loss"->NetPort["Loss"]
 }];
+
+
+MaskLayer[ mask_ ] := NetGraph[{
+   "mask"->ConstantArrayLayer["Array"->mask],
+   "thread"->ThreadingLayer[Times]},{
+   {NetPort["Input"],"mask"}->"thread"}]

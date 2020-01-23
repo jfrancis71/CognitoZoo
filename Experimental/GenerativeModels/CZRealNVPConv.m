@@ -34,12 +34,6 @@ gauss = NetChain[{
    SummationLayer[]}];
 
 
-MaskLayer[ mask_ ] := NetGraph[{
-   "mask"->ConstantArrayLayer["Array"->mask],
-   "thread"->ThreadingLayer[Times]},{
-   {NetPort["Input"],"mask"}->"thread"}]
-
-
 CheckerboardMask[ {channels_, row_, col_ } ] :=
    ReplacePart[ ConstantArray[ 0, {channels, row, col} ], {ch_, r_, c_}?(Function[v,If[OddQ[v[[2]]],OddQ[v[[3]]],EvenQ[v[[3]]]]])->1 ]
 
@@ -214,8 +208,6 @@ ReverseRealNVPBlock[ block_, dims_, z_ ] := (
 )
 
 
-gaussiansample[] := Table[RandomVariate@NormalDistribution[0,1],{1024},{1},{1}]
-
-
 CZSample[ CZGenerativeModel[ CZRealNVPModel[ blocks_,channelCouplings_ ], type_, net_ ] ] :=
-   ReverseRealNVP[ CZGenerativeModel[ CZRealNVPModel[ blocks,channelCouplings ], type, net ], gaussiansample[] ]
+   ReverseRealNVP[ CZGenerativeModel[ CZRealNVPModel[ blocks,channelCouplings ], type, net ],
+      CZSampleStandardNormalDistribution[{1024,1,1}] ]

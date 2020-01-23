@@ -36,12 +36,6 @@ PixelCNNOrder[ dims_ ] := If[Length[dims]==2,
 InformationMasking[ pixelCNNOrdering_ ] := FoldList[ Plus, pixelCNNOrdering[[1]]*0.0, pixelCNNOrdering ];
 
 
-MaskLayer[mask_]:=NetGraph[{
-   "mask"->ConstantArrayLayer["Array"->mask],
-   "thread"->ThreadingLayer[Times]},{
-   {NetPort["Input"],"mask"}->"thread"}]
-
-
 CZMaskLossLayer[ mask_, CZBinary[ dims_ ] ] := NetGraph[{
    "mask"->ConstantArrayLayer["Array"->mask],
    "activation"->{PartLayer[1],LogisticSigmoid},
