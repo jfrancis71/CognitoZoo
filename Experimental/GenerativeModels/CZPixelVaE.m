@@ -27,7 +27,7 @@ CZPixelVaEDecoder[ inputType_ ] := NetGraph[{
    NetPort["Target"]->NetPort[{5,"Input"}]}];
 
 
-CZCreatePixelVaE[ type_:CZBinary[{28,28}], latentUnits_:8 ] := CZGenerativeModel[
+CZCreatePixelVaE[ type_:CZBinary[{1,28,28}], latentUnits_:8 ] := CZGenerativeModel[
    CZPixelVaE[ {latentUnits,1,1} ], 
    type,
    CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type ] ]];

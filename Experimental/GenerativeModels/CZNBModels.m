@@ -17,7 +17,7 @@ CZCreateNBModelNet[ outputType_ ] := NetGraph[{
 SyntaxInformation[ CZNBModel ]= {"ArgumentsPattern"->{}};
 
 
-CZCreateNBModel[ type_:CZBinary[{28,28}] ] := CZGenerativeModel[ 
+CZCreateNBModel[ type_:CZBinary[{1,28,28}] ] := CZGenerativeModel[ 
    CZNBModel, type, CZCreateNBModelNet[ type ]
 ];
 

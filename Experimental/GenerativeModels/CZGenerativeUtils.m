@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-CZDiscretize[image_]:=Map[1+Round[#*9]&,ImageData[image, Interleaving->False],{2}]
+CZDiscretize[image_]:={Map[1+Round[#*9]&,ImageData[image, Interleaving->False],{2}]}
 
 
 CZOneHot[ image_ ] := Transpose[ Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {Length[Dimensions[image]]} ],

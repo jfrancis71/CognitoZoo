@@ -81,7 +81,7 @@ CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], inputType_, vaeNet_ ] ] :=
       CZSampleStandardNormalDistribution[ latentUnits ] ];
 
 
-CZCreateVaE[ type_:CZBinary[{28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=
+CZCreateVaE[ type_:CZBinary[{1,28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=
    CZGenerativeModel[ CZVaE[ {latentUnits,1,1} ], type,
       CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZCreateDecoder[ type ] ] ];
 

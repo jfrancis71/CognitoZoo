@@ -115,7 +115,7 @@ CZCreatePixelCNNNet[ crossEntropyType_, pixels_ ] := NetGraph[{
 SyntaxInformation[ CZPixelCNN ]= {"ArgumentsPattern"->{}};
 
 
-CZCreatePixelCNN[ type_:CZBinary[{28,28}] ] :=
+CZCreatePixelCNN[ type_:CZBinary[{1,28,28}] ] :=
    CZGenerativeModel[ CZPixelCNN, type, CZCreatePixelCNNNet[ type, PixelCNNOrder[ type[[1]] ] ] ];
 
 
