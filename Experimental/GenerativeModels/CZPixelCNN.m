@@ -21,12 +21,6 @@ PixelCNNOrdering2D[ imageDims_ ] := Module[{pixels=ConstantArray[0,Prepend[image
 }];
 
 
-channelInputDepth[ type_[dims_] ] := If[type===CZDiscrete,1,1]*If[Length[dims]==3,dims[[1]],1]
-
-
-channelOutputDepth[ type_[dims_] ] := CZDistributionParameters[ type[ dims ] ]*If[Length[dims]==3,dims[[1]],1]
-
-
 PixelCNNOrder[ dims_ ] := If[Length[dims]==2,
    PixelCNNOrdering2D[ dims ],
    Flatten[Table[ block=ConstantArray[0,dims];
@@ -78,11 +72,11 @@ CZMaskLossLayer[ mask_, CZRealGauss[ dims_ ] ] := NetGraph[{
 PredictLayer[ hideMask_, type_ ] := Module[{ inputDepth = If[Head[type]===CZDiscrete,10,1] },
    NetGraph[{
    "reshapeConditional"->ReshapeLayer[Prepend[type[[1,-2;;]],1]],
-   "masked_input"->{MaskLayer[If[Head[type]===CZDiscrete,hideMask,hideMask]],ReshapeLayer[{channelInputDepth[type],type[[1,-2]],type[[1,-1]]}]
+   "masked_input"->{MaskLayer[hideMask],ReshapeLayer[type[[1]]]
       },
    "cat"->CatenateLayer[],
    "conv"->{ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[16,{1,1},"PaddingSize"->0],Tanh,ConvolutionLayer[
-         channelOutputDepth[ type ],{1,1}]},
+         CZDistributionParameters[ type ]*type[[1,1]],{1,1}]},
    "reshape"->ReshapeLayer[Prepend[ type[[1]], CZDistributionParameters[ type ] ] ]
          },{
    NetPort["Input"]->"masked_input",
