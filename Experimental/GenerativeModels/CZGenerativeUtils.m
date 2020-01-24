@@ -40,13 +40,20 @@ SyntaxInformation[ CZDiscrete ]= {"ArgumentsPattern"->{_}};
 SyntaxInformation[ CZRealGauss ]= {"ArgumentsPattern"->{_}};
 
 
+createAssociation[ inputType_, model_, example_ ] :=
+   Association[
+      If[ model===CZNBModel, Nothing, "Input"->example ],
+      If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ model[[1]] ], Nothing ],
+      "Target"->If[Head[inputType] === CZDiscrete,CZOneHot@example, example] ]
+
+
 CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPattern[] ] := Module[{trained, lossNet, f},
    rnd=RandomSample[ samples ];len=Round[Length[rnd]*.9];
    {trainingSet,validationSet}={rnd[[;;len]],rnd[[len+1;;]]};
    trainBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[trainingSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];
+      Table[ createAssociation[ inputType, model, RandomChoice[trainingSet]], {assoc["BatchSize"]} ];
    validBatch[assoc_] :=
-      Table[ Append[ Association[ "Input"->CZEncoder[ inputType ][RandomChoice[validationSet]]], If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ model[[1]] ], {} ] ], {assoc["BatchSize"]} ];      
+      Table[ createAssociation[ inputType, model, RandomChoice[validationSet]], {assoc["BatchSize"]} ];
       tp1=trainBatch;
    trained = NetTrain[ net, {trainBatch,"RoundLength"->Length[trainingSet]}, ValidationSet->{validBatch,"RoundLength"->Length[validationSet]}, LossFunction->"Loss", "BatchSize"->128,
       FilterRules[{opts}, Options[NetTrain]], LearningRateMultipliers->CZModelLRM[ model, inputType[[1]] ] ];
@@ -55,8 +62,7 @@ CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPa
 
 
 CZLogDensity[ CZGenerativeModel[ modelType_, modelInput_, net_ ], sample_ ] :=
-   -net[ Association[ { "Input"->CZEncoder[ modelInput ]@sample,
-      If[ CZLatentModelQ[ modelType ], "RandomSample"->ConstantArray[0,modelType[[1]]], Nothing ] } ] ]
+   -net[ createAssociation[ modelInput, modelType, sample ] ]
 
 
 (*

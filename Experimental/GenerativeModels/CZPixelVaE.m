@@ -30,7 +30,7 @@ CZPixelVaEDecoder[ inputType_ ] := NetGraph[{
 CZCreatePixelVaE[ type_:CZBinary[{1,28,28}], latentUnits_:8 ] := CZGenerativeModel[
    CZPixelVaE[ {latentUnits,1,1} ], 
    type,
-   CZCreateVaENet[ CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type ] ]];
+   CZCreateVaENet[ type[[1]], CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type ] ]];
 
 
 SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};

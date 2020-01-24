@@ -10,7 +10,7 @@ CZCreateNBModelNet[ outputType_ ] := NetGraph[{
    "array"->ConstantArrayLayer[Prepend[ outputType[[1]], CZDistributionParameters[ outputType ] ]],
    "loss"->CZLossLogits[ outputType ]},{
    "array"->NetPort[{"loss","Input"}],
-   NetPort["Input"]->NetPort[{"loss","Target"}]
+   NetPort["Target"]->NetPort[{"loss","Target"}]
 }];
 
 

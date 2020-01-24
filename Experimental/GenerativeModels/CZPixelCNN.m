@@ -21,7 +21,7 @@ PixelCNNOrdering2D[ imageDims_ ] := Module[{pixels=ConstantArray[0,Prepend[image
 }];
 
 
-channelInputDepth[ type_[dims_] ] := If[type===CZDiscrete,10,1]*If[Length[dims]==3,dims[[1]],1]
+channelInputDepth[ type_[dims_] ] := If[type===CZDiscrete,1,1]*If[Length[dims]==3,dims[[1]],1]
 
 
 channelOutputDepth[ type_[dims_] ] := CZDistributionParameters[ type[ dims ] ]*If[Length[dims]==3,dims[[1]],1]
@@ -78,7 +78,7 @@ CZMaskLossLayer[ mask_, CZRealGauss[ dims_ ] ] := NetGraph[{
 PredictLayer[ hideMask_, type_ ] := Module[{ inputDepth = If[Head[type]===CZDiscrete,10,1] },
    NetGraph[{
    "reshapeConditional"->ReshapeLayer[Prepend[type[[1,-2;;]],1]],
-   "masked_input"->{MaskLayer[If[Head[type]===CZDiscrete,ConstantArray[hideMask,10],hideMask]],ReshapeLayer[{channelInputDepth[type],type[[1,-2]],type[[1,-1]]}]
+   "masked_input"->{MaskLayer[If[Head[type]===CZDiscrete,hideMask,hideMask]],ReshapeLayer[{channelInputDepth[type],type[[1,-2]],type[[1,-1]]}]
       },
    "cat"->CatenateLayer[],
    "conv"->{ConvolutionLayer[16,{3,3},"PaddingSize"->1],Tanh,ConvolutionLayer[16,{1,1},"PaddingSize"->0],Tanh,ConvolutionLayer[
@@ -98,7 +98,7 @@ CZCreatePixelCNNConditionalNet[ crossEntropyType_, computeOrdering_ ] := Module[
    "total_loss"->TotalLayer[]
    },
    {
-   Table[NetPort["Input"]->NetPort[{"loss"<>ToString[k],"Target"}],{k,Length[computeOrdering]}],
+   Table[NetPort["Target"]->NetPort[{"loss"<>ToString[k],"Target"}],{k,Length[computeOrdering]}],
    Table["predict"<>ToString[k]->"loss"<>ToString[k],{k,Length[computeOrdering]}],
    Table["loss"<>ToString[k]->"total_loss",{k,Length[computeOrdering]}],
    "total_loss"->NetPort["Loss"]
@@ -121,7 +121,7 @@ CZCreatePixelCNN[ type_:CZBinary[{1,28,28}] ] :=
 
 CZSampleConditionalPixelCNN[ conditionalPixelCNNNet_, inputType_[ imageDims_ ], conditional_ ] := Module[{s=ConstantArray[If[inputType===CZBinaryImage,0,1],imageDims], pixels=PixelCNNOrder[ imageDims ]},
    For[k=1,k<=Length[pixels],k++,
-      l = NetTake[conditionalPixelCNNNet,"predict"<>ToString[k]][Association["Input"->CZEncoder[ inputType[ imageDims ] ]@s,"Conditional"->conditional]];
+      l = NetTake[conditionalPixelCNNNet,"predict"<>ToString[k]][Association["Input"->s,"Conditional"->conditional]];
       s = CZSampleDistribution[ inputType[ imageDims ], l]*pixels[[k]]+s*(1-pixels[[k]]);t=s;
    ];
    s/If[inputType===CZDiscrete,10,1]]
