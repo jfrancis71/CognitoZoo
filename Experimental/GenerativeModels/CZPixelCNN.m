@@ -92,7 +92,7 @@ CZCreatePixelCNNConditionalNet[ crossEntropyType_, computeOrdering_ ] := Module[
    "total_loss"->TotalLayer[]
    },
    {
-   Table[NetPort["Target"]->NetPort[{"loss"<>ToString[k],"Target"}],{k,Length[computeOrdering]}],
+   Table[If[Head@crossEntropyType===CZDiscrete,NetPort["Target"],NetPort["Input"]]->NetPort[{"loss"<>ToString[k],"Target"}],{k,Length[computeOrdering]}],
    Table["predict"<>ToString[k]->"loss"<>ToString[k],{k,Length[computeOrdering]}],
    Table["loss"<>ToString[k]->"total_loss",{k,Length[computeOrdering]}],
    "total_loss"->NetPort["Loss"]

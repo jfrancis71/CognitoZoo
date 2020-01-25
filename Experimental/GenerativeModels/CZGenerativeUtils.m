@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-CZDiscretize[image_]:={Map[1+Round[#*9]&,ImageData[image, Interleaving->False],{2}]}
+CZDiscretize[image_]:=Map[1+Round[#*9]&,image,{3}]
 
 
 CZOneHot[ image_ ] := Transpose[ Map[ ReplacePart[ ConstantArray[ 0, {10} ], #->1 ]&, image, {Length[Dimensions[image]]} ],
@@ -42,9 +42,9 @@ SyntaxInformation[ CZRealGauss ]= {"ArgumentsPattern"->{_}};
 
 createAssociation[ inputType_, model_, example_ ] :=
    Association[
-      If[ model===CZNBModel, Nothing, "Input"->example ],
+     If[ model===CZNBModel && Head@inputType===CZDiscrete, Nothing, "Input"->example ],
       If[ CZLatentModelQ[ model ], "RandomSample"->CZSampleStandardNormalDistribution[ model[[1]] ], Nothing ],
-      "Target"->If[Head[inputType] === CZDiscrete,CZOneHot@example, example] ]
+      If[ Head[inputType] === CZDiscrete,"Target"->CZOneHot@CZDiscretize@example, Nothing ] ]
 
 
 CZTrain[ CZGenerativeModel[ model_, inputType_, net_ ], samples_, opts:OptionsPattern[] ] := Module[{trained, lossNet, f},

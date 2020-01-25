@@ -23,13 +23,16 @@ CZPixelVaEDecoder[ inputType_ ] := NetGraph[{
    {Apply[Times,inputType[[1,-2;;-1]]]},
    ReshapeLayer[inputType[[1,-2;;-1]]],
    CZCreatePixelCNNConditionalNet[ inputType, PixelCNNOrder[ inputType[[1]] ] ]},{
+   If[Not[Head@inputType===CZDiscrete],
+      NetPort["Target"]->NetPort[{5,"Input"}],
+      NetPort["Input"]->NetPort[{5,"Input"}]],
    NetPort["Conditional"]->1->2->3->4->NetPort[{5,"Conditional"}]}];
 
 
 CZCreatePixelVaE[ type_:CZBinary[{1,28,28}], latentUnits_:8 ] := CZGenerativeModel[
    CZPixelVaE[ {latentUnits,1,1} ], 
    type,
-   CZCreateVaENet[ type[[1]], CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type ] ]];
+   CZCreateVaENet[ type, CZCreateEncoder[ latentUnits ], CZPixelVaEDecoder[ type ] ]];
 
 
 SyntaxInformation[ CZPixelVaE ]= {"ArgumentsPattern"->{_}};

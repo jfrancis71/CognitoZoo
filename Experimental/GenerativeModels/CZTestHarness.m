@@ -9,16 +9,13 @@ mnist=ResourceData["MNIST","TrainingData"][[;;500,1]];
 binImages = {ImageData[#]}&/@Binarize/@mnist;
 
 
-discImages = CZDiscretize/@mnist;
-
-
 images={ImageData[#]}&/@mnist;
 
 
 nbmodel1 = CZCreateNBModel[];
 
 
-nbtrain1 = CZTrain[ nbmodel1, binImages, MaxTrainingRounds->1  ];
+nbtrain1 = CZTrain[ nbmodel1, binImages, MaxTrainingRounds->1 ];
 
 
 CZLogDensity[ nbtrain1, binImages[[1]] ]
@@ -30,10 +27,10 @@ Image@First@CZSample[ nbtrain1 ]
 nbmodel2 = CZCreateNBModel[ CZDiscrete[{1,28,28}] ];
 
 
-nbtrain2 = CZTrain[ nbmodel2, discImages, MaxTrainingRounds->1  ];
+nbtrain2 = CZTrain[ nbmodel2, images, MaxTrainingRounds->1  ];
 
 
-CZLogDensity[ nbtrain2, discImages[[1]] ]
+CZLogDensity[ nbtrain2, images[[1]] ]
 
 
 Image@First@CZSample[ nbtrain2 ]
@@ -69,10 +66,10 @@ Image@First@CZSample[ vaetrain1 ]
 vaemodel2 = CZCreateVaE[ CZDiscrete[{1,28,28}] ];
 
 
-vaetrain2 = CZTrain[ vaemodel2, discImages, MaxTrainingRounds->1  ];
+vaetrain2 = CZTrain[ vaemodel2, images, MaxTrainingRounds->1  ];
 
 
-CZLogDensity[ vaetrain2, discImages[[1]] ]
+CZLogDensity[ vaetrain2, images[[1]] ]
 
 
 Image@First@CZSample[ vaetrain2 ]
@@ -108,10 +105,10 @@ Image@First@CZSample[ cnntrain1 ]
 cnnmodel2 = CZCreatePixelCNN[ CZDiscrete[{1,28,28}] ];
 
 
-cnntrain2 = CZTrain[ cnnmodel2, discImages, MaxTrainingRounds->1  ];
+cnntrain2 = CZTrain[ cnnmodel2, images, MaxTrainingRounds->1  ];
 
 
-CZLogDensity[ cnntrain2, discImages[[1]] ]
+CZLogDensity[ cnntrain2, images[[1]] ]
 
 
 Image@First@CZSample[ cnntrain2 ]
@@ -147,10 +144,10 @@ Image@First@CZSample[ pixelvaetrain1 ]
 pixelvaemodel2 = CZCreatePixelVaE[ CZDiscrete[{1,28,28}] ];
 
 
-pixelvaetrain2 = CZTrain[ pixelvaemodel2, discImages, MaxTrainingRounds->1  ];
+pixelvaetrain2 = CZTrain[ pixelvaemodel2, images, MaxTrainingRounds->1  ];
 
 
-CZLogDensity[ pixelvaetrain2, discImages[[1]] ]
+CZLogDensity[ pixelvaetrain2, images[[1]] ]
 
 
 Image@First@CZSample[ pixelvaetrain2 ]

@@ -58,7 +58,7 @@ CZKLLoss = NetGraph[{
 }];
 
 
-CZCreateVaENet[ inputDims_, encoder_, decoder_ ] := NetGraph[{
+CZCreateVaENet[ inputType_, encoder_, decoder_ ] := NetGraph[{
    "encoder"->encoder,
    "sampler"->CZVaESamplerNet,
    "decoder"->decoder,
@@ -68,9 +68,9 @@ CZCreateVaENet[ inputDims_, encoder_, decoder_ ] := NetGraph[{
    NetPort[{"encoder","Mean"}]->{NetPort[{"sampler","Mean"}],NetPort[{"kl_loss","Mean"}]},
    NetPort[{"encoder","LogVar"}]->{NetPort[{"sampler","LogVar"}],NetPort[{"kl_loss","LogVar"}]},
    NetPort[{"sampler","Output"}]->NetPort[{"decoder","Conditional"}],
-(*   NetPort["Input"]->NetPort[{"decoder","Target"}],*)
+   If[Head[inputType]===CZDiscrete,NetPort["Target"],NetPort["Input"]]->NetPort[{"decoder","Target"}],
    {NetPort[{"decoder","Loss"}],NetPort[{"kl_loss","Loss"}]}->"total_loss"->NetPort["Loss"]
-},"Input"->inputDims];
+},"Input"->inputType[[1]]];
 
 
 SyntaxInformation[ CZVaE ]= {"ArgumentsPattern"->{_}};
@@ -83,7 +83,7 @@ CZSample[ CZGenerativeModel[ CZVaE[ latentUnits_ ], inputType_, vaeNet_ ] ] :=
 
 CZCreateVaE[ type_:CZBinary[{1,28,28}], latentUnits_:8, h1_:500, h2_:500 ] :=
    CZGenerativeModel[ CZVaE[ {latentUnits,1,1} ], type,
-      CZCreateVaENet[ type[[1]], CZCreateEncoder[ latentUnits ], CZCreateDecoder[ type ] ] ];
+      CZCreateVaENet[ type, CZCreateEncoder[ latentUnits ], CZCreateDecoder[ type ] ] ];
 
 
 CZGetLatent[ CZGenerativeModel[ CZVaE[ _ ], _, vaeNet_ ], sample_ ] :=
