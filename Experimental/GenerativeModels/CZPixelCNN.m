@@ -4,6 +4,11 @@
    Conditional Image Generation with PixelCNN Decoders, 2016
    van den Oord, Kalchbrenner, Vinyals, Espeholt, Graves, Kavukcuoglu
    http: https://arxiv.org/pdf/1606.05328.pdf
+
+   Note this is not a faithful implementation of above, although it is based on ideas
+   from this paper and NADE models. In summary this model will be much faster at sampling
+   than PixelCNN, but much less expressive. Each pixel sees a 3x3 windows around it,
+   which is probably the simplest possible model that illustrates the idea.
 *)
 
 
